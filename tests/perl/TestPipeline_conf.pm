@@ -11,6 +11,7 @@ sub pipeline_analyses {
 	   -logic_name => 'TestFactory',
 	   -module =>
 	   'TestFactory',
+	   -meadow_type=> 'LOCAL',
 	   -input_ids => [ ],    # required for automatic seeding
 	   -parameters => {},
 	   -flow_into => { '2->A' => ['TestRunnableParallel'],
@@ -20,6 +21,7 @@ sub pipeline_analyses {
 	   -logic_name => 'TestRunnableParallel',
 	   -module =>
 	   'TestRunnableParallel',
+	   -meadow_type=> 'LOCAL',
 	   -parameters    => {},
 	   -hive_capacity => 8,
 	   -flow_into     => ['TestRunnableDecorate']
@@ -28,6 +30,7 @@ sub pipeline_analyses {
 	   -logic_name => 'TestRunnableDecorate',
 	   -module =>
 	   'TestRunnableParallel',
+	   -meadow_type=> 'LOCAL',
 	   -parameters    => {},
 	   -hive_capacity => 8,
 	   -flow_into     => {
@@ -38,6 +41,7 @@ sub pipeline_analyses {
 	   -logic_name => 'TestRunnableMerge',
 	   -module =>
 	   'TestRunnableMerge',
+	   -meadow_type=> 'LOCAL',
 	   -parameters    => {},
 	   -hive_capacity => 8,
 	   -flow_into     => {
@@ -49,6 +53,7 @@ sub pipeline_analyses {
 	   -logic_name => 'TestRunnable',
 	   -module =>
 	   'TestRunnable',
+	   -meadow_type=> 'LOCAL',
 	   -parameters    => {},
 	   -hive_capacity => 8,
 	   -flow_into     => {
