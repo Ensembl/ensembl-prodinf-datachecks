@@ -19,7 +19,8 @@ class Analysis(Base):
 
 class Result(Base):
     __tablename__ = 'result'
-    job_id = Column(Integer, primary_key=True, autoincrement=False)
+
+    job_id = Column(Integer, primary_key=True)
     output = Column(String)
 
     def output_dict(self):
@@ -31,6 +32,7 @@ class Result(Base):
 
 class LogMessage(Base):
     __tablename__ = 'log_message'
+
     log_message_id = Column(Integer, primary_key=True)
     job_id = Column(Integer)
     msg = Column(String)
@@ -46,10 +48,12 @@ class LogMessage(Base):
 class Job(Base):
     __tablename__ = 'job'
 
-    job_id = Column(Integer, ForeignKey("result.job_id"), ForeignKey("log_message.job_id"), primary_key=True)
+    job_id = Column(Integer(), ForeignKey("result.job_id"), ForeignKey("log_message.job_id"), primary_key=True, autoincrement=True)
     input_id = Column(String)
     status = Column(String)
-    semaphored_job_id = Column(String)
+    prev_job_id = Column(Integer)
+    semaphored_job_id = Column(Integer)
+    semaphore_count = Column(Integer, default=0)
     
     analysis_id = Column(Integer, ForeignKey("analysis_base.analysis_id"))
     analysis = relationship("Analysis", uselist=False)
@@ -104,18 +108,29 @@ class HiveInstance:
         if job == None:
             raise ValueError("Job %s not found" % id)
         result = {"id":job.job_id}
-        if job.status == 'DONE':
-            if job.result!=None:
-                result['status'] = 'complete'
-                result['output'] = job.result.output_dict()
-            else:
-                result['status'] = self.check_semaphores_for_job(job)
-        elif job.status == 'FAILED':
-            result['status'] = 'failed'
+        if job.status == 'DONE' and job.result!=None:
+            result['status'] = 'complete'
+            result['output'] = job.result.output_dict()
         else:
-            result['status'] = 'incomplete'
+            result['status'] = self.get_job_tree_status(job)
         return result
 
+    def get_job_tree_status(self, job):
+        # check for semaphores
+        if job.semaphore_count>0:
+            return self.check_semaphores_for_job(job)
+        else:
+            if job.status == 'FAILED':
+                return 'failed'
+            elif job.status != 'DONE':
+                return 'incomplete'
+            else:
+                session = Session()
+                for child_job in session.query(Job).filter(Job.prev_job_id == job.job_id).all():
+                    child_status = self.get_job_tree_status(child_job)
+                    if child_status != 'complete':
+                        return child_status
+                return 'complete'
 
     def get_semaphored_jobs(self,job,status=None):
         session = Session()
@@ -126,12 +141,13 @@ class HiveInstance:
 
     def check_semaphores_for_job(self, job):
         session = Session()
-        jobs  = dict(session.query(Job.status, func.count(Job.status)).filter(Job.semaphored_job_id==job.job_id).all())
-        if ('READY' in jobs and jobs['READY']>0) or ('RUN' in jobs and jobs['RUN']>0): 
-            return 'incomplete'
-        elif 'FAILED' in jobs and jobs['FAILED']>0:
-            return 'failed'
-        else:
-            return 'complete'
+        status = 'complete'
+        jobs  = dict(session.query(Job.status, func.count(Job.status)).filter(Job.semaphored_job_id==job.job_id).group_by(Job.status).all())
+        if 'FAILED' in jobs and jobs['FAILED']>0:
+            status = 'failed'
+        elif ('READY' in jobs and jobs['READY']>0) or ('RUN' in jobs and jobs['RUN']>0): 
+            status = 'incomplete'
+        return status
+
 
 
