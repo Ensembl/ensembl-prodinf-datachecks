@@ -35,4 +35,4 @@ def list_to_perl_string(input_list):
     return "[%s]" % ", ".join(elems)  
 
 def escape_perl_string(v):
-    return str(v).replace("$","\\\$").replace("\"","\\\"").replace("@","\\\@")
+    return str(v).replace("$","\\$").replace("\"","\\\"").replace("@","\\@")

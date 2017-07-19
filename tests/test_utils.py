@@ -33,4 +33,15 @@ class HiveTest(unittest.TestCase):
         o = {'a':"\"b\""}
         s = dict_to_perl_string(o)
         self.assertEquals(s,"""{"a" => "\\"b\\""}""")
+
+    def test_parse_string_dollar(self):
+        o = {'a':"$b"}
+        s = dict_to_perl_string(o)
+        self.assertEquals(s,"""{"a" => "\\$b"}""")
+
+    def test_parse_string_at(self):
+        o = {'a':"@b"}
+        s = dict_to_perl_string(o)
+        print s
+        self.assertEquals(s,"""{"a" => "\\@b"}""")
         
