@@ -1,6 +1,7 @@
 from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, func
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
+from .utils import dict_to_perl_string
 
 import time
 import json
@@ -91,17 +92,13 @@ class HiveInstance:
             raise ValueError("Analysis %s not found" % analysis_name)
         session = Session()
         try:
-            job = Job(input_id=self.input_data_to_string(input_data), status='READY', analysis_id=analysis.analysis_id);
+            job = Job(input_id=dict_to_perl_string(input_data), status='READY', analysis_id=analysis.analysis_id);
             session.add(job)
             session.commit()
             return job
         except:
             session.rollback()
-            raise
-    
-    def input_data_to_string(self, input_data):
-        return "{%s}" % ",".join(["\"%s\" => \"%s\"" % (k,v) for k, v in input_data.iteritems()])
-
+            raise        
 
     def get_result_for_job_id(self, id):
         job = self.get_job_by_id(id)
