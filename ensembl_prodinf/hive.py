@@ -9,6 +9,7 @@ import json
 Base = declarative_base()
 
 class Analysis(Base):
+
     __tablename__ = 'analysis_base'
 
     analysis_id = Column(Integer, primary_key=True)
@@ -19,6 +20,7 @@ class Analysis(Base):
             self.analysis_id, self.logic_name)
 
 class Result(Base):
+
     __tablename__ = 'result'
 
     job_id = Column(Integer, primary_key=True)
@@ -32,6 +34,7 @@ class Result(Base):
             self.job_id, self.output)
 
 class LogMessage(Base):
+
     __tablename__ = 'log_message'
 
     log_message_id = Column(Integer, primary_key=True)
@@ -78,14 +81,25 @@ class HiveInstance:
         Session.configure(bind=engine)
 
     def get_job_by_id(self, id):
+
+        """ Retrieve a job given the unique surrogate ID """
+
         session = Session()
         return session.query(Job).filter(Job.job_id == id).first()
 
     def get_analysis_by_name(self, name):
+
+        """ Find an analysis """
+
         session = Session()
         return session.query(Analysis).filter(Analysis.logic_name==name).first()
 
     def create_job(self, analysis_name, input_data):
+
+        """ Create a job for the supplied analysis and input hash 
+        The input_data dict is converted to a Perl string before storing
+        """
+
         input_data['timestamp'] = time.time()
         analysis = self.get_analysis_by_name(analysis_name)
         if analysis == None:
@@ -101,6 +115,9 @@ class HiveInstance:
             raise        
 
     def get_result_for_job_id(self, id):
+
+        """ Detertmine if the job has completed. If the job has semaphored children, they are also checked """
+
         job = self.get_job_by_id(id)
         if job == None:
             raise ValueError("Job %s not found" % id)
@@ -113,6 +130,9 @@ class HiveInstance:
         return result
 
     def get_job_tree_status(self, job):
+
+        """ Recursively check all children of a job """
+
         # check for semaphores
         if job.semaphore_count>0:
             return self.check_semaphores_for_job(job)
@@ -130,6 +150,13 @@ class HiveInstance:
                 return 'complete'
 
     def get_semaphored_jobs(self,job,status=None):
+
+        """ Find all jobs that are semaphored children of the nominated job, optionall filtering by status 
+        'complete' indicates that all children completed successfully
+        'failed' indicates that at least one child has failed
+        'incomplete' indicates that at least one child is running or ready
+        """
+
         session = Session()
         if status == None:
             return session.query(Job).filter(Job.semaphored_job_id==job.job_id).all()
@@ -137,6 +164,9 @@ class HiveInstance:
             return session.query(Job).filter(Job.semaphored_job_id==job.job_id, Job.status == status).all()
 
     def check_semaphores_for_job(self, job):
+
+        """ Find all jobs that are semaphored children of the nominated job, and check whether they have completed """
+
         session = Session()
         status = 'complete'
         jobs  = dict(session.query(Job.status, func.count(Job.status)).filter(Job.semaphored_job_id==job.job_id).group_by(Job.status).all())
