@@ -1,3 +1,4 @@
 nose
 sphinx
 sqlalchemy
+celery
