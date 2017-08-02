@@ -4,8 +4,7 @@ import getpass
 import json
 import urllib2
 
-from_email = "%s@ebi.ac.uk" % getpass.getuser()
-smtp_server = 'localhost'
+
 
 @app.task(bind=True)
 def email_when_complete(self, url, address):
@@ -19,6 +18,8 @@ def email_when_complete(self, url, address):
     if result['status'] == 'incomplete':
         raise self.retry()
     else:
+        from_email = "%s@ebi.ac.uk" % getpass.getuser()
+        smtp_server = 'localhost'
         send_email(smtp_server, from_email, address, result['subject'], result['body'])
         return result
 
