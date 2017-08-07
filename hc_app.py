@@ -10,8 +10,8 @@ import re
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 app = Flask(__name__, instance_relative_config=True)
-app.config.from_object('config')
-app.config.from_pyfile('config.py')
+app.config.from_object('hc_config')
+app.config.from_pyfile('gc_config.py')
 
 cors = CORS(app)
 
