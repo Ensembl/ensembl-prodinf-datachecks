@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from sqlalchemy import create_engine, text
@@ -11,7 +12,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(level
 
 app = Flask(__name__, instance_relative_config=True)
 app.config.from_object('hc_config')
-app.config.from_pyfile('gc_config.py')
+app.config.from_pyfile('hc_config.py')
 
 cors = CORS(app)
 
