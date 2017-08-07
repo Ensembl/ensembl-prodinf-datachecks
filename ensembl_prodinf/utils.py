@@ -6,10 +6,10 @@ def send_email(server, from_address, to_address, subject, body):
     """ Utility method for sending an email"""
     msg = MIMEText(body)
     msg['Subject'] = subject
-    msg['From'] = from_email
-    msg['To'] = address    
+    msg['From'] = from_address
+    msg['To'] = to_address    
     s = SMTP(server)
-    s.sendmail(from_email, [address], msg.as_string())
+    s.sendmail(from_address, [to_address], msg.as_string())
     s.quit()
 
 def dict_to_perl_string(input_dict):
