@@ -76,8 +76,8 @@ class HiveInstance:
 
     analysis_dict = dict()
 
-    def __init__(self, url):
-        engine = create_engine(url)
+    def __init__(self, url, timeout=3600):
+        engine = create_engine(url, pool_recycle=timeout)
         Session.configure(bind=engine)
 
     def get_job_by_id(self, id):
