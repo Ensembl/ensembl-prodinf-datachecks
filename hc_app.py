@@ -32,9 +32,9 @@ json_pattern = re.compile("application/json")
 def submit():
     if json_pattern.match(request.headers['Content-Type']):
         logging.debug("Submitting HC "+str(request.json))
-        job = get_hive().create_job(analysis, request.json)
+        job = get_hive().create_job(app.analysis, request.json)
         results = {"job_id":job.job_id};
-        email =  request.json['email']
+        email =  request.json.get('email')
         if email != None and email != '':
             logging.debug("Submitting email request for  "+email)
             email_results = email_when_complete.delay(request.url_root+"results_email/"+str(job.job_id),email)
