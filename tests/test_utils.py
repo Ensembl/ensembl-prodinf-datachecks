@@ -7,7 +7,7 @@ import logging
 
 logging.basicConfig()
 
-class HiveTest(unittest.TestCase):
+class UtilsTest(unittest.TestCase):
 
     def test_parse_simple_str(self):
         o = {'a':'b'}
