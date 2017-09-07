@@ -3,7 +3,7 @@ from sqlalchemy import create_engine, text
 
 def list_databases(db_uri, query):
 
-    if(db_uri.startsWith('mysql')==False):
+    if(db_uri.startswith('mysql')==False):
         raise ValueError('list_databases can only work with MySQL databases')
 
     engine = create_engine(db_uri)
