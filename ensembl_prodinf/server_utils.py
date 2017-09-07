@@ -40,7 +40,7 @@ def process_ncores(status, line):
 def run_process(command, function, host=None):
     status = {}
     if host!=None:
-        command = 'ssh '+host+' '+command
+        command = 'ssh -q '+host+' '+command
     p = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
     for line in p.stdout.readlines():
         function(status, line)
