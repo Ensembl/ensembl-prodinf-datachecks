@@ -2,10 +2,13 @@ import re
 import subprocess
 import os
 
-def get_status(host=None,dir=None):
+def get_status(host=None,dir_name=None):
     status = {}
-    if(dir!=None):
-        status.update(run_process('df -hP '+dir,process_df, host))
+    if(host!=None):
+        status['host'] = host
+    if(dir_name!=None):
+        status['dir'] = dir_name
+        status.update(run_process('df -hP '+dir_name,process_df, host))
     status.update(run_process('free -m',process_free, host))
     status.update(run_process('uptime',process_uptime, host))
     status.update(run_process('grep -c "^processor" /proc/cpuinfo',process_ncores, host))
