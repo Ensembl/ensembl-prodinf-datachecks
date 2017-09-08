@@ -74,17 +74,3 @@ def results_email(job_id):
     except ValueError:
         return "Job "+str(job_id)+" not found", 404
 
-@app.route('/list_databases', methods=['GET'])
-def list_databases():
-    try:
-        db_uri = request.args.get('db_uri')
-        query = request.args.get('query')
-        logging.info("Looking up "+str(query)+" on "+str(db_uri))
-        engine = create_engine(db_uri)
-        s = text("select schema_name from information_schema.schemata where schema_name rlike :q")
-        noms = []
-        with engine.connect() as con:
-            noms = [str(r[0]) for r in con.execute(s, {"q":query}).fetchall()]
-        return jsonify(noms)
-    except ValueError:
-        return "Job "+str(job_id)+" not found", 404
