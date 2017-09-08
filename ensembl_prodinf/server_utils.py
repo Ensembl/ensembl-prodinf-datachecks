@@ -1,6 +1,5 @@
 import re
 import subprocess
-import os
 
 def get_status(host=None,dir_name=None):
     status = {}
