@@ -109,6 +109,8 @@ class HiveInstance:
             job = Job(input_id=dict_to_perl_string(input_data), status='READY', analysis_id=analysis.analysis_id);
             session.add(job)
             session.commit()
+            # force load of object
+            job.analysis
             return job
         except:
             session.rollback()
@@ -116,11 +118,14 @@ class HiveInstance:
 
     def get_result_for_job_id(self, id):
 
-        """ Detertmine if the job has completed. If the job has semaphored children, they are also checked """
-
         job = self.get_job_by_id(id)
         if job == None:
             raise ValueError("Job %s not found" % id)
+        return self.get_result_for_job(job)
+    
+
+    def get_result_for_job(self, job):
+        """ Detertmine if the job has completed. If the job has semaphored children, they are also checked """
         result = {"id":job.job_id}
         if job.status == 'DONE' and job.result!=None:
             result['status'] = 'complete'
@@ -176,5 +181,9 @@ class HiveInstance:
             status = 'incomplete'
         return status
 
+    def get_all_results(self, analysis_name):
 
-
+        """Find all jobs from the specified analysis"""
+        session = Session()
+        return list(map(lambda result: self.get_result_for_job(result.Job), session.query(Job, Analysis).filter(Analysis.logic_name == analysis_name).all()))
+        

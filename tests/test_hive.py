@@ -90,6 +90,11 @@ class HiveTest(unittest.TestCase):
         logging.debug(output)
         self.assertEquals('failed', output['status'], "Checking status of unsuccessful job factory output")
         self.assertTrue('output' not in output, "Checking output of unsuccessful job factory output")
+
+    """Test case for listing all jobs"""
+    def test_get_all_results(self):
+        jobs = self.hive.get_all_results('TestRunnable')
+        self.assertEquals(20, len(jobs), "Checking we got 20 jobs")
  
     """Remove test database file"""
     def tearDown(self):
