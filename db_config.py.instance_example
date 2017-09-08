@@ -1,2 +1,6 @@
-DEBUG = False
+SERVER_URIS = {           
+    "ensro":[
+        "mysql://ensro@localhost:3306/",
+     ]
+}
 
