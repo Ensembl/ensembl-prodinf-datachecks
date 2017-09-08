@@ -64,6 +64,13 @@ class HcSrvTest(unittest.TestCase):
         self.assertEquals(results.get('status'),'complete')
         self.assertTrue(results.get('body'))
         self.assertTrue(results.get('subject'))
+        
+    """Basic test case for retrieving lists of jobs"""
+    def test_jobs(self):
+        response = self.app.get("/jobs");
+        self.assertEquals(200, response.status_code)
+        results = json.loads(response.data);
+        print results
 
     """Remove test database file"""
     def tearDown(self):

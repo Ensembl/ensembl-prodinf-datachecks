@@ -1,10 +1,8 @@
 #!/usr/bin/env python
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from sqlalchemy import create_engine, text
 from ensembl_prodinf import HiveInstance
 from ensembl_prodinf.tasks import email_when_complete
-import json
 import logging
 import re
 
@@ -74,3 +72,7 @@ def results_email(job_id):
     except ValueError:
         return "Job "+str(job_id)+" not found", 404
 
+@app.route('/jobs', methods=['GET'])
+def jobs():
+    logging.info("Retrieving jobs")
+    return jsonify(get_hive().get_all_results(app.analysis))
