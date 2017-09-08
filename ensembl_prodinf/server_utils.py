@@ -24,9 +24,9 @@ def process_uptime(status, line):
 def process_free(status, line):
     if line.startswith("Mem:"):
         elems = line.split()
-        status['memory_total'] = elems[1]+"M"
-        status['memory_used'] = elems[2]+"M"
-        status['memory_available'] = elems[3]+"M"
+        status['memory_total_M'] = elems[1]
+        status['memory_used_M'] = elems[2]
+        status['memory_available_M'] = elems[3]
 
 def process_df(status, line):
     if not line.startswith("Filesystem"):
