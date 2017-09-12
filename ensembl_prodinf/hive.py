@@ -71,7 +71,6 @@ class Job(Base):
             self.job_id, self.analysis.logic_name, self.input_id, self.status, self.result.output if self.result != None else None)
 
 Session = sessionmaker()
-
 class HiveInstance:
 
     analysis_dict = dict()
@@ -79,20 +78,19 @@ class HiveInstance:
     def __init__(self, url, timeout=3600):
         engine = create_engine(url, pool_recycle=timeout)
         Session.configure(bind=engine)
+        self.session = Session()
+
 
     def get_job_by_id(self, id):
 
         """ Retrieve a job given the unique surrogate ID """
-
-        session = Session()
-        return session.query(Job).filter(Job.job_id == id).first()
+        return self.session.query(Job).filter(Job.job_id == id).first()
 
     def get_analysis_by_name(self, name):
 
         """ Find an analysis """
 
-        session = Session()
-        return session.query(Analysis).filter(Analysis.logic_name==name).first()
+        return self.session.query(Analysis).filter(Analysis.logic_name==name).first()
 
     def create_job(self, analysis_name, input_data):
 
@@ -104,7 +102,7 @@ class HiveInstance:
         analysis = self.get_analysis_by_name(analysis_name)
         if analysis == None:
             raise ValueError("Analysis %s not found" % analysis_name)
-        session = Session()
+        session = self.session
         try:
             job = Job(input_id=dict_to_perl_string(input_data), status='READY', analysis_id=analysis.analysis_id);
             session.add(job)
@@ -148,8 +146,7 @@ class HiveInstance:
             elif job.status != 'DONE':
                 return 'incomplete'
             else:
-                session = Session()
-                for child_job in session.query(Job).filter(Job.prev_job_id == job.job_id).all():
+                for child_job in self.session.query(Job).filter(Job.prev_job_id == job.job_id).all():
                     child_status = self.get_job_tree_status(child_job)
                     if child_status != 'complete':
                         return child_status
@@ -163,19 +160,17 @@ class HiveInstance:
         'incomplete' indicates that at least one child is running or ready
         """
 
-        session = Session()
         if status == None:
-            return session.query(Job).filter(Job.semaphored_job_id==job.job_id).all()
+            return self.session.query(Job).filter(Job.semaphored_job_id==job.job_id).all()
         else:
-            return session.query(Job).filter(Job.semaphored_job_id==job.job_id, Job.status == status).all()
+            return self.session.query(Job).filter(Job.semaphored_job_id==job.job_id, Job.status == status).all()
 
     def check_semaphores_for_job(self, job):
 
         """ Find all jobs that are semaphored children of the nominated job, and check whether they have completed """
 
-        session = Session()
         status = 'complete'
-        jobs  = dict(session.query(Job.status, func.count(Job.status)).filter(Job.semaphored_job_id==job.job_id).group_by(Job.status).all())
+        jobs  = dict(self.session.query(Job.status, func.count(Job.status)).filter(Job.semaphored_job_id==job.job_id).group_by(Job.status).all())
         if 'FAILED' in jobs and jobs['FAILED']>0:
             status = 'failed'
         elif ('READY' in jobs and jobs['READY']>0) or ('RUN' in jobs and jobs['RUN']>0): 
@@ -185,6 +180,9 @@ class HiveInstance:
     def get_all_results(self, analysis_name):
 
         """Find all jobs from the specified analysis"""
-        session = Session()
-        return list(map(lambda result: self.get_result_for_job(result.Job), session.query(Job, Analysis).filter(Analysis.logic_name == analysis_name).all()))
+        return list(map(lambda result: self.get_result_for_job(result.Job), self.session.query(Job, Analysis).filter(Analysis.logic_name == analysis_name).all()))
+        
+    def delete_job(self, job):
+        self.session.delete(job)
+        
         
