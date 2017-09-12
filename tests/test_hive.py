@@ -94,7 +94,7 @@ class HiveTest(unittest.TestCase):
     """Test case for listing all jobs"""
     def test_get_all_results(self):
         jobs = self.hive.get_all_results('TestRunnable')
-        self.assertEquals(20, len(jobs), "Checking we got 20 jobs")
+        self.assertEquals(1, len(jobs), "Checking we got just one job")
  
     """Remove test database file"""
     def tearDown(self):
