@@ -1,7 +1,7 @@
 from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, func
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
-from .utils import dict_to_perl_string
+from .utils import dict_to_perl_string, perl_string_to_python
 
 import time
 import json
@@ -127,6 +127,7 @@ class HiveInstance:
     def get_result_for_job(self, job):
         """ Detertmine if the job has completed. If the job has semaphored children, they are also checked """
         result = {"id":job.job_id}
+        result['input'] = perl_string_to_python(job.input_id)
         if job.status == 'DONE' and job.result!=None:
             result['status'] = 'complete'
             result['output'] = job.result.output_dict()
