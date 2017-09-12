@@ -7,7 +7,7 @@ def get_status(host=None,dir_name=None):
         status['host'] = host
     if(dir_name!=None):
         status['dir'] = dir_name
-        status.update(run_process('df -hP '+dir_name,process_df, host))
+        status.update(run_process('df -BG '+dir_name,process_df, host))
     status.update(run_process('free -m',process_free, host))
     status.update(run_process('uptime',process_uptime, host))
     status.update(run_process('grep -c "^processor" /proc/cpuinfo',process_ncores, host))
@@ -24,16 +24,18 @@ def process_uptime(status, line):
 def process_free(status, line):
     if line.startswith("Mem:"):
         elems = line.split()
-        status['memory_total_M'] = elems[1]
-        status['memory_used_M'] = elems[2]
-        status['memory_available_M'] = elems[3]
+        status['memory_total_m'] = int(elems[1])
+        status['memory_used_m'] = int(elems[2])
+        status['memory_available_m'] = int(elems[3])
+        status['memory_used_pct'] = 100*status['memory_used_m']/status['memory_total_m']
 
 def process_df(status, line):
     if not line.startswith("Filesystem"):
         elems = line.split()
-        status['disk_total'] = elems[1]
-        status['disk_used'] = elems[2]
-        status['disk_available'] = elems[3]
+        status['disk_total_g'] = int(elems[1].replace('G',''))
+        status['disk_used_g'] = int(elems[2].replace('G',''))
+        status['disk_available_g'] = int(elems[3].replace('G',''))
+        status['disk_used_pct'] = 100.0*status['disk_used_g']/status['disk_total_g']
 
 def process_ncores(status, line):
     elems = line.split()
