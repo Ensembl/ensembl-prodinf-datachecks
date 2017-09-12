@@ -1,6 +1,7 @@
 # Miscellaneous utilities used by the package
 from email.mime.text import MIMEText
 from smtplib import SMTP
+import json
 
 def send_email(server, from_address, to_address, subject, body):
     """ Utility method for sending an email"""
@@ -58,3 +59,34 @@ def list_to_perl_string(input_list):
 def escape_perl_string(v):
     """Escape characters with special meaning in perl"""
     return str(v).replace("$","\\$").replace("\"","\\\"").replace("@","\\@")
+
+def perl_string_to_python(s):
+    s = s.replace("=>",":").replace("\\$","$").replace("\\@","@")
+    return json.loads(s)
+
+# str_p = re.compile('"(.*)"')
+# def perl_string_to_python(s):
+#     """Transform a Perlified string to a python structure""" 
+#     s = s.strip()
+#     print s
+#     if(s.startswith('{') and s.endswith('}')):
+#         return perl_string_to_dict(s)
+#     elif(s.startswith('[') and s.endswith(']')):
+#         return perl_string_to_list(s)
+#     else:
+#         m = str_p.match(s)
+#         if(m):
+#             return str(m.group(1)).replace("\\$","$").replace("\\\"","\"").replace("\\@","@")      
+#         else:
+#             return s
+# 
+# dict_p = re.compile('"(.+?)" *=> *(.*?)[},]')
+# def perl_string_to_dict(s):
+#     d = {}
+#     for pair in dict_p.findall(s):
+#         d[pair[0]] = perl_string_to_python(pair[1])
+#     return d
+# 
+# def perl_string_to_list(s):
+#     d = []
+#     return d
