@@ -13,12 +13,15 @@ You can also install `ensembl_prodinf` from git or by adding an existing install
 Hive Setup
 ==========
 
-Before you can use the HC endpoint, you need a beekeeper running init_pipeline.pl Bio::EnsEMBL::Healthcheck::Pipeline::RunStandaloneHealthchecksParallel_conf $(mysql-ens-hive-prod-1-ensadmin details hive):
+Before you can use the HC endpoint, you need a beekeeper running the pipeline defined by `Bio::EnsEMBL::Healthcheck::Pipeline::RunStandaloneHealthchecksParallel_conf`. This also needs a Java jar. To build and initiate the pipeline:
 ```
 git clone https://github.com/Ensembl/ensj-healthcheck
-cd ensj-healthcheck/perl
+cd ensj-healthcheck
+mvn clean package
+JAR=$PWD/target/healthchecks-jar-with-dependencies.jar
+cd perl
 SRV=your_mysql_command_wrapper
-init_pipeline.pl Bio::EnsEMBL::Healthcheck::Pipeline::RunStandaloneHealthchecksParallel_conf $($SRV details hive)
+init_pipeline.pl Bio::EnsEMBL::Healthcheck::Pipeline::RunStandaloneHealthchecksParallel_conf $($SRV details hive) -hc_jar $JAR 
 ```
 
 Next, run the `beekeeper.pl` supplied by the output with the arguments `--loop --keep_alive`. This ensures the hive runs continually, picking up new jobs as they are submitted.
