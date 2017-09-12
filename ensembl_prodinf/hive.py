@@ -180,7 +180,8 @@ class HiveInstance:
     def get_all_results(self, analysis_name):
 
         """Find all jobs from the specified analysis"""
-        return list(map(lambda result: self.get_result_for_job(result.Job), self.session.query(Job, Analysis).filter(Analysis.logic_name == analysis_name).all()))
+        jobs = self.session.query(Job).join(Analysis).filter(Analysis.logic_name == analysis_name).all()
+        return list(map(lambda job: self.get_result_for_job(job), jobs))
         
     def delete_job(self, job):
         self.session.delete(job)
