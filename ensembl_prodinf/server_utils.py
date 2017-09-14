@@ -17,9 +17,9 @@ up_pattern = re.compile('.* load average: ([0-9.]+), ([0-9.]+), ([0-9.]+)')
 def process_uptime(status, line):
     m = up_pattern.match(line)
     if m:
-        status['load_1m'] = m.group(1)
-        status['load_5m'] = m.group(2)
-        status['load_15m'] = m.group(3)
+        status['load_1m'] = float(m.group(1))
+        status['load_5m'] = float(m.group(2))
+        status['load_15m'] = float(m.group(3))
 
 def process_free(status, line):
     if line.startswith("Mem:"):
@@ -39,7 +39,7 @@ def process_df(status, line):
 
 def process_ncores(status, line):
     elems = line.split()
-    status['n_cpus'] = elems[0]
+    status['n_cpus'] = int(elems[0])
 
 def run_process(command, function, host=None):
     status = {}
