@@ -16,7 +16,7 @@ def send_email(server, from_address, to_address, subject, body):
 def dict_to_perl_string(input_dict):
     """Transform the supplied dict into a string representation of a Perl hash"""
     pairs = []
-    for k,v in sorted(input_dict.items()):
+    for k,v in sorted(filter(lambda (k,v): v != None, input_dict.items())):
         k = str(k)
         t = type(v).__name__
         if t == 'str':

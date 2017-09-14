@@ -85,3 +85,8 @@ class UtilsTest(unittest.TestCase):
         t = type(o2).__name__
         self.assertEquals(t, "dict")
         self.assertEquals(o2['a'], '@b')                
+
+    def test_parse_none(self):
+        o = {'a':None}
+        s = dict_to_perl_string(o)
+        self.assertEquals(s, """{}""")
