@@ -92,6 +92,15 @@ class HiveInstance:
         finally:
             s.close()
 
+    def get_job_failure_msg(self, job):
+
+        """ Retrieve a job failure message """
+        s = Session()
+        try:
+            return s.query(LogMessage).filter(LogMessage.job_id == job.job_id).order_by(LogMessage.log_message_id.desc()).first()
+        finally:
+            s.close()
+
     def get_analysis_by_name(self, name):
 
         """ Find an analysis """
@@ -132,7 +141,6 @@ class HiveInstance:
         if job == None:
             raise ValueError("Job %s not found" % id)
         return self.get_result_for_job(job)
-    
 
     def get_result_for_job(self, job):
         """ Detertmine if the job has completed. If the job has semaphored children, they are also checked """
