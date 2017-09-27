@@ -31,6 +31,9 @@ def dict_to_perl_string(input_dict):
             pairs.append("\"%s\" => %s" % (k,list_to_perl_string(v)))
         elif t == 'dict':
             pairs.append("\"%s\" => %s" % (k,dict_to_perl_string(v)))
+        elif t == 'bool':
+            if str(v) == "True":
+                pairs.append("\"%s\" => %d" % (k,1))
         else:
             raise Exception("Unsupported type "+str(t))
     return "{%s}" % ", ".join(pairs)
