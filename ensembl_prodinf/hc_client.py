@@ -26,7 +26,7 @@ def submit_job(uri, db_uri, production_uri, compara_uri, staging_uri, live_uri, 
     
 def delete_job(uri, job_id):
     logging.info("Deleting job " + str(job_id))
-    r = requests.get(uri + 'delete/' + job_id)
+    r = requests.get(uri + 'delete/' + str(job_id))
     r.raise_for_status()
     return True
     
@@ -40,9 +40,9 @@ def list_jobs(uri, output_file):
         print_job(job, print_results=False, print_input=False)
     write_output(r, output_file)      
             
-def retrieve_job(uri, job_id, output_file):    
+def retrieve_job(uri, job_id):    
     logging.info("Retrieving results for job " + str(job_id))
-    r = requests.get(uri + 'results/' + job_id)
+    r = requests.get(uri + 'results/' + str(job_id))
     r.raise_for_status()
     job = r.json()
     return job
