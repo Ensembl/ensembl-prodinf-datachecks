@@ -107,7 +107,7 @@ if __name__ == '__main__':
     elif args.action == 'retrieve':
     
         job = retrieve_job(args.uri, args.job_id, args.output_file)
-        print_job(job, print_input=True, print_result=True)
+        print_job(job, print_input=True, print_results=True)
     
     elif args.action == 'list':
        
