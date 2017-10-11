@@ -92,12 +92,12 @@ class HiveInstance:
         finally:
             s.close()
 
-    def get_job_failure_msg(self, job):
+    def get_job_failure_msg_by_id(self, id):
 
         """ Retrieve a job failure message """
         s = Session()
         try:
-            return s.query(LogMessage).filter(LogMessage.job_id == job.job_id).order_by(LogMessage.log_message_id.desc()).first()
+            return s.query(LogMessage).filter(LogMessage.job_id == id).order_by(LogMessage.log_message_id.desc()).first()
         finally:
             s.close()
 

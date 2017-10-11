@@ -56,7 +56,7 @@ while True:
         break
 
 if output['status'] == 'failed':
-    msg = hive.get_job_failure_msg(job)
+    msg = hive.get_job_failure_msg_by_id(job.job_id)
     logging.error("Job failed with error "+msg.msg)
 else:
     print "Status: %s\n" % output['status']
