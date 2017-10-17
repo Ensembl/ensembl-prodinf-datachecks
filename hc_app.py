@@ -63,27 +63,25 @@ def delete(job_id):
 
 @app.route('/results_email/<int:job_id>', methods=['GET'])
 def results_email(job_id):
-    try:
-        email = request.args.get('email')
-        logging.info("Retrieving job with ID " + str(job_id) + " for " + str(email))
-        job = get_hive().get_job_by_id(id)
-        results['input'] = job.input_id
-        results = get_hive().get_result_for_job_id(job_id)
-        if results['status'] == 'complete':
-            results['subject'] = 'Healthchecks for %s - %s' % (results['output']['db_name'], results['output']['status'])
-            results['body'] = "Results for %s:\n" % (results['output']['db_uri'])
-            for (test, result) in results['output']['results'].iteritems():
-                results['body'] += "* %s : %s\n" % (test, result['status'])
-                if result['messages'] != None:
-                    for msg in result['messages']:
-                        results['body'] += "** %s\n" % (msg)
-        elif results['status'] == 'failed':
-            results['subject'] = 'Healthcheck job failed'
-            results['body'] = 'HC job failed. Boo.'
-        results['output'] = None
-        return jsonify(results)
-    except ValueError:
+    email = request.args.get('email')
+    logging.info("Retrieving job with ID " + str(job_id) + " for " + str(email))
+    job = get_hive().get_job_by_id(job_id)
+    if(job == None):
         return "Job " + str(job_id) + " not found", 404
+    results = get_hive().get_result_for_job_id(job_id)
+    if results['status'] == 'complete':
+        results['subject'] = 'Healthchecks for %s - %s' % (results['output']['db_name'], results['output']['status'])
+        results['body'] = "Results for %s:\n" % (results['output']['db_uri'])
+        for (test, result) in results['output']['results'].iteritems():
+            results['body'] += "* %s : %s\n" % (test, result['status'])
+            if result['messages'] != None:
+                for msg in result['messages']:
+                    results['body'] += "** %s\n" % (msg)
+    elif results['status'] == 'failed':
+        results['subject'] = 'Healthcheck job failed'
+        results['body'] = 'HC job failed. Boo.'
+    results['output'] = None
+    return jsonify(results)
 
 @app.route('/jobs', methods=['GET'])
 def jobs():
