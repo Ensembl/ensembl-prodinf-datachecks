@@ -46,6 +46,12 @@ def retrieve_job(uri, job_id, output_file):
     job = r.json()
     return job
 
+def results_email(uri, job_id, email):
+    logging.info("Sending job detail by email " + str(job_id))
+    r = requests.get(uri + 'results_email/' + str(job_id) + "?email=" + str(email))
+    r.raise_for_status()
+    return r.json()
+
 def retrieve_job_failure(uri, job_id):    
     logging.info("Retrieving job failure for job " + str(job_id))
     r = requests.get(uri + 'failure/' + str(job_id))
@@ -81,7 +87,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Copy HCs via a REST service')
 
     parser.add_argument('-u', '--uri', help='REST service URI', required=True)
-    parser.add_argument('-a', '--action', help='Action to take', choices=['submit', 'retrieve', 'list', 'delete'], required=True)
+    parser.add_argument('-a', '--action', help='Action to take', choices=['submit', 'retrieve', 'list', 'delete', 'email'], required=True)
     parser.add_argument('-i', '--job_id', help='HC job identifier to retrieve')
     parser.add_argument('-v', '--verbose', help='Verbose output', action='store_true')
     parser.add_argument('-o', '--output_file', help='File to write output as JSON', type=argparse.FileType('w'))
@@ -91,6 +97,7 @@ if __name__ == '__main__':
     parser.add_argument('-n', '--skip_tables', help='List of tables to skip')
     parser.add_argument('-p', '--update', help='Incremental database update using rsync checksum')
     parser.add_argument('-d', '--drop', help='Drop database on Target server before copy')
+    parser.add_argument('-e', '--email', help='Email where to send the report')
 
 
     args = parser.parse_args()
@@ -122,4 +129,7 @@ if __name__ == '__main__':
     elif args.action == 'delete':
         delete_job(args.uri, args.job_id)
         logging.info("Job " + str(args.job_id) + " was successfully deleted")
+
+    elif args.action == 'email':
+        results_email(args.uri, args.job_id, args.email)
         
