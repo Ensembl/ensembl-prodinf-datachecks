@@ -62,7 +62,7 @@ def list_servers_endpoint(user):
 @app.route('/submit', methods=['POST'])
 def submit():
     if json_pattern.match(request.headers['Content-Type']):
-        logging.debug("Submitting HC " + str(request.json))
+        logging.debug("Submitting Database copy " + str(request.json))
         job = get_hive().create_job(app.analysis, request.json)
         results = {"job_id":job.job_id};
         email = request.json.get('email')
@@ -103,27 +103,23 @@ def delete(job_id):
 
 @app.route('/results_email/<int:job_id>', methods=['GET'])
 def results_email(job_id):
-    try:
-        email = request.args.get('email')
-        logging.info("Retrieving job with ID " + str(job_id) + " for " + str(email))
-        job = get_hive().get_job_by_id(id)
-        results['input'] = job.input_id
-        results = get_hive().get_result_for_job_id(job_id)
-        if results['status'] == 'complete':
-            results['subject'] = 'Healthchecks for %s - %s' % (results['output']['db_name'], results['output']['status'])
-            results['body'] = "Results for %s:\n" % (results['output']['db_uri'])
-            for (test, result) in results['output']['results'].iteritems():
-                results['body'] += "* %s : %s\n" % (test, result['status'])
-                if result['messages'] != None:
-                    for msg in result['messages']:
-                        results['body'] += "** %s\n" % (msg)
-        elif results['status'] == 'failed':
-            results['subject'] = 'Healthcheck job failed'
-            results['body'] = 'HC job failed. Boo.'
-        results['output'] = None
-        return jsonify(results)
-    except ValueError:
+    email = request.args.get('email')
+    logging.info("Retrieving job with ID " + str(job_id) + " for " + str(email))
+    job = get_hive().get_job_by_id(job_id)
+    if(job == None):
         return "Job " + str(job_id) + " not found", 404
+    results = get_hive().get_result_for_job_id(job_id)
+    if results['status'] == 'complete':
+        results['subject'] = 'Copy database from %s to %s successful' % (results['output']['source_db_uri'], results['output']['target_db_uri'])
+        results['body'] = "Copy from %s to %s is successful\n" % (results['output']['source_db_uri'], results['output']['target_db_uri'])
+        results['body'] += "Copy took %s" % (results['output']['runtime'])
+    elif results['status'] == 'failed':
+        failure=get_hive().get_job_failure_msg_by_id(job_id)
+        results['subject'] = 'Copy database from %s to %s failed' % (results['input']['source_db_uri'], results['input']['target_db_uri'])
+        results['body'] = 'Copy failed with following message:\n'
+        results['body'] += '%s' % (failure.msg)
+    results['output'] = None
+    return jsonify(results)
 
 @app.route('/jobs', methods=['GET'])
 def jobs():
