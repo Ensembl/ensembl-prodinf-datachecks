@@ -24,7 +24,7 @@ SRV=your_mysql_command_wrapper
 init_pipeline.pl Bio::EnsEMBL::Healthcheck::Pipeline::RunStandaloneHealthchecksParallel_conf $($SRV details hive) -hc_jar $JAR 
 ```
 
-Next, run the `beekeeper.pl` supplied by the output with the arguments `--loop --keep_alive`. This ensures the hive runs continually, picking up new jobs as they are submitted.
+Next, run the `beekeeper.pl` supplied by the output with the arguments `--keep_alive -sleep 0.2`. This ensures the hive runs continually, picking up new jobs as they are submitted.
 
 Configuration
 =============

@@ -7,13 +7,26 @@ pip install -r requirements.txt
 ```
 You can also install `ensembl_prodinf` from git or by adding an existing install to PYTHONPATH.
 
+Hive Setup
+==========
+
+Before you can use the HC endpoint, you need a beekeeper running the pipeline defined by `Bio::EnsEMBL::Production::Pipeline::PipeConfig::CopyDatabase_conf`. To build and initiate the pipeline:
+```
+git clone https://github.com/Ensembl/ensembl-production
+cd ensembl-production
+SRV=your_mysql_command_wrapper from where your hive will be running.
+init_pipeline.pl Bio::EnsEMBL::Production::Pipeline::PipeConfig::CopyDatabase_conf $($SRV details hive)
+```
+
+Next, run the `beekeeper.pl` supplied by the output with the arguments `--keep_alive -sleep 0.2`. This ensures the hive runs continually, picking up new jobs as they are submitted.
+
 Configuration
 =============
 
 There is one configuration files you need to have copies of locally:
 ```
 mkdir instance
-cp db_config.py.instance_example instance/hc_config.py
+cp db_config.py.instance_example instance/db_config.py
 ```
 
 Edit them as required. db_config.py must contain a dict containing lists of server names for autocomplete e.g.
@@ -27,6 +40,7 @@ SERVER_URIS = {
         "mysql://user2@server1:3306/"
     ]
 }
+HIVE_URI='mysql://myuser:mypass@myhost:3306/standalone_hc_hive'
 ```
 
 
