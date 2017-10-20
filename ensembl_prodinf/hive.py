@@ -250,11 +250,7 @@ class HiveInstance:
             jobs  = dict(s.query(Job.status, func.count(Job.status)).filter(Job.semaphored_job_id==job.job_id).group_by(Job.status).all())
             if 'FAILED' in jobs and jobs['FAILED']>0:
                 status = 'failed'
-            elif ('READY' in jobs and jobs['READY']>0):
-                status = 'submitted'
-            elif ('RUN' in jobs and jobs['RUN']>0):
-                status = 'running'
-            else:
+            elif ('READY' in jobs and jobs['READY']>0) or ('RUN' in jobs and jobs['RUN']>0):
                 status = 'incomplete'
             return status
         finally:
