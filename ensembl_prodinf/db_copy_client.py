@@ -28,6 +28,12 @@ def delete_job(uri, job_id):
     r = requests.get(uri + 'delete/' + job_id)
     r.raise_for_status()
     return True
+
+def kill_job(uri, job_id):
+    logging.info("Killing hive job " + str(job_id))
+    r = requests.get(uri + 'kill_hive_job/' + job_id)
+    r.raise_for_status()
+    return True
     
 def list_jobs(uri, output_file):
     logging.info("Listing")
@@ -87,7 +93,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Copy HCs via a REST service')
 
     parser.add_argument('-u', '--uri', help='REST service URI', required=True)
-    parser.add_argument('-a', '--action', help='Action to take', choices=['submit', 'retrieve', 'list', 'delete', 'email'], required=True)
+    parser.add_argument('-a', '--action', help='Action to take', choices=['submit', 'retrieve', 'list', 'delete', 'email', 'kill_job'], required=True)
     parser.add_argument('-i', '--job_id', help='HC job identifier to retrieve')
     parser.add_argument('-v', '--verbose', help='Verbose output', action='store_true')
     parser.add_argument('-o', '--output_file', help='File to write output as JSON', type=argparse.FileType('w'))
@@ -132,4 +138,7 @@ if __name__ == '__main__':
 
     elif args.action == 'email':
         results_email(args.uri, args.job_id, args.email)
+
+    elif args.action == 'kill_job':
+        kill_job(args.uri, args.job_id)
         
