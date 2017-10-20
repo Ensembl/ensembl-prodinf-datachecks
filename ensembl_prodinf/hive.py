@@ -48,6 +48,31 @@ class LogMessage(Base):
         return "<LogMessage(log_message_id='%s', msg='%s')>" % (
             self.log_message_id, self.msg)
 
+class Role(Base):
+
+    __tablename__ = 'role'
+
+    role_id  = Column(Integer, primary_key=True)
+    worker_id = Column(Integer, ForeignKey("worker.worker_id"))
+
+    def __repr__(self):
+        return "<Role(role_id='%s', worker_id='%s')>" % (
+            self.role_id, self.worker_id)
+
+
+
+class Worker(Base):
+
+    __tablename__ = 'worker'
+
+    worker_id = Column(Integer, primary_key=True)
+    process_id = Column(String)
+
+    def __repr__(self):
+        return "<LogMessage(worker_id='%s', process_id='%s')>" % (
+            self.worker_id, self.process_id)
+
+
 
 class Job(Base):
     __tablename__ = 'job'
@@ -58,6 +83,7 @@ class Job(Base):
     prev_job_id = Column(Integer)
     semaphored_job_id = Column(Integer)
     semaphore_count = Column(Integer, default=0)
+    role_id = Column(Integer, ForeignKey("role.role_id"))
     
     analysis_id = Column(Integer, ForeignKey("analysis_base.analysis_id"))
     analysis = relationship("Analysis", uselist=False, lazy="joined")
@@ -67,8 +93,8 @@ class Job(Base):
     log_messages = relationship("LogMessage", viewonly=True)
 
     def __repr__(self):
-        return "<Job(job_id='%s', analysis='%s', input_id='%s', status='%s', result='%s')>" % (
-            self.job_id, self.analysis.logic_name, self.input_id, self.status, self.result.output if self.result != None else None)
+        return "<Job(job_id='%s', analysis='%s', input_id='%s', status='%s', result='%s', role=%s)>" % (
+            self.job_id, self.analysis.logic_name, self.input_id, self.status, self.result.output, self.role_id if self.result != None else None)
 
 Session = sessionmaker()
 class HiveInstance:
@@ -92,12 +118,30 @@ class HiveInstance:
         finally:
             s.close()
 
+    def get_worker_id(self, id):
+
+        """ Retrieve a worker_id for a given role_id """
+        s = Session()
+        try:
+            return s.query(Role).filter(Role.role_id == id).first()
+        finally:
+            s.close()
+
     def get_job_failure_msg_by_id(self, id):
 
         """ Retrieve a job failure message """
         s = Session()
         try:
             return s.query(LogMessage).filter(LogMessage.job_id == id).order_by(LogMessage.log_message_id.desc()).first()
+        finally:
+            s.close()
+
+    def get_worker_process_id(self, id):
+
+        """ Find a workers process_id """
+        s = Session()
+        try:
+            return s.query(Worker).filter(Worker.worker_id==id).first()
         finally:
             s.close()
 
@@ -162,9 +206,11 @@ class HiveInstance:
         else:
             if job.status == 'FAILED':
                 return 'failed'
-            elif job.status != 'DONE':
-                return 'incomplete'
-            else:
+            elif job.status == 'READY':
+                return 'submitted'
+            elif job.status == 'RUN':
+                return 'running'
+            elif job.status == 'DONE':
                 s = Session()
                 try:
                     for child_job in s.query(Job).filter(Job.prev_job_id == job.job_id).all():
@@ -174,6 +220,8 @@ class HiveInstance:
                     return 'complete'
                 finally:
                     s.close()
+            else:
+                return 'incomplete'
 
 
     def get_semaphored_jobs(self,job,status=None):
@@ -202,7 +250,11 @@ class HiveInstance:
             jobs  = dict(s.query(Job.status, func.count(Job.status)).filter(Job.semaphored_job_id==job.job_id).group_by(Job.status).all())
             if 'FAILED' in jobs and jobs['FAILED']>0:
                 status = 'failed'
-            elif ('READY' in jobs and jobs['READY']>0) or ('RUN' in jobs and jobs['RUN']>0): 
+            elif ('READY' in jobs and jobs['READY']>0):
+                status = 'submitted'
+            elif ('RUN' in jobs and jobs['RUN']>0):
+                status = 'running'
+            else:
                 status = 'incomplete'
             return status
         finally:
