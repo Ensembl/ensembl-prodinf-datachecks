@@ -103,8 +103,8 @@ def failure(job_id):
     except ValueError:
         return "Job " + str(job_id) + " not found", 404
 
-@app.route('/kill_hive_job/<int:job_id>', methods=['GET'])
-def kill_hive_job(job_id):
+@app.route('/kill_job/<int:job_id>', methods=['GET'])
+def kill_job(job_id):
     hive = get_hive()
     job = get_hive().get_job_by_id(job_id)
     if(job == None):
