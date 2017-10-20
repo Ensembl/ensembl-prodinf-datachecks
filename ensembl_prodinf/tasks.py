@@ -12,7 +12,7 @@ def email_when_complete(self, url, address):
     # allow infinite retries 
     self.max_retries = None
     result = json.load(urllib2.urlopen(url))
-    if result['status'] == 'incomplete':
+    if (result['status'] == 'incomplete') or (result['status'] == 'running') or (result['status'] == 'submitted'):
         raise self.retry()
     else:
         from_email_address = "%s@ebi.ac.uk" % getpass.getuser()
