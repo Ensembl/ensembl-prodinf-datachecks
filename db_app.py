@@ -8,6 +8,10 @@ from ensembl_prodinf.tasks import email_when_complete
 import json
 import logging
 import re
+import os
+import signal
+import time
+
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
@@ -23,6 +27,13 @@ def get_hive():
     if hive == None:
         hive = HiveInstance(app.config["HIVE_URI"])
     return hive
+
+def is_running(pid):
+    try:
+        os.kill(pid, 0)
+    except OSError as err:
+        return False
+    return True
 
 cors = CORS(app)
 
@@ -91,6 +102,25 @@ def failure(job_id):
         return jsonify({"msg":failure.msg})
     except ValueError:
         return "Job " + str(job_id) + " not found", 404
+
+@app.route('/kill_hive_job/<int:job_id>', methods=['GET'])
+def kill_hive_job(job_id):
+    hive = get_hive()
+    job = get_hive().get_job_by_id(job_id)
+    if(job == None):
+        return "Job " + str(job_id) + " not found", 404
+    logging.debug("Getting worker_id for job_id " + str(job_id))
+    worker = get_hive().get_worker_id(job.role_id)
+    logging.debug("Getting process_id for worker_id " + str(worker.worker_id))
+    process_id = get_hive().get_worker_process_id(worker.worker_id)
+    logging.debug("Process_id is " + str(process_id.process_id))
+    os.kill(int(process_id.process_id), signal.SIGTERM)
+    time.sleep(5)
+    # Check if the process that we killed is alive.
+    if (is_running(int(process_id.process_id))):
+        return "Wasn't able to kill the process: "+str(process_id.process_id), 404
+    else:
+        return jsonify({"process_id":process_id.process_id})
 
 @app.route('/delete/<int:job_id>', methods=['GET'])
 def delete(job_id):
