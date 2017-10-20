@@ -31,7 +31,7 @@ def delete_job(uri, job_id):
 
 def kill_job(uri, job_id):
     logging.info("Killing hive job " + str(job_id))
-    r = requests.get(uri + 'kill_hive_job/' + job_id)
+    r = requests.get(uri + 'kill_job/' + job_id)
     r.raise_for_status()
     return True
     
