@@ -88,3 +88,12 @@ def jobs():
     logging.info("Retrieving jobs")
     return jsonify(get_hive().get_all_results(app.analysis))
 
+@app.route('/failures/<int:job_id>', methods=['GET'])
+def failures(job_id):
+    try:
+        logging.info("Retrieving failure for job with ID " + str(job_id))
+        failures=get_hive().get_jobs_failure_msg(job_id)
+        return jsonify(failures)
+    except ValueError:
+        return "Job " + str(job_id) + " not found", 404
+
