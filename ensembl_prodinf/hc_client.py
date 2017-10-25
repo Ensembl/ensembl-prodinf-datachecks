@@ -37,17 +37,24 @@ def list_jobs(uri, output_file):
     return r.json()
 
     for job in r.json():
-        print_job(job, print_results=False, print_input=False)
-    write_output(r, output_file)      
-            
-def retrieve_job(uri, job_id):    
+        print_job(uri, job, print_results=False, print_input=False)
+    write_output(r, output_file)
+
+def retrieve_job_failure(uri, job_id):
+    logging.info("Retrieving job failure for job " + str(job_id))
+    r = requests.get(uri + 'failures/' + str(job_id))
+    r.raise_for_status()
+    failure_msg = r.json()
+    return failure_msg
+
+def retrieve_job(uri, job_id, output_file):
     logging.info("Retrieving results for job " + str(job_id))
     r = requests.get(uri + 'results/' + str(job_id))
     r.raise_for_status()
     job = r.json()
     return job
     
-def print_job(job, print_results=False, print_input=False):
+def print_job(uri, job, print_results=False, print_input=False):
     logging.info("Job %s (%s) - %s" % (job['id'], job['input']['db_uri'], job['status']))
     if print_input == True:
         print_inputs(job['input'])
@@ -58,6 +65,9 @@ def print_job(job, print_results=False, print_input=False):
             if result['messages'] != None:
                 for msg in result['messages']:
                     logging.info(msg)
+    elif job['status'] == 'failed':
+        failures = retrieve_job_failure(uri, job['id'])
+        logging.info("Job failed with error: "+ str(failures))
 
 def print_inputs(i):
     logging.info("DB URI: " + i['db_uri'])
@@ -107,13 +117,13 @@ if __name__ == '__main__':
     elif args.action == 'retrieve':
     
         job = retrieve_job(args.uri, args.job_id, args.output_file)
-        print_job(job, print_input=True, print_results=True)
+        print_job(args.uri, job, print_input=True, print_results=True)
     
     elif args.action == 'list':
        
         jobs = list_jobs(args.uri, args.output_file)   
         for job in jobs:
-            print_job(job)
+            print_job(args.uri, job)
     
     elif args.action == 'delete':
         delete_job(args.uri, args.job_id)
