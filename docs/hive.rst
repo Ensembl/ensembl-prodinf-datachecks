@@ -10,6 +10,7 @@ The `ensembl_prodinf.hive` package contains utilities for interacting with an eH
 * checking on the status of individual jobs
 * checking on the status of job hierarchies
 * retrieving results from custom result tables
+* retrieving log message for parent and children jobs
 
 The package uses the SQL Alchemy ORM package for creating and retrieving jobs from a hive database, with custom code for checking on semaphores and job hierarchies.
 
