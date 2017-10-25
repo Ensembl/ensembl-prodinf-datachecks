@@ -127,6 +127,22 @@ class HiveInstance:
         finally:
             s.close()
 
+    def get_jobs_failure_msg(self, id):
+
+        """Get failures for all the parent and child jobs"""
+        s = Session()
+        try:
+           failures = {}
+           parent_job = self.get_job_by_id(id)
+           if parent_job.status == 'FAILED':
+            failures[id]=self.get_job_failure_msg_by_id(id).msg
+           for child_job in s.query(Job).filter(Job.prev_job_id == id).all():
+                if child_job.status == 'FAILED':
+                    failures[child_job.job_id]=self.get_job_failure_msg_by_id(child_job.job_id).msg
+           return failures
+        finally:
+            s.close()
+
     def get_job_failure_msg_by_id(self, id):
 
         """ Retrieve a job failure message """
