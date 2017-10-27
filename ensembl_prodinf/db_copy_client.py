@@ -97,6 +97,7 @@ if __name__ == '__main__':
     parser.add_argument('-i', '--job_id', help='HC job identifier to retrieve')
     parser.add_argument('-v', '--verbose', help='Verbose output', action='store_true')
     parser.add_argument('-o', '--output_file', help='File to write output as JSON', type=argparse.FileType('w'))
+    parser.add_argument('-f', '--input_file', help='File containing list of source and target URIs', type=argparse.FileType('r'))
     parser.add_argument('-s', '--source_db_uri', help='URI of database to copy from')
     parser.add_argument('-t', '--target_db_uri', help='URI of database to copy to')
     parser.add_argument('-y', '--only_tables', help='List of tables to copy')
@@ -118,8 +119,16 @@ if __name__ == '__main__':
             
     if args.action == 'submit':
 
-        id = submit_job(args.uri, args.source_db_uri, args.target_db_uri, args.only_tables, args.skip_tables, args.update, args.drop)
-        logging.info('Job submitted with ID '+str(id))
+        if args.input_file == None:
+            logging.info("Submitting " + args.source_db_uri + "->" + args.targ5Cet_db_uri)
+            id = submit_job(args.uri, args.source_db_uri, args.target_db_uri, args.only_tables, args.skip_tables, args.update, args.drop)
+            logging.info('Job submitted with ID '+str(id))
+        else:
+            for line in args.input_file:
+                uris = line.split()
+                logging.info("Submitting " + uris[0] + "->" + uris[1])
+                id = submit_job(args.uri, uris[0], uris[1], args.only_tables, args.skip_tables, args.update, args.drop)
+                logging.info('Job submitted with ID '+str(id))
     
     elif args.action == 'retrieve':
     
