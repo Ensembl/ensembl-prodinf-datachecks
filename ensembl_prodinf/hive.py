@@ -203,7 +203,8 @@ class HiveInstance:
         return self.get_result_for_job(job)
 
     def get_result_for_job(self, job):
-        """ Detertmine if the job has completed. If the job has semaphored children, they are also checked """
+        """ Determine if the job has completed. If the job has semaphored children, they are also checked """
+        """ Also return progress of jobs, completed and total """
         result = {"id":job.job_id}
         result['input'] = perl_string_to_python(job.input_id)
         if job.status == 'DONE' and job.result!=None:
@@ -211,7 +212,30 @@ class HiveInstance:
             result['output'] = job.result.output_dict()
         else:
             result['status'] = self.get_job_tree_status(job)
+            result['progress'] = self.get_jobs_progress(job)
         return result
+
+
+    def get_jobs_progress(self, job):
+
+        """Get jobs progress for parent and children jobs"""
+        """ Return number of completed jobs and total of jobs"""
+        s = Session()
+        try:
+           total=1
+           complete = 0
+           parent_job = self.get_job_by_id(job.job_id)
+           if parent_job.status == 'DONE':
+            complete +=1
+           for child_job in s.query(Job).filter(Job.prev_job_id == job.job_id).all():
+                total +=1
+                if child_job.status == 'DONE':
+                  complete +=1
+           return {"complete":complete,"total":total}
+        finally:
+            s.close()
+
+
 
     def get_job_tree_status(self, job):
 
