@@ -59,3 +59,11 @@ flask run --port 5001 --host 0.0.0.0
 
 Note that for production, a different deployment option should be used as the standalone flask app can only serve one request at a time.
 
+There are multiple options, described at:
+* http://flask.pocoo.org/docs/0.12/deploying/wsgi-standalone/
+* http://flask.pocoo.org/docs/0.12/deploying/uwsgi/
+
+To use a standalone gunicorn server with 4 worker threads:
+```
+gunicorn -w 4 -b 0.0.0.0:5001 hc_app:app
+```
