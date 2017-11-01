@@ -33,6 +33,18 @@ class Result(Base):
         return "<Result(job_id='%s', output='%s')>" % (
             self.job_id, self.output)
 
+class JobProgress(Base):
+
+    __tablename__ = 'job_progress'
+
+    job_progress_id = Column(Integer, primary_key=True)
+    job_id = Column(Integer)
+    message = Column(String)
+
+    def __repr__(self):
+        return "<JobProgress(job_progress_id='%s', job_id='%s', message='%s')>" % (
+            self.job_progress_id, self.job_id, self.message)
+
 class LogMessage(Base):
 
     __tablename__ = 'log_message'
@@ -218,24 +230,30 @@ class HiveInstance:
 
     def get_jobs_progress(self, job):
 
-        """Get jobs progress for parent and children jobs"""
+        """ Check data in the job_progress table """
+        """ alternatively, get jobs progress for parent and children jobs"""
         """ Return number of completed jobs and total of jobs"""
+        """ If there is data in the job_progress table, return progress message"""
         s = Session()
         try:
-           total=1
-           complete = 0
-           parent_job = self.get_job_by_id(job.job_id)
-           if parent_job.status == 'DONE':
-            complete +=1
-           for child_job in s.query(Job).filter(Job.prev_job_id == job.job_id).all():
-                total +=1
-                if child_job.status == 'DONE':
-                  complete +=1
-           return {"complete":complete,"total":total}
+            last_job_progress_msg=s.query(JobProgress).filter(JobProgress.job_id == job.job_id).order_by(JobProgress.job_progress_id.desc()).first()
+            if last_job_progress_msg !=None:
+                total=10
+                complete=s.query(JobProgress).filter(JobProgress.job_id == job.job_id).count()
+                return {"complete":complete,"total":total,"message":last_job_progress_msg.message}
+            else:
+               total=1
+               complete = 0
+               parent_job = self.get_job_by_id(job.job_id)
+               if parent_job.status == 'DONE':
+                complete +=1
+               for child_job in s.query(Job).filter(Job.prev_job_id == job.job_id).all():
+                    total +=1
+                    if child_job.status == 'DONE':
+                      complete +=1
+               return {"complete":complete,"total":total}
         finally:
             s.close()
-
-
 
     def get_job_tree_status(self, job):
 
