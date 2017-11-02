@@ -2,12 +2,9 @@
 import argparse
 import logging
 import requests
+import json
+import re
 
-def write_output(r, output_file):
-    if(output_file != None):
-        with output_file as f:
-            f.write(r.text)  
-    
 def submit_job(uri, db_uri, production_uri, compara_uri, staging_uri, live_uri, hc_names, hc_groups):
     logging.info("Submitting job")
     payload = {
@@ -30,15 +27,20 @@ def delete_job(uri, job_id):
     r.raise_for_status()
     return True
     
-def list_jobs(uri, output_file):
+def list_jobs(uri, output_file, pattern):
     logging.info("Listing")
     r = requests.get(uri + 'jobs')
-    r.raise_for_status()
-    return r.json()
-
+    r.raise_for_status()    
+    output = []
+    if pattern == None:
+        pattern = '.*'
+    re_pattern = re.compile(pattern)
     for job in r.json():
-        print_job(uri, job, print_results=False, print_input=False)
-    write_output(r, output_file)
+        if re_pattern.match(job['input']['db_uri']):
+            print_job(uri, job, print_results=False, print_input=False)
+            output.append(job)
+    if output_file!= None:
+        output_file.write(json.dumps(output))
 
 def retrieve_job_failure(uri, job_id):
     logging.info("Retrieving job failure for job " + str(job_id))
@@ -98,6 +100,7 @@ if __name__ == '__main__':
     parser.add_argument('-l', '--live_uri', help='URI of live server for comparison')
     parser.add_argument('-n', '--hc_names', help='List of healthcheck names to run', nargs='*')
     parser.add_argument('-g', '--hc_groups', help='List of healthcheck groups to run', nargs='*')
+    parser.add_argument('-r', '--db_pattern', help='Pattern of DB URIs to restrict by')
 
     args = parser.parse_args()
     
@@ -121,9 +124,7 @@ if __name__ == '__main__':
     
     elif args.action == 'list':
        
-        jobs = list_jobs(args.uri, args.output_file)   
-        for job in jobs:
-            print_job(args.uri, job)
+        jobs = list_jobs(args.uri, args.output_file, args.db_pattern)   
     
     elif args.action == 'delete':
         delete_job(args.uri, args.job_id)
