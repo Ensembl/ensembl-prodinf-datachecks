@@ -120,7 +120,7 @@ if __name__ == '__main__':
     if args.action == 'submit':
 
         if args.input_file == None:
-            logging.info("Submitting " + args.source_db_uri + "->" + args.targ5Cet_db_uri)
+            logging.info("Submitting " + args.source_db_uri + "->" + args.target_db_uri)
             id = submit_job(args.uri, args.source_db_uri, args.target_db_uri, args.only_tables, args.skip_tables, args.update, args.drop)
             logging.info('Job submitted with ID '+str(id))
         else:
