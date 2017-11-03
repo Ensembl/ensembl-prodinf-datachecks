@@ -16,3 +16,4 @@ pyparsing==2.1.10
 six==1.10.0
 SQLAlchemy==1.1.11
 Werkzeug==0.11.15
+gunicorn==19.7.1

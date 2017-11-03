@@ -53,5 +53,11 @@ To start the main application as a standalone Flask application:
 export FLASK_APP=db_app.py
 flask run --port 5002 --host 0.0.0.0
 ```
+or to start the main application as a standalone using gunicorn with 4 threads:
+```
+pyenv activate ensprod_inf
+gunicorn -w 4 -b 0.0.0.0:5002 db_app:app
+```
+
 
 Note that for production, a different deployment option should be used as the standalone flask app can only serve one request at a time.
