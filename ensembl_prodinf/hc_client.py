@@ -4,6 +4,7 @@ import logging
 import requests
 import json
 import re
+from collections import defaultdict
 
 def submit_job(uri, db_uri, production_uri, compara_uri, staging_uri, live_uri, hc_names, hc_groups):
     logging.info("Submitting job")
@@ -27,7 +28,7 @@ def delete_job(uri, job_id):
     r.raise_for_status()
     return True
     
-def list_jobs(uri, output_file, pattern):
+def list_jobs(uri, output_file, pattern, failure_only):
     logging.info("Listing")
     r = requests.get(uri + 'jobs')
     r.raise_for_status()    
@@ -36,9 +37,27 @@ def list_jobs(uri, output_file, pattern):
         pattern = '.*'
     re_pattern = re.compile(pattern)
     for job in r.json():
-        if re_pattern.match(job['input']['db_uri']):
+        if re_pattern.match(job['input']['db_uri']) and (failure_only == False or ('output' in job and job['output']['status'] == 'failed')):
             print_job(uri, job, print_results=False, print_input=False)
-            output.append(job)
+            if 'output' in job:
+                if failure_only == True:
+                    job['output']['results'] = {k: v for k, v in job['output']['results'].items() if v['status'] == 'failed'}
+                output.append(job)
+    if output_file!= None:
+        output_file.write(json.dumps(output))
+
+def collate_jobs(uri, output_file, pattern):
+    logging.info("Collating jobs")
+    r = requests.get(uri + 'jobs')
+    r.raise_for_status()    
+    if pattern == None:
+        pattern = '.*'
+    re_pattern = re.compile(pattern)
+    output = defaultdict(list)
+    for job in r.json():
+        if re_pattern.match(job['input']['db_uri']) and ('output' in job and job['output']['status'] == 'failed'):
+            for h,r in {k: v for k, v in job['output']['results'].iteritems() if v['status'] == 'failed'}.items():
+                [output[h].append(job['input']['db_uri']+"\t"+m) for m in r['messages']]
     if output_file!= None:
         output_file.write(json.dumps(output))
 
@@ -60,13 +79,14 @@ def print_job(uri, job, print_results=False, print_input=False):
     logging.info("Job %s (%s) - %s" % (job['id'], job['input']['db_uri'], job['status']))
     if print_input == True:
         print_inputs(job['input'])
-    if print_results == True and job['status'] == 'complete':
-        logging.info("HC result: " + str(job['output']['status']))
-        for (hc, result) in job['output']['results'].iteritems():
-            logging.info("%s : %s" % (hc, result['status']))
-            if result['messages'] != None:
-                for msg in result['messages']:
-                    logging.info(msg)
+    if job['status'] == 'complete':
+        if print_results == True:
+            logging.info("HC result: " + str(job['output']['status']))
+            for (hc, result) in job['output']['results'].iteritems():
+                logging.info("%s : %s" % (hc, result['status']))
+                if result['messages'] != None:
+                    for msg in result['messages']:
+                        logging.info(msg)
     elif job['status'] == 'failed':
         failures = retrieve_job_failure(uri, job['id'])
         logging.info("Job failed with error: "+ str(failures))
@@ -89,7 +109,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Run HCs via a REST service')
 
     parser.add_argument('-u', '--uri', help='HC REST service URI', required=True)
-    parser.add_argument('-a', '--action', help='Action to take', choices=['submit', 'retrieve', 'list', 'delete'], required=True)
+    parser.add_argument('-a', '--action', help='Action to take', choices=['submit', 'retrieve', 'list', 'delete', 'collate'], required=True)
     parser.add_argument('-i', '--job_id', help='HC job identifier to retrieve')
     parser.add_argument('-v', '--verbose', help='Verbose output', action='store_true')
     parser.add_argument('-o', '--output_file', help='File to write output as JSON', type=argparse.FileType('w'))
@@ -101,6 +121,7 @@ if __name__ == '__main__':
     parser.add_argument('-n', '--hc_names', help='List of healthcheck names to run', nargs='*')
     parser.add_argument('-g', '--hc_groups', help='List of healthcheck groups to run', nargs='*')
     parser.add_argument('-r', '--db_pattern', help='Pattern of DB URIs to restrict by')
+    parser.add_argument('-f', '--failure_only', help='Show failures only', action='store_true')
 
     args = parser.parse_args()
     
@@ -124,7 +145,11 @@ if __name__ == '__main__':
     
     elif args.action == 'list':
        
-        jobs = list_jobs(args.uri, args.output_file, args.db_pattern)   
+        jobs = list_jobs(args.uri, args.output_file, args.db_pattern, args.failure_only)   
+
+    elif args.action == 'collate':
+       
+        jobs = collate_jobs(args.uri, args.output_file, args.db_pattern)   
     
     elif args.action == 'delete':
         delete_job(args.uri, args.job_id)
