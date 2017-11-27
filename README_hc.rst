@@ -19,7 +19,6 @@ git clone https://github.com/Ensembl/ensj-healthcheck
 cd ensj-healthcheck
 mvn clean package
 JAR=$PWD/target/healthchecks-jar-with-dependencies.jar
-cd perl
 SRV=your_mysql_command_wrapper
 init_pipeline.pl Bio::EnsEMBL::Healthcheck::Pipeline::RunStandaloneHealthchecksParallel_conf $($SRV details hive) -hc_jar $JAR 
 ```
