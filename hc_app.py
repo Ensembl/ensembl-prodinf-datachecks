@@ -78,8 +78,11 @@ def results_email(job_id):
                 for msg in result['messages']:
                     results['body'] += "** %s\n" % (msg)
     elif results['status'] == 'failed':
+        failures=get_hive().get_jobs_failure_msg(job_id)
         results['subject'] = 'Healthcheck job failed'
-        results['body'] = 'HC job failed. Boo.'
+        results['body'] = 'Healthcheck job failed with following message:\n'
+        for (jobid,msg) in failures.iteritems():
+            results['body'] += "* Job ID %s : %s\n" % (jobid, msg)
     results['output'] = None
     return jsonify(results)
 
