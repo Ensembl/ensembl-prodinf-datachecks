@@ -1,4 +1,4 @@
-from ensembl_prodinf.celery_app import app
+from ensembl_prodinf.email_celery_app import app
 from .utils import send_email
 import getpass
 import json
