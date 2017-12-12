@@ -11,4 +11,5 @@ def list_databases(db_uri, query):
     noms = []
     with engine.connect() as con:
         return [str(r[0]) for r in con.execute(s, {"q":query}).fetchall()]
-    
+
+

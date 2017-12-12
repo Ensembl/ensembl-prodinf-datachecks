@@ -2,15 +2,21 @@
 from email.mime.text import MIMEText
 from smtplib import SMTP
 import json
+import getpass
+import logging
 
-def send_email(server, from_address, to_address, subject, body):
+default_user = '%s@ebi.ac.uk' % getpass.getuser()
+
+def send_email(**kwargs):
     """ Utility method for sending an email"""
-    msg = MIMEText(body)
-    msg['Subject'] = subject
+    logging.debug("Sending email "+str(kwargs))
+    from_address = kwargs.get('from_address',default_user)
+    msg = MIMEText(kwargs['body'])
+    msg['Subject'] = kwargs['subject']
     msg['From'] = from_address
-    msg['To'] = to_address    
-    s = SMTP(server)
-    s.sendmail(from_address, [to_address], msg.as_string())
+    msg['To'] = kwargs['to_address']    
+    s = SMTP(kwargs.get('smtp_server','localhost'))
+    s.sendmail(from_address, [kwargs['to_address']], msg.as_string())
     s.quit()
 
 def dict_to_perl_string(input_dict):

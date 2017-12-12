@@ -25,13 +25,13 @@ def submit_job(uri, source_db_uri, target_db_uri, only_tables, skip_tables, upda
     
 def delete_job(uri, job_id):
     logging.info("Deleting job " + str(job_id))
-    r = requests.get(uri + 'delete/' + job_id)
+    r = requests.get(uri + 'delete/' + str(job_id))
     r.raise_for_status()
     return True
 
 def kill_job(uri, job_id):
     logging.info("Killing hive job " + str(job_id))
-    r = requests.get(uri + 'kill_job/' + job_id)
+    r = requests.get(uri + 'kill_job/' + str(job_id))
     r.raise_for_status()
     return True
     
@@ -45,9 +45,9 @@ def list_jobs(uri, output_file):
         print_job(uri, job, print_results=False, print_input=False)
     write_output(r, output_file)      
             
-def retrieve_job(uri, job_id, output_file):    
+def retrieve_job(uri, job_id):    
     logging.info("Retrieving results for job " + str(job_id))
-    r = requests.get(uri + 'results/' + job_id)
+    r = requests.get(uri + 'results/' + str(job_id))
     r.raise_for_status()
     job = r.json()
     return job
@@ -73,20 +73,20 @@ def print_job(uri, job, print_results=False, print_input=False):
         logging.info("Copy result: " + str(job['status']))
         logging.info("Copy took: " +str(job['output']['runtime']))
     elif job['status'] == 'failed':
-      failure_msg = retrieve_job_failure(uri, job['id'])
-      logging.info("Job failed with error: "+ str(failure_msg['msg']))
+        failure_msg = retrieve_job_failure(uri, job['id'])
+        logging.info("Job failed with error: "+ str(failure_msg['msg']))
 
 def print_inputs(i):
     logging.info("Source URI: " + i['source_db_uri'])
     logging.info("Target URI: " + i['target_db_uri'])
     if 'only_tables' in i:
-      logging.info("List of tables to copy: " + i['only_tables'])
+        logging.info("List of tables to copy: " + i['only_tables'])
     elif 'skip_tables' in i:
-      logging.info("List of tables to skip: " + i['skip_tables'])
+        logging.info("List of tables to skip: " + i['skip_tables'])
     elif 'update' in i:
-      logging.info("Incremental database update using rsync checksum set to: " + i['update'])
+        logging.info("Incremental database update using rsync checksum set to: " + i['update'])
     elif 'drop' in i:
-      logging.info("Drop database on Target server before copy set to: " + i['drop'])
+        logging.info("Drop database on Target server before copy set to: " + i['drop'])
 
 if __name__ == '__main__':
             
@@ -121,14 +121,14 @@ if __name__ == '__main__':
 
         if args.input_file == None:
             logging.info("Submitting " + args.source_db_uri + "->" + args.target_db_uri)
-            id = submit_job(args.uri, args.source_db_uri, args.target_db_uri, args.only_tables, args.skip_tables, args.update, args.drop)
-            logging.info('Job submitted with ID '+str(id))
+            job_id = submit_job(args.uri, args.source_db_uri, args.target_db_uri, args.only_tables, args.skip_tables, args.update, args.drop)
+            logging.info('Job submitted with ID '+str(job_id))
         else:
             for line in args.input_file:
                 uris = line.split()
                 logging.info("Submitting " + uris[0] + "->" + uris[1])
-                id = submit_job(args.uri, uris[0], uris[1], args.only_tables, args.skip_tables, args.update, args.drop)
-                logging.info('Job submitted with ID '+str(id))
+                job_id = submit_job(args.uri, uris[0], uris[1], args.only_tables, args.skip_tables, args.update, args.drop)
+                logging.info('Job submitted with ID '+str(job_id))
     
     elif args.action == 'retrieve':
     

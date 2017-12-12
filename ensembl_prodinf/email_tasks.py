@@ -1,6 +1,5 @@
 from ensembl_prodinf.email_celery_app import app
 from .utils import send_email
-import getpass
 import json
 import urllib2
 
@@ -15,8 +14,6 @@ def email_when_complete(self, url, address):
     if (result['status'] == 'incomplete') or (result['status'] == 'running') or (result['status'] == 'submitted'):
         raise self.retry()
     else:
-        from_email_address = "%s@ebi.ac.uk" % getpass.getuser()
-        smtp_server = 'localhost'
-        send_email(smtp_server, from_email_address, address, result['subject'], result['body'])
+        send_email(to_address=address, subject=result['subject'], body=result['body'])
         return result
 

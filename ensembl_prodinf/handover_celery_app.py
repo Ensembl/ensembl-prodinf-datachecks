@@ -1,5 +1,4 @@
 from celery import Celery
-import handover_celery_app_config
 
 app = Celery('ensembl_prodinf',
              include=['ensembl_prodinf.handover_tasks'])

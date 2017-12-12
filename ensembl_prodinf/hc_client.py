@@ -68,7 +68,7 @@ def retrieve_job_failure(uri, job_id):
     failure_msg = r.json()
     return failure_msg
 
-def retrieve_job(uri, job_id, output_file):
+def retrieve_job(uri, job_id):
     logging.info("Retrieving results for job " + str(job_id))
     r = requests.get(uri + 'results/' + str(job_id))
     r.raise_for_status()
