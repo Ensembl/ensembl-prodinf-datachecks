@@ -10,4 +10,4 @@ from ensembl_prodinf.db_copy_client import submit_job, delete_job, list_jobs, re
 from ensembl_prodinf.server_utils import get_status
 from ensembl_prodinf.email_celery_app import app as email_celery_app
 from ensembl_prodinf.handover_celery_app import app as handover_celery_app
-
+from ensembl_prodinf.Reporter import Reporter
