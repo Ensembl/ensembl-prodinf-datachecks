@@ -64,7 +64,8 @@ def process_checked_db(self, hc_job_id, spec):
 Running healthchecks vs %s failed to execute.
 Please see %s
 """ % (spec['src_uri'], cfg.hc_web_uri + str(hc_job_id))
-        send_email(to_address=spec['contact'], subject='HC failed to run', body=msg, smtp_server=cfg.smtp_server)          
+        send_email(to_address=spec['contact'], subject='HC failed to run', body=msg, smtp_server=cfg.smtp_server)         
+        return 
     elif (result['output']['status'] == 'failed'):
         logging.info("HCs found problems")
         msg = """
@@ -72,6 +73,7 @@ Running healthchecks vs %s completed but found failures.
 Please see %s
 """ % (spec['src_uri'], cfg.hc_web_uri + str(hc_job_id))
         send_email(to_address=spec['contact'], subject='HC ran but failed', body=msg, smtp_server=cfg.smtp_server)  
+        return
     else:
         logging.info("HCs fine, starting copy")
         copy_job_id = submit_copy(spec['src_uri'], spec['tgt_uri'])
@@ -96,21 +98,20 @@ def process_copied_db(self, copy_job_id, spec):
         raise self.retry() 
     
     if (result['status'] == 'failed'):
-        logging.info("HCs failed to run")
+        logging.info("Copy failed")
         msg = """
 Copying %s to %s failed.
 Please see %s
 """ % (spec['src_uri'], spec['tgt_uri'], cfg.copy_web_uri + str(copy_job_id))
         send_email(to_address=spec['contact'], subject='Database copy failed', body=msg, smtp_server=cfg.smtp_server)          
+        return
     else:
         logging.info("Copying complete, need to submit metadata")
         meta_job_id = submit_metadata_update(spec['tgt_uri'])
         task_id = process_db_metadata.delay(meta_job_id, spec)    
         logging.debug("Submitted DB for meta update as " + str(task_id))
         return task_id
-        
-    return
-
+    
 
 def submit_metadata_update(uri):
     return 'metaplaceholder_db_id'
