@@ -1,6 +1,10 @@
 import re
 import subprocess
 
+def get_load(host=None): 
+    status = run_process('uptime',process_uptime, host)
+    return status
+
 def get_status(host=None,dir_name=None):
     status = {}
     if(host!=None):
