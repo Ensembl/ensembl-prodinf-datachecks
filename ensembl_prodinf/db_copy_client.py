@@ -2,6 +2,8 @@
 import argparse
 import logging
 import requests
+import sys
+import re
 
 def write_output(r, output_file):
     if(output_file != None):
@@ -9,6 +11,20 @@ def write_output(r, output_file):
             f.write(r.text)  
     
 def submit_job(uri, source_db_uri, target_db_uri, only_tables, skip_tables, update, drop):
+    db_uri_regex = r"^(mysql://){1}(.+){1}(:.+){0,1}(@){1}(.+){1}(:){1}(\d+){1}(/){1}(.+){1}$"
+    http_uri_regex = r"^(http){1}(s){0,1}(://){1}(.+){1}(:){1}(\d+){1}(/){1}(.+){0,1}$"
+    if not re.search(http_uri_regex, uri):
+        sys.exit("DB endpoint URL don't match pattern: http://server_name:port/")
+    if not re.search(db_uri_regex, source_db_uri):
+        sys.exit("Database URI don't match pattern: mysql://user(:pass)@server:port/")
+    if not re.search(db_uri_regex, source_db_uri):
+        sys.exit("Database URI don't match pattern: mysql://user(:pass)@server:port/")
+    if only_tables:
+        if (not re.search(r"^([^ ]+){1}$", only_tables) or not re.search(r"^([^ ]+){1}(,){1}([^ ]+){1}$", only_tables)):
+            sys.exit("List of tables need to be comma separated, eg: table1,table2,table3")
+    if skip_tables:
+        if (not re.search(r"^([^ ]+){1}$", skip_tables) or not re.search(r"^([^ ]+){1}(,){1}([^ ]+){1}$", skip_tables)):
+            sys.exit("List of tables need to be comma separated, eg: table1,table2,table3")
     logging.info("Submitting job")
     payload = {
         'source_db_uri':source_db_uri,
@@ -24,18 +40,31 @@ def submit_job(uri, source_db_uri, target_db_uri, only_tables, skip_tables, upda
     return r.json()['job_id']
     
 def delete_job(uri, job_id):
+    uri_regex = r"^(http){1}(s){0,1}(://){1}(.+){1}(:){1}(\d+){1}(/){1}(.+){0,1}$"
+    if not re.search(uri_regex, uri):
+        sys.exit("DB endpoint URL don't match pattern: http://server_name:port/")
+    if not re.search(r"\d+", job_id):
+        sys.exit("job_id should be a number")
     logging.info("Deleting job " + str(job_id))
     r = requests.get(uri + 'delete/' + job_id)
     r.raise_for_status()
     return True
 
 def kill_job(uri, job_id):
+    uri_regex = r"^(http){1}(s){0,1}(://){1}(.+){1}(:){1}(\d+){1}(/){1}(.+){0,1}$"
+    if not re.search(uri_regex, uri):
+        sys.exit("DB endpoint URL don't match pattern: http://server_name:port/")
+    if not re.search(r"\d+", job_id):
+        sys.exit("job_id should be a number")
     logging.info("Killing hive job " + str(job_id))
     r = requests.get(uri + 'kill_job/' + job_id)
     r.raise_for_status()
     return True
     
 def list_jobs(uri, output_file):
+    uri_regex = r"^(http){1}(s){0,1}(://){1}(.+){1}(:){1}(\d+){1}(/){1}(.+){0,1}$"
+    if not re.search(uri_regex, uri):
+        sys.exit("DB endpoint URL don't match pattern: http://server_name:port/")
     logging.info("Listing")
     r = requests.get(uri + 'jobs')
     r.raise_for_status()
@@ -46,6 +75,11 @@ def list_jobs(uri, output_file):
     write_output(r, output_file)      
             
 def retrieve_job(uri, job_id, output_file):    
+    uri_regex = r"^(http){1}(s){0,1}(://){1}(.+){1}(:){1}(\d+){1}(/){1}(.+){0,1}(.+){0,1}$"
+    if not re.search(uri_regex, uri):
+        sys.exit("DB endpoint URL don't match pattern: http://server_name:port/")
+    if not re.search(r"\d+", job_id):
+        sys.exit("job_id should be a number")
     logging.info("Retrieving results for job " + str(job_id))
     r = requests.get(uri + 'results/' + job_id)
     r.raise_for_status()
@@ -53,12 +87,24 @@ def retrieve_job(uri, job_id, output_file):
     return job
 
 def results_email(uri, job_id, email):
+    uri_regex = r"^(http){1}(s){0,1}(://){1}(.+){1}(:){1}(\d+){1}(/){1}(.+){0,1}$"
+    if not re.search(uri_regex, uri):
+        sys.exit("DB endpoint URL don't match pattern: http://server_name:port/")
+    if not re.search(r"\d+", job_id):
+        sys.exit("job_id should be a number")
+    if not re.search(r"^(.+){1}(@){1}(.+){1}$", email):
+        sys.exit("email should match pattern john.doe@ebi.ac.uk")
     logging.info("Sending job detail by email " + str(job_id))
     r = requests.get(uri + 'results_email/' + str(job_id) + "?email=" + str(email))
     r.raise_for_status()
     return r.json()
 
 def retrieve_job_failure(uri, job_id):    
+    uri_regex = r"^(http){1}(s){0,1}(://){1}(.+){1}(:){1}(\d+){1}(/){1}(.+){0,1}$"
+    if not re.search(uri_regex, uri):
+        sys.exit("DB endpoint URL don't match pattern: http://server_name:port/")
+    if not re.search(r"\d+", job_id):
+        sys.exit("job_id should be a number")
     logging.info("Retrieving job failure for job " + str(job_id))
     r = requests.get(uri + 'failure/' + str(job_id))
     r.raise_for_status()
@@ -66,12 +112,21 @@ def retrieve_job_failure(uri, job_id):
     return failure_msg
     
 def print_job(uri, job, print_results=False, print_input=False):
+    uri_regex = r"^(http){1}(s){0,1}(://){1}(.+){1}(:){1}(\d+){1}(/){1}(.+){0,1}$"
+    if not re.search(uri_regex, uri):
+        sys.exit("DB endpoint URL don't match pattern: http://server_name:port/")
     logging.info("Job %s (%s) to (%s) - %s" % (job['id'], job['input']['source_db_uri'], job['input']['target_db_uri'], job['status']))
     if print_input == True:
         print_inputs(job['input'])
-    if print_results == True and job['status'] == 'complete':
-        logging.info("Copy result: " + str(job['status']))
-        logging.info("Copy took: " +str(job['output']['runtime']))
+    if job['status'] == 'complete':
+        if print_results == True:
+            logging.info("Copy result: " + str(job['status']))
+            logging.info("Copy took: " +str(job['output']['runtime']))
+    elif job['status'] == 'running':
+        if print_results == True:
+            logging.info("HC result: " + str(job['status']))
+            logging.info(str(job['progress']['complete'])+"/"+str(job['progress']['total'])+" task complete")
+            logging.info("Status: "+str(job['progress']['message']))
     elif job['status'] == 'failed':
       failure_msg = retrieve_job_failure(uri, job['id'])
       logging.info("Job failed with error: "+ str(failure_msg['msg']))
@@ -133,7 +188,7 @@ if __name__ == '__main__':
     elif args.action == 'retrieve':
     
         job = retrieve_job(args.uri, args.job_id, args.output_file)
-        print_job(args.uri, job, print_input=True, print_results=True)
+        print_job(args.uri, job, print_results=True, print_input=True)
     
     elif args.action == 'list':
        
