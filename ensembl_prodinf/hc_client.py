@@ -6,7 +6,12 @@ import json
 import re
 from collections import defaultdict
 
-def submit_job(uri, db_uri, production_uri, compara_uri, staging_uri, live_uri, hc_names, hc_groups):
+def write_output(r, output_file):
+    if(output_file != None):
+        with output_file as f:
+            f.write(r.text)  
+    
+def submit_job(uri, db_uri, production_uri, compara_uri, staging_uri, live_uri, hc_names, hc_groups, data_files_path):
     logging.info("Submitting job")
     payload = {
         'db_uri':db_uri,
@@ -15,7 +20,8 @@ def submit_job(uri, db_uri, production_uri, compara_uri, staging_uri, live_uri, 
         'staging_uri':staging_uri,
         'live_uri':live_uri,
         'hc_names':hc_names,
-        'hc_groups':hc_groups
+        'hc_groups':hc_groups,
+        'data_files_path':data_files_path
         }
     logging.debug(payload)
     r = requests.post(uri+'submit', json=payload)
@@ -97,6 +103,7 @@ def print_inputs(i):
     logging.info("Live URI: " + i['live_uri'])
     logging.info("Compara URI: " + i['compara_uri'])
     logging.info("Production URI: " + i['production_uri'])
+    logging.info("Data files path: " + i['data_files_path'])
     if 'hc_names' in i:
         for hc in i['hc_names']:
             logging.info("HC: " + hc)
@@ -118,6 +125,7 @@ if __name__ == '__main__':
     parser.add_argument('-c', '--compara_uri', help='URI of compara master database')
     parser.add_argument('-s', '--staging_uri', help='URI of current staging server')
     parser.add_argument('-l', '--live_uri', help='URI of live server for comparison')
+    parser.add_argument('-f', '--data_files_path', help='Data files path')
     parser.add_argument('-n', '--hc_names', help='List of healthcheck names to run', nargs='*')
     parser.add_argument('-g', '--hc_groups', help='List of healthcheck groups to run', nargs='*')
     parser.add_argument('-r', '--db_pattern', help='Pattern of DB URIs to restrict by')
