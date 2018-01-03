@@ -53,17 +53,18 @@ def list_databases_endpoint():
     except ValueError:
         return "Could not list databases", 500
 
-@app.route('/databases/sizes', methods=['GET'])
-def databases_sizes_endpoint(host, port):
+@app.route('/databases_sizes', methods=['GET'])
+def databases_sizes_endpoint():
     try:
+        host = request.args.get('host')
+        port = request.args.get('port')
         dir_name = request.args.get('dir_name')
         if(dir_name == None):
             dir_name = '/instances/' + str(port)
-        logging.debug("Finding database sizes for "+host+":"+port)
+            logging.debug("Finding database sizes for "+host+":"+port)
         return jsonify(get_database_sizes(host,dir_name))
     except ValueError:
         return "Could not list database sizes", 500
-
 
 @app.route('/status/<host>', methods=['GET'])
 def get_status_endpoint(host):
