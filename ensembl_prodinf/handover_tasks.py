@@ -8,6 +8,7 @@ import logging
 import db_copy_client
 import hc_client
 from sqlalchemy_utils.functions import database_exists
+from sqlalchemy.engine.url import make_url
 from .utils import send_email
 import handover_config as cfg
 import uuid        
@@ -15,6 +16,8 @@ import uuid
         
 def handover_database(spec):    
     logging.info("Handling " + str(spec))
+    if 'tgt_uri' not in spec:
+        spec['tgt_uri'] = get_tgt_uri(spec['src_uri'])
     spec['handover_token'] = str(uuid.uuid1())                    
     check_db(spec['src_uri'])
     check_registry(spec)     
@@ -25,6 +28,9 @@ def handover_database(spec):
     send_email(to_address=spec['contact'], subject='HC submitted', body=str(spec['src_uri']) + ' has been submitted for checking', smtp_server=cfg.smtp_server)
     return spec['handover_token']
 
+def get_tgt_uri(src_uri):
+    url = make_url(src_uri)
+    return str(cfg.staging_uri) + str(url.database)
     
 def check_db(uri):    
     if(database_exists(uri) == False):
