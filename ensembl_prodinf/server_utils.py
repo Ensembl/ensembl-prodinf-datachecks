@@ -6,8 +6,8 @@ def get_load(host=None):
     return status
 
 def get_database_sizes(host=None,dir_name=None):     
-    return run_process('du -sm '+dir_name+'/data/*',process_du, host)
-
+    return run_process('"(cd '+dir_name+'/data/ && du -sm *)"',process_du, host)
+ 
 def get_status(host=None,dir_name=None):
     status = {}
     if(host!=None):
@@ -50,7 +50,7 @@ def process_ncores(status, line):
 
 def process_du(status, line):
     elems = line.split()
-    status[elems[0]] = long(elems[1])
+    status[elems[1]] = long(elems[0])
 
 def run_process(command, function, host=None):
     status = {}
