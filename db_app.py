@@ -51,8 +51,8 @@ def list_databases_endpoint():
         query = request.args.get('query')
         logging.debug("Finding dbs matching " + query + " on " + db_uri)
         return jsonify(list_databases(db_uri, query))
-    except ValueError:
-        return "Could not list databases", 500
+    except ValueError as e:
+        return "Could not list databases: "+str(e), 500
 
 @app.route('/database_sizes', methods=['GET'])
 def database_sizes_endpoint():
@@ -64,8 +64,8 @@ def database_sizes_endpoint():
             dir_name = '/instances'
         logging.debug("Finding sizes of dbs matching " + str(query) + " on " + db_uri)
         return jsonify(get_database_sizes(db_uri, query, dir_name))
-    except ValueError:
-        return "Could not list database sizes", 500
+    except ValueError as e:
+        return "Could not list database sizes: "+str(e), 500
 
 @app.route('/status/<host>', methods=['GET'])
 def get_status_endpoint(host):
