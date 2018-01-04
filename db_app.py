@@ -62,7 +62,7 @@ def database_sizes_endpoint():
         dir_name = request.args.get('dir_name')
         if(dir_name == None):
             dir_name = '/instances'
-        logging.debug("Finding sizes of dbs matching " + query + " on " + db_uri)
+        logging.debug("Finding sizes of dbs matching " + str(query) + " on " + db_uri)
         return jsonify(get_database_sizes(db_uri, query, dir_name))
     except ValueError:
         return "Could not list database sizes", 500
