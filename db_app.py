@@ -51,7 +51,7 @@ def list_databases_endpoint():
         query = request.args.get('query')
         logging.debug("Finding dbs matching " + query + " on " + db_uri)
         return jsonify(list_databases(db_uri, query))
-    except ValueError as e:
+    except Exception as e:
         return "Could not list databases: "+str(e), 500
 
 @app.route('/database_sizes', methods=['GET'])
@@ -64,7 +64,7 @@ def database_sizes_endpoint():
             dir_name = '/instances'
         logging.debug("Finding sizes of dbs matching " + str(query) + " on " + db_uri)
         return jsonify(get_database_sizes(db_uri, query, dir_name))
-    except ValueError as e:
+    except Exception as e:
         return "Could not list database sizes: "+str(e), 500
 
 @app.route('/status/<host>', methods=['GET'])
@@ -73,13 +73,18 @@ def get_status_endpoint(host):
     if(dir_name == None):
         dir_name = '/instances'
     logging.debug("Finding status of " + host + " (dir " + dir_name + ")")
-    return jsonify(get_status(host=host, dir_name=dir_name))
-
+    try:
+        return jsonify(get_status(host=host, dir_name=dir_name))
+    except Exception as e:
+        return "Could not get status: "+str(e), 500
 
 @app.route('/load/<host>', methods=['GET'])
 def get_load_endpoint(host):
     logging.debug("Finding load of " + host)
-    return jsonify(get_load(host=host))
+    try:
+        return jsonify(get_load(host=host))
+    except Exception as e:
+        return "Could not get status: "+str(e), 500
 
 
 @app.route('/list_servers/<user>', methods=['GET'])
