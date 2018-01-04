@@ -21,4 +21,4 @@ def get_database_sizes(db_uri, query, dir_name):
     url = make_url(db_uri)
     dir_name = dir_name + '/' + str(url.port) + '/data'
     sizes = get_file_sizes(url.host, dir_name)
-    return {db: sizes[db] for db in db_list}
+    return {db: sizes[db] for db in db_list if db in sizes.keys()}
