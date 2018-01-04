@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from ensembl_prodinf.db_utils import list_databases
-from ensembl_prodinf.server_utils import get_status, get_load, get_database_sizes
+from ensembl_prodinf.db_utils import list_databases, get_database_sizes
+from ensembl_prodinf.server_utils import get_status, get_load
 from ensembl_prodinf import HiveInstance
 from ensembl_prodinf.tasks import email_when_complete
 import logging
@@ -10,6 +10,7 @@ import re
 import os
 import signal
 import time
+from macpath import dirname
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
@@ -53,16 +54,16 @@ def list_databases_endpoint():
     except ValueError:
         return "Could not list databases", 500
 
-@app.route('/databases_sizes', methods=['GET'])
-def databases_sizes_endpoint():
+@app.route('/database_sizes', methods=['GET'])
+def database_sizes_endpoint():
     try:
-        host = request.args.get('host')
-        port = request.args.get('port')
+        db_uri = request.args.get('db_uri')
+        query = request.args.get('query')
         dir_name = request.args.get('dir_name')
         if(dir_name == None):
-            dir_name = '/instances/' + str(port)
-            logging.debug("Finding database sizes for "+host+":"+port)
-        return jsonify(get_database_sizes(host,dir_name))
+            dir_name = '/instances'
+        logging.debug("Finding sizes of dbs matching " + query + " on " + db_uri)
+        return jsonify(get_database_sizes(db_uri, query, dir_name))
     except ValueError:
         return "Could not list database sizes", 500
 
