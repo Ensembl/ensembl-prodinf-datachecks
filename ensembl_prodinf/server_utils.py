@@ -6,7 +6,7 @@ def get_load(host=None):
     return status
 
 def get_file_sizes(host=None,dir_name=None):     
-    return run_process('"(cd '+dir_name+'/data/ && du -sm *)"',process_du, host)
+    return run_process('"(cd '+dir_name+' && du -sm *)"',process_du, host)
  
 def get_status(host=None,dir_name=None):
     status = {}
