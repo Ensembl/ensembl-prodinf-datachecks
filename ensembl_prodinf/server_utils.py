@@ -5,7 +5,7 @@ def get_load(host=None):
     status = run_process('uptime',process_uptime, host)
     return status
 
-def get_database_sizes(host=None,dir_name=None):     
+def get_file_sizes(host=None,dir_name=None):     
     return run_process('"(cd '+dir_name+'/data/ && du -sm *)"',process_du, host)
  
 def get_status(host=None,dir_name=None):
