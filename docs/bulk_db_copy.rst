@@ -12,7 +12,7 @@ List of databases to copy
 ############
 
 Create file with list of databases to copy, e.g: db_to_copy.txt
-
+::
   cavia_porcellus_funcgen_91_4
   homo_sapiens_funcgen_91_38
   mus_musculus_funcgen_91_38
@@ -21,23 +21,27 @@ Create file with list of databases to copy, e.g: db_to_copy.txt
 Or for all the database of a given division:
 
 1. EG:
-
-  ./ensembl-production/scripts/process_division.sh EM mysql-eg-pan-prod ensembl_production > fungi_db_to_copy.txt
+::
+  RELEASE=38
+  ./ensembl-production/scripts/process_division.sh EM mysql-eg-pan-prod ensembl_production $RELEASE > fungi_db_to_copy.txt
 
 2. Ensembl:
+::
+  RELEASE=91
+  ./ensembl-production/scripts/process_division.sh ens mysql-ens-sta-1 ensembl_production_${RELEASE} $RELEASE > db_to_copy.txt
 
-  ./ensembl-production/scripts/process_division.sh ens mysql-ens-sta-1 ensembl_production_91 > db_to_copy.txt
-
-Submit the jobs using Python REST API
+Submit the jobs using Python REST db copy endpoint:
 #####
 
+To Submit the job via the REST enpoint
+::
   SOURCE_SERVER=$(mysql-ens-vertannot-staging details url)
   TARGET_SERVER=$(mysql-ens-sta-1-ensadmin details url)
   EMAIL=john.doe@ebi.ac.uk
 
   cd $BASE_DIR/ensembl-prodinf-core 
   for db in $(cat db_to_copy.txt); 
-  do ensembl_prodinf/db_copy_client.py -a submit -u http://ens-prod-1.ebi.ac.uk:8000/dbcopy/ -s "${SOURCE_SERVER}${db}" -t "${TARGET_SERVER}${db}" -d 1 -e $EMAIL; 
+  do ensembl_prodinf/db_copy_client.py -a submit -u http://ens-prod-1.ebi.ac.uk:8000/dbcopy/ -s "${SOURCE_SERVER}${db}" -t "${TARGET_SERVER}${db}" -d 1 -e $EMAIL;
   done
 
 Check job status
