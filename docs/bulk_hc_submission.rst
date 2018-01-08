@@ -1,5 +1,5 @@
 ************************
-Bulk Database Copy
+Bulk Healthcheck submission
 ************************
 
 Overview
@@ -66,13 +66,11 @@ or using the Python REST API:
 Collate results
 #####
 If you have run the healthchecks on a large number of databases, you can collate all the results in one file:
-
 ::
   python ensembl-prodinf-core/ensembl_prodinf/hc_client.py -u http://ens-prod-1:8000/hc/ -a collate -r ".*core_38_91.*" -o results.json
 
 Convert results in readable form
 #####
 Convert Json result file in readable text format:
-
 ::
   cat results.json | json_reformat > results.txt
