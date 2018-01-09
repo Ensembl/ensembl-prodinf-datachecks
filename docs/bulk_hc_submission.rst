@@ -44,11 +44,12 @@ To Submit the job via the REST enpoint
   PRODUCTION=$(mysql-ens-sta-1 details url)
   ENDPOINT=http://ens-prod-1:8000/hc/
   DATA_FILE_PATH=/nfs/panda/ensembl/production/ensemblftp/data_files/
+  RELEASE=91
   
   cd $BASE_DIR/ensembl-prodinf-core 
   for db in $(cat db_hc.txt); do
     echo "Submitting HC check for $db"
-    output=`python ensembl_prodinf/hc_client.py -u $ENDPOINT -d "${SERVER}${db}" -p "${PRODUCTION}ensembl_production" -s $STAGING -l $LIVE -c "${COMPARA}ensembl_compara_master" -g $GROUP -dfp $DATA_FILE_PATH  -a submit` || {
+    output=`python ensembl_prodinf/hc_client.py -u $ENDPOINT -d "${SERVER}${db}" -p "${PRODUCTION}ensembl_production_${RELEASE}" -s $STAGING -l $LIVE -c "${COMPARA}ensembl_compara_master" -g $GROUP -dfp $DATA_FILE_PATH  -a submit` || {
           echo "Cannot submit $db" 1>&2
           exit 2
     }
