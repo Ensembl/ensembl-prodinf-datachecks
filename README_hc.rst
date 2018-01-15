@@ -9,6 +9,7 @@ pip install -r requirements.txt
 You can do this on a shared pyenv environment, or per user with the `--user` option.
 
 You can also install `ensembl_prodinf` from git or by adding an existing install to PYTHONPATH.
+e.g: PYTHONPATH=dir/ensembl-prodinf/ensembl-prodinf-core
 
 Hive Setup
 ==========
@@ -53,11 +54,13 @@ Running
 To start the main application as a standalone Flask application:
 ```
 export FLASK_APP=hc_app.py
+cd ensembl-prodinf-srv
 flask run --port 5001 --host 0.0.0.0
 ```
 or to start the main application as a standalone using gunicorn with 4 threads:
 ```
 pyenv activate ensprod_inf
+cd ensembl-prodinf-srv
 gunicorn -w 4 -b 0.0.0.0:5001 hc_app:app
 ```
 

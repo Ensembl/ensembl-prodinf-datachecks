@@ -6,6 +6,7 @@ To install Python requirements using pip:
 pip install -r requirements.txt
 ```
 You can also install `ensembl_prodinf` from git or by adding an existing install to PYTHONPATH.
+e.g: PYTHONPATH=dir/ensembl-prodinf/ensembl-prodinf-core
 
 Hive Setup
 ==========
@@ -51,11 +52,13 @@ Important: for the status endpoint to work, you must run the app as a user who c
 To start the main application as a standalone Flask application:
 ```
 export FLASK_APP=db_app.py
+cd ensembl-prodinf-srv
 flask run --port 5002 --host 0.0.0.0
 ```
 or to start the main application as a standalone using gunicorn with 4 threads:
 ```
 pyenv activate ensprod_inf
+cd ensembl-prodinf-srv
 gunicorn -w 4 -b 0.0.0.0:5002 db_app:app
 ```
 
