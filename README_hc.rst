@@ -72,3 +72,17 @@ To use a standalone gunicorn server with 4 worker threads:
 ```
 gunicorn -w 4 -b 0.0.0.0:5001 hc_app:app
 ```
+
+Using Docker
+============
+
+To build a Docker image:
+```
+docker build -t ensembl_prodinf/hc_app -f Dockerfile.hc .
+```
+
+To run your Docker image against a specified hive, exposing the REST service on port 4001:
+```
+docker run -p 127.0.0.1:4001:8000 --env HIVE_URI='mysql://user:pwd@localhost:3306/my_hive_db' ensembl_prodinf/hc_app
+```
+
