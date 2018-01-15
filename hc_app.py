@@ -6,15 +6,21 @@ import re
 
 from ensembl_prodinf import HiveInstance
 from ensembl_prodinf.tasks import email_when_complete
+from flasgger import Swagger
 
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 app = Flask(__name__, instance_relative_config=True)
-print app.config
+app.config['SWAGGER'] = {
+    'title': 'Production healthchecks REST endpoints',
+    'uiversion': 2
+}
 app.config.from_object('hc_config')
 app.config.from_pyfile('hc_config.py')
 app.analysis = app.config["HIVE_ANALYSIS"]
+print app.config
+swagger = Swagger(app)
 
 hive = None
 def get_hive():
@@ -30,6 +36,86 @@ json_pattern = re.compile("application/json")
 
 @app.route('/submit', methods=['POST'])
 def submit():
+    """
+    Endpoint to submit an healthcheck job
+    This is using docstring for specifications
+    ---
+    tags:
+      - submit
+    parameters:
+      - in: body
+        name: body
+        description: healthcheck object
+        requiered: false
+        schema:
+          $ref: '#/definitions/submit'
+    operationId: submit
+    consumes:
+      - application/json
+    produces:
+      - application/json
+    security:
+      submit_auth:
+        - 'write:submit'
+        - 'read:submit'
+    schemes: ['http', 'https']
+    deprecated: false
+    externalDocs:
+      description: Project repository
+      url: http://github.com/rochacbruno/flasgger
+    definitions:
+      submit:
+        title: Healthcheck job
+        description: A job to run multiple healthchecks or healthchecks groups on a given database URI.
+        type: object
+        required: 
+          -db_uri
+          -compara_uri
+          -live_uri
+          -production_uri
+          -staging_uri
+          -hc_names
+          -data_files_path
+        properties:
+          db_uri:
+            type: string
+            example: 'mysql://user@server:port/saccharomyces_cerevisiae_core_91_4'
+          compara_uri:
+            type: string
+            example: 'mysql://user:password@server:port/compara_master'
+          live_uri:
+            type: string
+            example: 'mysql://user:password@server:port/'
+          staging_uri:
+            type: string
+            example: 'mysql://user:password@server:port/'
+          production_uri:
+            type: string
+            example: 'mysql://user:password@server:port/ensembl_production_xx'
+          hc_names:
+            type: array
+            items:
+              type: string
+              example: 'org.ensembl.healthcheck.testcase.generic.StableID'
+          hc_groups:
+            type: array
+            items:
+              type: string
+              example: ''
+          data_files_path:
+            type: string
+            example: '/nfs/panda/ensembl/production/ensemblftp/data_files/'
+          email:
+            type: string
+            example: 'undefined'
+    responses:
+      200:
+        description: submit of an healthcheck job
+        schema:
+          $ref: '#/definitions/submit'
+        examples:
+          {db_uri: "mysql://user@server:port/saccharomyces_cerevisiae_core_91_4", staging_uri: "mysql://user@server:port/", live_uri: "mysql://user@server:port/", production_uri: "mysql://user@server:port/ensembl_production_91", compara_uri: "mysql://user@server:port/ensembl_compara_master", hc_names: ["org.ensembl.healthcheck.testcase.generic.StableID"]}
+    """
     if json_pattern.match(request.headers['Content-Type']):
         logging.debug("Submitting HC " + str(request.json))
         job = get_hive().create_job(app.analysis, request.json)
@@ -46,6 +132,74 @@ def submit():
 
 @app.route('/results/<int:job_id>', methods=['GET'])
 def results(job_id):
+    """
+    Endpoint to retrieve a given job result using job_id
+    This is using docstring for specifications
+    ---
+    tags:
+      - results
+    parameters:
+      - name: job_id
+        in: path
+        type: integer
+        required: true
+        default: 1
+        description: id of the job
+    operationId: results
+    consumes:
+      - application/json
+    produces:
+      - application/json
+    security:
+      results_auth:
+        - 'write:results'
+        - 'read:results'
+    schemes: ['http', 'https']
+    deprecated: false
+    externalDocs:
+      description: Project repository
+      url: http://github.com/rochacbruno/flasgger
+    definitions:
+      job_id:
+        type: object
+        properties:
+          job_id:
+            type: integer
+            items:
+              $ref: '#/definitions/job_id'
+      result:
+        type: object
+        properties:
+          result:
+            type: string
+            items:
+              $ref: '#/definitions/result'
+    responses:
+      200:
+        description: Result of an healthcheck job
+        schema:
+          $ref: '#/definitions/job_id'
+        examples:
+          id: 1
+          input:
+             compara_uri: mysql://user@server:port/ensembl_compara_master
+             data_files_path: /nfs/panda/ensembl/production/ensemblftp/data_files/
+             db_uri: mysql://user@server:port/ailuropoda_melanoleuca_core_91_1
+             hc_names: ['org.ensembl.healthcheck.testcase.eg_core.GeneSource']
+             live_uri: mysql://user@server:port/
+             production_uri: mysql://user@server:port/ensembl_production_91
+             staging_uri: mysql://user@server:port/
+             timestamp: 1515494166.015124
+          output:
+             db_name: ailuropoda_melanoleuca_core_91_1
+             db_uri: mysql://user@server:port/ailuropoda_melanoleuca_core_91_1
+             results:
+                org.ensembl.healthcheck.testcase.eg_core.GeneSource:
+                    messages: ['PROBLEM: Found 23262 genes with source Ensembl which should be replaced with an appropriate GOA compatible name for the original source']
+                    status: failed
+             status: failed
+          status: complete
+    """
     try:
         logging.info("Retrieving job with ID " + str(job_id))
         return jsonify(get_hive().get_result_for_job_id(job_id))
@@ -54,6 +208,56 @@ def results(job_id):
 
 @app.route('/delete/<int:job_id>', methods=['GET'])
 def delete(job_id):
+    """
+    Endpoint to delete a given job result using job_id
+    This is using docstring for specifications
+    ---
+    tags:
+      - delete
+    parameters:
+      - name: job_id
+        in: path
+        type: integer
+        required: true
+        default: 1
+        description: id of the job
+    operationId: delete
+    consumes:
+      - application/json
+    produces:
+      - application/json
+    security:
+      delete_auth:
+        - 'write:delete'
+        - 'read:delete'
+    schemes: ['http', 'https']
+    deprecated: false
+    externalDocs:
+      description: Project repository
+      url: http://github.com/rochacbruno/flasgger
+    definitions:
+      job_id:
+        type: object
+        properties:
+          job_id:
+            type: integer
+            items:
+              $ref: '#/definitions/job_id'
+      id:
+        type: integer
+        properties:
+          id:
+            type: integer
+            items:
+              $ref: '#/definitions/id'
+    responses:
+      200:
+        description: Job_id that has been deleted
+        schema:
+          $ref: '#/definitions/job_id'
+        examples:
+          id: 1
+    """
     hive = get_hive()
     job = get_hive().get_job_by_id(job_id)
     if(job == None):
@@ -63,6 +267,70 @@ def delete(job_id):
 
 @app.route('/results_email/<int:job_id>', methods=['GET'])
 def results_email(job_id):
+    """
+    Endpoint to display job result sent to email defined in input
+    This is using docstring for specifications
+    ---
+    tags:
+      - results_email
+    parameters:
+      - name: job_id
+        in: path
+        type: integer
+        required: true
+        default: 4
+        description: id of the job
+    operationId: results_email
+    consumes:
+      - application/json
+    produces:
+      - application/json
+    security:
+      results_email_auth:
+        - 'write:results_email'
+        - 'read:results_email'
+    schemes: ['http', 'https']
+    deprecated: false
+    externalDocs:
+      description: Project repository
+      url: http://github.com/rochacbruno/flasgger
+    definitions:
+      job_id:
+        type: object
+        properties:
+          job_id:
+            type: integer
+            items:
+              $ref: '#/definitions/job_id'
+      results_email:
+        type: string
+        properties:
+          results_email:
+            type: string
+            items:
+              $ref: '#/definitions/results_email'
+    responses:
+      200:
+        description: result in email friendly format that was sent to email defined in input
+        schema:
+          $ref: '#/definitions/job_id'
+        examples:
+          body: 'Results for mysql://user@server:port/ailuropoda_melanoleuca_core_91_1: * org.ensembl.healthcheck.testcase.eg_core.GeneSource : failed ** PROBLEM: Found 23262 genes with source Ensembl which should be replaced with an appropriate GOA compatible name for the original source'
+          id: 4
+          input:
+            compara_uri: mysql://user@server:port/ensembl_compara_master 
+            data_files_path: /nfs/panda/ensembl/production/ensemblftp/data_files/ 
+            db_uri: mysql://user@server:port/ailuropoda_melanoleuca_core_91_1
+            email: john.doe@ebi.ac.uk
+            hc_names: ['org.ensembl.healthcheck.testcase.eg_core.GeneSource']
+            live_uri: mysql://user@server:port/
+            production_uri: mysql://user@server:port/ensembl_production_91
+            staging_uri: mysql://user@server:port/
+            timestamp: 1515494256.239413 
+          output: null
+          status: complete
+          subject: 'Healthchecks for ailuropoda_melanoleuca_core_91_1 - failed'
+    """
     email = request.args.get('email')
     logging.info("Retrieving job with ID " + str(job_id) + " for " + str(email))
     job = get_hive().get_job_by_id(job_id)
@@ -88,11 +356,127 @@ def results_email(job_id):
 
 @app.route('/jobs', methods=['GET'])
 def jobs():
+    """
+    Endpoint to retrieve all the jobs results from the database
+    This is using docstring for specifications
+    ---
+    tags:
+      - jobs
+    operationId: jobs
+    consumes:
+      - application/json
+    produces:
+      - application/json
+    security:
+      jobs_auth:
+        - 'write:jobs'
+        - 'read:jobs'
+    schemes: ['http', 'https']
+    deprecated: false
+    externalDocs:
+      description: Project repository
+      url: http://github.com/rochacbruno/flasgger
+    responses:
+      200:
+        description: Retrieve all the jobs results from the database
+        schema:
+          $ref: '#/definitions/job_id'
+        examples:
+          id: 1 
+          input: 
+            compara_uri: mysql://user@server:port/ensembl_compara_master
+            data_files_path: /nfs/panda/ensembl/production/ensemblftp/data_files/
+            db_uri: mysql://user@server:port/ailuropoda_melanoleuca_core_91_1
+            hc_names: ['org.ensembl.healthcheck.testcase.eg_core.GeneSource']
+            live_uri: mysql://user@server:port/
+            production_uri: mysql://user@server:port/ensembl_production_91
+            staging_uri: mysql://user@server:port/
+            timestamp: 1515494166.015124
+          output: 
+            db_name: ailuropoda_melanoleuca_core_91_1
+            db_uri: mysql://user@server:port/ailuropoda_melanoleuca_core_91_1
+            results:
+            org.ensembl.healthcheck.testcase.eg_core.GeneSource:
+                messages: ['PROBLEM: Found 23262 genes with source Ensembl which should be replaced with an appropriate GOA compatible name for the original source']
+                status: failed
+            status: failed
+          status: complete
+          id: 4 
+          input: 
+            compara_uri: mysql://user@server:port/ensembl_compara_master
+            data_files_path: /nfs/panda/ensembl/production/ensemblftp/data_files/
+            db_uri: mysql://user@server:port/ailuropoda_melanoleuca_core_91_1
+            email: john.doe@ebi.ac.uk
+            hc_names: ['org.ensembl.healthcheck.testcase.eg_core.GeneSource']
+            live_uri: mysql://user@server:port/
+            production_uri: mysql://user@server:port/ensembl_production_91
+            staging_uri: mysql://user@server:port/
+            timestamp: 1515494256.239413
+          output: 
+            db_name: ailuropoda_melanoleuca_core_91_1
+            db_uri: mysql://user@server:port/ailuropoda_melanoleuca_core_91_1
+            results:
+              org.ensembl.healthcheck.testcase.eg_core.GeneSource:
+                messages: ['PROBLEM: Found 23262 genes with source Ensembl which should be replaced with an appropriate GOA compatible name for the original source']
+                status: failed
+              status: failed
+          status: complete
+    """
     logging.info("Retrieving jobs")
     return jsonify(get_hive().get_all_results(app.analysis))
 
 @app.route('/failures/<int:job_id>', methods=['GET'])
 def failures(job_id):
+    """
+    Endpoint to retrieve a given job failures using job_id
+    This is using docstring for specifications
+    ---
+    tags:
+      - failures
+    parameters:
+      - name: job_id
+        in: path
+        type: integer
+        required: true
+        default: 13
+        description: id of the job
+    operationId: failures
+    consumes:
+      - application/json
+    produces:
+      - application/json
+    security:
+      failures_auth:
+        - 'write:failures'
+        - 'read:failures'
+    schemes: ['http', 'https']
+    deprecated: false
+    externalDocs:
+      description: Project repository
+      url: http://github.com/rochacbruno/flasgger
+    definitions:
+      job_id:
+        type: object
+        properties:
+          job_id:
+            type: integer
+            items:
+              $ref: '#/definitions/job_id'
+      failures:
+        type: object
+        properties:
+          failures:
+            type: string
+            items:
+              $ref: '#/definitions/failures'
+    responses:
+      200:
+        description: Retrieve failures for a given job using job_id
+        schema:
+          $ref: '#/definitions/job_id'
+        examples:
+          15: 'Could not execute java  -jar /homes/user/work/ensj-healthcheck/target/healthchecks-jar-with-dependencies.jar --output_format json --output_file ./totosaccharomyces_cerevisiae_core_91_4_org.ensembl.healthcheck.testcase.generic.StableID.json --release 91 --t org.ensembl.healthcheck.testcase.generic.StableID --host server --port port --user user --dbname saccharomyces_cerevisiae_core_91_4 --prod_host server --prod_port port --prod_user user --prod_dbname ensembl_production --compara_host server --compara_port port --compara_user user --compara_dbname ensembl_compara_master --secondary_host server --secondary_port port --secondary_user user --staging_host server --staging_port port --staging_user user --data_files_path /nfs/panda/ensembl/production/ensemblftp/data_files/ >& /tmp/_HealthcheckDatabase__8EczD.log: 10-1-2018 01:53:59 org.ensembl.healthcheck.StandaloneTestRunner INFO : Executing testcase org.ensembl.healthcheck.testcase.generic.StableID10-1-2018 01:53:59 org.ensembl.healthcheck.StandaloneTestRunner INFO : Connecting to production database ensembl_productionJan 10, 2018 1:53:59 PM org.ensembl.healthcheck.DatabaseRegistryEntry <init>WARNING: Unknown database ensembl_production10-1-2018 01:53:59 org.ensembl.healthcheck.StandaloneTestRunner INFO : Connecting to compara master database ensembl_compara_master10-1-2018 01:54:00 org.ensembl.healthcheck.StandaloneTestRunner INFO : Connecting to test database totosaccharomyces_cerevisiae_core_91_4Jan 10, 2018 1:54:00 PM org.ensembl.healthcheck.DatabaseRegistryEntry getConnectionWARNING: Unknown database totosaccharomyces_cerevisiae_core_91_4Exception in thread main org.ensembl.healthcheck.configurationmanager.ConfigurationException: Test database totosaccharomyces_cerevisiae_core_91_4 not found\tat org.ensembl.healthcheck.StandaloneTestRunner.getTestDb(StandaloneTestRunner.java:407)\tat org.ensembl.healthcheck.StandaloneTestRunner.runTestCase(StandaloneTestRunner.java:471)\tat org.ensembl.healthcheck.StandaloneTestRunner.runAll(StandaloneTestRunner.java:460)\tat org.ensembl.healthcheck.StandaloneTestRunner.main(StandaloneTestRunner.java:251) at /homes/user/work/ensembl-hive/modules/Bio/EnsEMBL/Hive/Worker.pm line 688.'
+    """
     try:
         logging.info("Retrieving failure for job with ID " + str(job_id))
         failures=get_hive().get_jobs_failure_msg(job_id)
@@ -100,3 +484,5 @@ def failures(job_id):
     except ValueError:
         return "Job " + str(job_id) + " not found", 404
 
+if __name__ == "__main__":
+    app.run(debug=True)
