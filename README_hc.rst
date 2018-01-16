@@ -37,6 +37,14 @@ cp celery_app_config.py.example celery_app_config.py
 
 Edit them as required. hc_config.py must contain a URL for the hive MySQL instance described above.
 
+You can also leave instance/hc_config.py empty and use the defaults in hc_config.py or override using environment variables.
+
+The following environment variables are supported by the container:
+* HIVE_URI - mysql URI of HC hive database (required)
+* HIVE_ANALYSIS - name of analysis for submitting new jobs to the hive (not usually needed to be changed)
+* CELERY_BROKER_URL - URL of Celery broker
+* CELERY_RESULT_BACKEND - URl of Celery backend
+
 Running Celery
 ==============
 The Celery task manager is currently used for scheduling checks on completed jobs. The default backend in celery_app_config.py is RabbitMQ. This can be installed as per https://www.rabbitmq.com/ rabbitmq_server-3.6.10 has been successfully installed from tarball (assuming erlang is already installed).
@@ -61,7 +69,6 @@ pyenv activate ensprod_inf
 gunicorn -w 4 -b 0.0.0.0:5001 hc_app:app
 ```
 
-
 Note that for production, a different deployment option should be used as the standalone flask app can only serve one request at a time.
 
 There are multiple options, described at:
@@ -81,8 +88,9 @@ To build a Docker image:
 docker build -t ensembl_prodinf/hc_app -f Dockerfile.hc .
 ```
 
-To run your Docker image against a specified hive, exposing the REST service on port 4001:
+To run your Docker image against a specified hive, exposing the REST service on port 4001 e.g.:
 ```
 docker run -p 127.0.0.1:4001:8000 --env HIVE_URI='mysql://user:pwd@localhost:3306/my_hive_db' ensembl_prodinf/hc_app
 ```
 
+Environment variables should be supplied as arguments to the run command as shown in the example above.
