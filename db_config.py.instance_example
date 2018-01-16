@@ -1,7 +1,2 @@
-SERVER_URIS = {           
-    "ensro":[
-        "mysql://ensro@localhost:3306/",
-     ]
-}
+SERVER_URIS_FILE = 'server_uris.json'
 HIVE_URI='mysql://myuser:mypass@myhost:3306/standalone_hc_hive'
-
