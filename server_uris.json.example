@@ -1,0 +1,5 @@
+{           
+    "ensro":[
+        "mysql://ensro@localhost:3306/"
+     ]
+}
