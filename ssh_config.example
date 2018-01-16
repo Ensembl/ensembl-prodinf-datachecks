@@ -1,0 +1,10 @@
+Host mysql-*
+  User ensmysql
+  Ciphers arcfour
+  StrictHostKeyChecking no
+  UserKnownHostsFile /dev/null
+  LogLevel QUIET
+  BatchMode yes
+  IdentityFile /root/.ssh/id_rsa
+  IdentitiesOnly yes
+ 
