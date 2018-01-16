@@ -10,6 +10,7 @@ import re
 import os
 import signal
 import time
+import json
 from macpath import dirname
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -19,6 +20,9 @@ print app.config
 app.config.from_object('db_config')
 app.config.from_pyfile('db_config.py')
 app.analysis = app.config["HIVE_ANALYSIS"]
+
+with open(app.config["SERVER_URIS_FILE"], 'r') as f:
+    app.servers = json.loads(f.read())
 
 hive = None
 
@@ -90,10 +94,11 @@ def get_load_endpoint(host):
 @app.route('/list_servers/<user>', methods=['GET'])
 def list_servers_endpoint(user):
     query = request.args.get('query')
-    servers = app.config["SERVER_URIS"]
-    if user in servers:
+    if query == None:
+        return "Query not specified", 400
+    if user in app.servers:
         logging.debug("Finding servers matching " + query + " for " + user)
-        user_urls = servers[user] or []
+        user_urls = app.servers[user] or []
         urls = filter(lambda x:query in x, user_urls)
         return jsonify(urls)
     else:
