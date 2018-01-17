@@ -17,7 +17,7 @@ app.config['SWAGGER'] = {
     'uiversion': 2
 }
 app.config.from_object('hc_config')
-app.config.from_pyfile('hc_config.py')
+app.config.from_pyfile('hc_config.py', silent=True)
 app.analysis = app.config["HIVE_ANALYSIS"]
 print app.config
 swagger = Swagger(app)
