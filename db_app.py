@@ -129,6 +129,82 @@ def list_databases_endpoint():
 
 @app.route('/database_sizes', methods=['GET'])
 def database_sizes_endpoint():
+    """
+    Endpoint to retrieve a list of databases and their size from a MySQL server given as URI
+    This is using docstring for specifications
+    ---
+    tags:
+      - database_sizes
+    parameters:
+      - in : query
+        name: db_uri
+        type: string
+        required: true
+        default: mysql://user@server:port/
+        description: MySQL server db_uri
+      - in : query
+        name: query
+        type: string
+        required: true
+        default: homo_sapiens
+        description: query use to find databases
+      - in : query
+        name: dir_name
+        type: string
+        required: false
+        default: /instances
+        description: Directory name where the database files are located on the MySQL server
+    operationId: database_sizes
+    consumes:
+      - application/json
+    produces:
+      - application/json
+    security:
+      database_sizes_auth:
+        - 'write:database_sizes'
+        - 'read:database_sizes'
+    schemes: ['http', 'https']
+    deprecated: false
+    externalDocs:
+      description: Project repository
+      url: http://github.com/rochacbruno/flasgger
+    definitions:
+      db_uri:
+        type: db_uri
+        properties:
+          db_uri:
+            type: string
+            items:
+              $ref: '#/definitions/db_uri'
+      query:
+        type: query
+        properties:
+          query:
+            type: string
+            items:
+              $ref: '#/definitions/query'
+      dir_name:
+        type: dir_name
+        properties:
+          dir_name:
+            type: string
+            items:
+              $ref: '#/definitions/dir_name'
+      database_sizes:
+        type: object
+        properties:
+          database_sizes:
+            type: string
+            items:
+              $ref: '#/definitions/database_sizes'
+    responses:
+      200:
+        description: database_sizes of all the databases from a MySQL server
+        schema:
+          $ref: '#/definitions/database_sizes'
+        examples:
+          {  "mus_caroli_core_91_11": 4890, "ncbi_taxonomy": 362 }
+    """
     try:
         db_uri = request.args.get('db_uri')
         query = request.args.get('query')
