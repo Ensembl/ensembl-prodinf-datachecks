@@ -23,11 +23,23 @@ Next, run the `beekeeper.pl` supplied by the output with the arguments `--keep_a
 
 Configuration
 =============
-There are two configuration files you need to have copies of locally:
+There are two configuration files you need to have copies of locally. 
+```
+cp celery_app_config.py.example celery_app_config.py
+```
+
+Secondly, you can provide an instance file, the location of which depends if you're using virtualenv or not.
+
+For virtualenv:
+```
+mkdir -p vars/db_app-instance
+cp db_config.py.instance_example vars/db_app-instance/db_config.py 
+```
+
+Otherwise:
 ```
 mkdir instance
-cp db_config.py.instance_example instance/db_config.py
-cp celery_app_config.py.example celery_app_config.py
+cp db_config.py.instance_example instance/db_config.py 
 ```
 
 Edit them as required. SERVER_URIS_FILE must point to a JSON file containing lists of server names for autocomplete e.g.
@@ -37,7 +49,7 @@ HIVE_URI='mysql://myuser:mypass@myhost:3306/standalone_db_hive'
 ```
 An example can be found in `server_uris.json.example`.
 
-Note that you can leave `instance/db_config.py` empty, and use the defaults found in db_config.py, or override them at run time with environment variables.
+Note that you can leave instance files empty, and use the defaults found in db_config.py, or override them at run time with environment variables.
 
 The following environment variables are supported:
 * SERVER_URIS_FILE - path to JSON file containing server details
