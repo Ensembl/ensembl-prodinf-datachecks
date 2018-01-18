@@ -5,6 +5,6 @@ Host mysql-*
   UserKnownHostsFile /dev/null
   LogLevel QUIET
   BatchMode yes
-  IdentityFile /root/.ssh/id_rsa
+  IdentityFile /ssh_keys/id_rsa
   IdentitiesOnly yes
  
