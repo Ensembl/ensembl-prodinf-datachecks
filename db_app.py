@@ -4,7 +4,7 @@ from flask_cors import CORS
 from ensembl_prodinf.db_utils import list_databases, get_database_sizes
 from ensembl_prodinf.server_utils import get_status, get_load
 from ensembl_prodinf import HiveInstance
-from ensembl_prodinf.tasks import email_when_complete
+from ensembl_prodinf.email_tasks import email_when_complete
 from flasgger import Swagger
 import logging
 import re

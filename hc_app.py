@@ -5,7 +5,7 @@ import logging
 import re
 
 from ensembl_prodinf import HiveInstance
-from ensembl_prodinf.tasks import email_when_complete
+from ensembl_prodinf.email_tasks import email_when_complete
 from flasgger import Swagger
 
 
