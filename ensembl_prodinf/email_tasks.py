@@ -2,10 +2,10 @@ from ensembl_prodinf.celery_app import app
 from .utils import send_email
 import json
 import urllib2
-import getpass
 
 smtp_server = app.conf['smtp_server']
 from_email_address = app.conf['from_email_address']
+retry_wait = app.conf['retry_wait']
 
 @app.task(bind=True)
 def email_when_complete(self, url, address):
@@ -16,7 +16,7 @@ def email_when_complete(self, url, address):
     self.max_retries = None
     result = json.load(urllib2.urlopen(url))
     if (result['status'] == 'incomplete') or (result['status'] == 'running') or (result['status'] == 'submitted'):
-        raise self.retry()
+        raise self.retry(countdown=retry_wait)
     else:
         send_email(smtp_server, from_email_address, address, result['subject'], result['body'])
         return result
