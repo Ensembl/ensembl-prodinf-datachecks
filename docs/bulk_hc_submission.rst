@@ -36,20 +36,20 @@ Submit the jobs using Python REST hc endpoint:
 To Submit the job via the REST enpoint
 ::
 
-  SERVER=$(mysql-ens-vertannot-staging details url)
+  SERVER=$(mysql-ens-vertannot-staging details url) #e.g: mysql://ensro@mysql-ens-vertannot-staging:4573/
   GROUP=CoreHandover
-  COMPARA=$(mysql-ens-compara-prod-1 details url)
+  COMPARA_MASTER=$(mysql-ens-compara-prod-1 details url)
   LIVE=$(mysql-ensembl-mirror details url)
   STAGING=$(mysql-ens-sta-1 details url)
   PRODUCTION=$(mysql-ens-sta-1 details url)
-  ENDPOINT=http://ens-prod-1:8000/hc/
+  ENDPOINT=http://ens-prod-1.ebi.ac.uk:8000/hc/ #or http://eg-prod-01.ebi.ac.uk:7000/hc/ for EG
   DATA_FILE_PATH=/nfs/panda/ensembl/production/ensemblftp/data_files/
   RELEASE=91
   
   cd $BASE_DIR/ensembl-prodinf-core 
   for db in $(cat db_hc.txt); do
     echo "Submitting HC check for $db"
-    output=`python ensembl_prodinf/hc_client.py -u $ENDPOINT -d "${SERVER}${db}" -p "${PRODUCTION}ensembl_production_${RELEASE}" -s $STAGING -l $LIVE -c "${COMPARA}ensembl_compara_master" -g $GROUP -dfp $DATA_FILE_PATH  -a submit` || {
+    output=`python ensembl_prodinf/hc_client.py -u $ENDPOINT -d "${SERVER}${db}" -p "${PRODUCTION}ensembl_production_${RELEASE}" -s $STAGING -l $LIVE -c "${COMPARA_MASTER}ensembl_compara_master" -g $GROUP -dfp $DATA_FILE_PATH  -a submit` || {
           echo "Cannot submit $db" 1>&2
           exit 2
     }
@@ -58,17 +58,21 @@ To Submit the job via the REST enpoint
 Check job status
 #####
 
-You can check job status either on the production interface: `http://ens-prod-1.ebi.ac.uk:8000/#!/hc_list`
+You can check job status either on the production interface: `http://ens-prod-1.ebi.ac.uk:8000/#!/hc_list` or `http://eg-prod-01.ebi.ac.uk:7000/#!/hc_list` for EG
 
 or using the Python REST API:
 
-  ensembl_prodinf/db_copy_client.py -a list -u http://ens-prod-1:8000/hc/
+  ensembl_prodinf/db_copy_client.py -a list -u http://ens-prod-1.ebi.ac.uk:8000/hc/
+  
+  or for EG:
+   
+  ensembl_prodinf/db_copy_client.py -a list -u http://eg-prod-01.ebi.ac.uk:7000/hc/
 
 Collate results
 #####
 If you have run the healthchecks on a large number of databases, you can collate all the results in one file:
 ::
-  python ensembl-prodinf-core/ensembl_prodinf/hc_client.py -u http://ens-prod-1:8000/hc/ -a collate -r ".*core_38_91.*" -o results.json
+  python ensembl-prodinf-core/ensembl_prodinf/hc_client.py -u http://ens-prod-1.ebi.ac.uk:8000/hc/ -a collate -r ".*core_38_91.*" -o results.json
 
 Convert results in readable form
 #####
