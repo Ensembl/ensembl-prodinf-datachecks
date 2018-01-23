@@ -36,9 +36,9 @@ Submit the jobs using Python REST hc endpoint:
 To Submit the job via the REST enpoint
 ::
 
-  SERVER=$(mysql-ens-vertannot-staging details url)
+  SERVER=$(mysql-ens-vertannot-staging details url) #e.g: mysql://ensro@mysql-ens-vertannot-staging:4573/
   GROUP=CoreHandover
-  COMPARA=$(mysql-ens-compara-prod-1 details url)
+  COMPARA_MASTER=$(mysql-ens-compara-prod-1 details url)
   LIVE=$(mysql-ensembl-mirror details url)
   STAGING=$(mysql-ens-sta-1 details url)
   PRODUCTION=$(mysql-ens-sta-1 details url)
@@ -49,7 +49,7 @@ To Submit the job via the REST enpoint
   cd $BASE_DIR/ensembl-prodinf-core 
   for db in $(cat db_hc.txt); do
     echo "Submitting HC check for $db"
-    output=`python ensembl_prodinf/hc_client.py -u $ENDPOINT -d "${SERVER}${db}" -p "${PRODUCTION}ensembl_production_${RELEASE}" -s $STAGING -l $LIVE -c "${COMPARA}ensembl_compara_master" -g $GROUP -dfp $DATA_FILE_PATH  -a submit` || {
+    output=`python ensembl_prodinf/hc_client.py -u $ENDPOINT -d "${SERVER}${db}" -p "${PRODUCTION}ensembl_production_${RELEASE}" -s $STAGING -l $LIVE -c "${COMPARA_MASTER}ensembl_compara_master" -g $GROUP -dfp $DATA_FILE_PATH  -a submit` || {
           echo "Cannot submit $db" 1>&2
           exit 2
     }
