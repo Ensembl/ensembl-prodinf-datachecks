@@ -90,9 +90,9 @@ The database status endpoint relies on certificate-based SSH to other machines, 
 
 In addition, the file specified in `SERVER_URIS` must also be available. Again, this can be provided with an additional volume using the `--mount` argument.
 
-To run your Docker image against a specified hive, exposing the REST service on port 4001 e.g.:
+To run your Docker image against a specified hive, exposing the REST service on port 4002 e.g.:
 ```
-docker run -p 127.0.0.1:4001:8000 \
+docker run -p 127.0.0.1:4002:4002 \
        --mount type=bind,src=$PWD/ssh_keys/,target=/ssh_keys/ \
        --mount type=bind,src=$PWD/server_uris/,target=/server_uris \
        --env HIVE_URI='mysql://user:pwd@localhost:3306/my_hive_db' \

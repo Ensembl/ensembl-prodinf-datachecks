@@ -6,5 +6,5 @@ RUN pip install -r requirements.txt && \
 	chmod -R 700 /root/.ssh && \
 	mkdir /instance && \
  	touch /instance/db_config.py
-EXPOSE 8000
-ENTRYPOINT ["/usr/local/bin/gunicorn", "--config", "/gunicorn.conf", "-b", ":8000", "db_app:app"]
+EXPOSE 4002
+ENTRYPOINT ["/usr/local/bin/gunicorn", "--config", "/gunicorn.conf", "-b", ":4002", "db_app:app"]
