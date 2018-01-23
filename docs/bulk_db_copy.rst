@@ -37,12 +37,12 @@ To Submit the job via the REST enpoint
 ::
   SOURCE_SERVER=$(mysql-ens-vertannot-staging details url) #e.g: mysql://ensro@mysql-ens-vertannot-staging:4573/
   TARGET_SERVER=$(mysql-ens-sta-1-ensadmin details url)
-  SERVER_URL=http://ens-prod-1.ebi.ac.uk:8000/dbcopy/ #or http://eg-prod-01.ebi.ac.uk:7000/dbcopy/ for EG
+  ENDPOINT=http://ens-prod-1.ebi.ac.uk:8000/dbcopy/ #or http://eg-prod-01.ebi.ac.uk:7000/dbcopy/ for EG
   EMAIL=john.doe@ebi.ac.uk
 
   cd $BASE_DIR/ensembl-prodinf-core 
   for db in $(cat db_to_copy.txt); 
-  do ensembl_prodinf/db_copy_client.py -a submit -u ${SERVER_URL} -s "${SOURCE_SERVER}${db}" -t "${TARGET_SERVER}${db}" -d 1 -e $EMAIL;
+  do ensembl_prodinf/db_copy_client.py -a submit -u ${ENDPOINT} -s "${SOURCE_SERVER}${db}" -t "${TARGET_SERVER}${db}" -d 1 -e $EMAIL;
   done
 
 Check job status
