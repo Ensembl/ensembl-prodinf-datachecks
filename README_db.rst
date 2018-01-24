@@ -19,7 +19,7 @@ SRV=your_mysql_command_wrapper from where your hive will be running.
 init_pipeline.pl Bio::EnsEMBL::Production::Pipeline::PipeConfig::CopyDatabase_conf $($SRV details hive)
 ```
 
-Next, run the `beekeeper.pl` supplied by the output with the arguments `--keep_alive -sleep 0.2`. This ensures the hive runs continually, picking up new jobs as they are submitted.
+Next, run the `beekeeper.pl` supplied by the output with the arguments `--keep_alive -sleep 0.5`. This ensures the hive runs continually, picking up new jobs as they are submitted.
 
 Configuration
 =============
