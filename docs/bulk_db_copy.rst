@@ -36,7 +36,7 @@ Submit the jobs using Python REST db copy endpoint:
 To Submit the job via the REST enpoint
 ::
   SOURCE_SERVER=$(mysql-ens-vertannot-staging details url) #e.g: mysql://ensro@mysql-ens-vertannot-staging:4573/
-  TARGET_SERVER=$(mysql-ens-sta-1-ensadmin details url)
+  TARGET_SERVER=$(mysql-ens-general-prod-1-ensadmin details url)
   ENDPOINT=http://ens-prod-1.ebi.ac.uk:8000/dbcopy/ #or http://eg-prod-01.ebi.ac.uk:7000/dbcopy/ for EG
   EMAIL=john.doe@ebi.ac.uk
 
