@@ -65,6 +65,50 @@ To run multiple hcs, you need to list each healthchecks name with a space betwee
 You can also run individual healthchecks and healthcheck groups at the same time, e.g:
   --hc_groups CoreXrefs --hc_names CoreForeignKeys
 
+Script usage:
+#####
+
+The script accept the following arguments:
+::
+    usage: hc_client.py [-h] -u URI -a {submit,retrieve,list,delete,collate}
+                        [-i JOB_ID] [-v] [-o OUTPUT_FILE] [-d DB_URI]
+                        [-p PRODUCTION_URI] [-c COMPARA_URI] [-s STAGING_URI]
+                        [-l LIVE_URI] [-dfp DATA_FILES_PATH]
+                        [-n [HC_NAMES [HC_NAMES ...]]]
+                        [-g [HC_GROUPS [HC_GROUPS ...]]] [-r DB_PATTERN] [-f]
+
+    Run HCs via a REST service
+
+    optional arguments:
+      -h, --help            show this help message and exit
+      -u URI, --uri URI     HC REST service URI
+      -a {submit,retrieve,list,delete,collate}, --action {submit,retrieve,list,delete,collate}
+                            Action to take
+      -i JOB_ID, --job_id JOB_ID
+                            HC job identifier to retrieve
+      -v, --verbose         Verbose output
+      -o OUTPUT_FILE, --output_file OUTPUT_FILE
+                            File to write output as JSON
+      -d DB_URI, --db_uri DB_URI
+                            URI of database to test
+      -p PRODUCTION_URI, --production_uri PRODUCTION_URI
+                            URI of production database
+      -c COMPARA_URI, --compara_uri COMPARA_URI
+                            URI of compara master database
+      -s STAGING_URI, --staging_uri STAGING_URI
+                            URI of current staging server
+      -l LIVE_URI, --live_uri LIVE_URI
+                            URI of live server for comparison
+      -dfp DATA_FILES_PATH, --data_files_path DATA_FILES_PATH
+                            Data files path
+      -n [HC_NAMES [HC_NAMES ...]], --hc_names [HC_NAMES [HC_NAMES ...]]
+                            List of healthcheck names to run
+      -g [HC_GROUPS [HC_GROUPS ...]], --hc_groups [HC_GROUPS [HC_GROUPS ...]]
+                            List of healthcheck groups to run
+      -r DB_PATTERN, --db_pattern DB_PATTERN
+                            Pattern of DB URIs to restrict by
+      -f, --failure_only    Show failures only
+
 Check job status
 #####
 
