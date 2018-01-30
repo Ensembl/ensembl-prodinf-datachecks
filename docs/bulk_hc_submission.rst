@@ -11,7 +11,7 @@ This method is really useful for running healthchecks on a large number of datab
 Create file with list of databases to healthcheck
 ############
 
-Create file with list of databases to copy, e.g: db_hc.txt
+Create file with list of databases to healthcheck, e.g: db_hc.txt
 ::
   cavia_porcellus_funcgen_91_4
   homo_sapiens_funcgen_91_38
@@ -49,11 +49,21 @@ To Submit the job via the REST enpoint
   cd $BASE_DIR/ensembl-prodinf-core 
   for db in $(cat db_hc.txt); do
     echo "Submitting HC check for $db"
-    output=`python ensembl_prodinf/hc_client.py -u $ENDPOINT -d "${SERVER}${db}" -p "${PRODUCTION}ensembl_production_${RELEASE}" -s $STAGING -l $LIVE -c "${COMPARA_MASTER}ensembl_compara_master" -g $GROUP -dfp $DATA_FILE_PATH  -a submit` || {
+    output=`python ensembl_prodinf/hc_client.py --uri $ENDPOINT --db_uri "${SERVER}${db}" --production_uri "${PRODUCTION}ensembl_production_${RELEASE}" --staging_uri $STAGING --live_uri $LIVE --compara_uri "${COMPARA_MASTER}ensembl_compara_master" --hc_groups $GROUP --data_files_path $DATA_FILE_PATH  --action submit` || {
           echo "Cannot submit $db" 1>&2
           exit 2
     }
   done
+  
+To run multiple hcs and groups
+#####
+
+To run multiple hcs, you need to list each healthchecks name with a space between each name, e.g:
+::
+  --hc_names CoreForeignKeys AutoIncrement
+
+You can also run individual healthchecks and healthcheck groups at the same time, e.g:
+  --hc_groups CoreXrefs --hc_names CoreForeignKeys
 
 Check job status
 #####
@@ -62,17 +72,17 @@ You can check job status either on the production interface: `http://ens-prod-1.
 
 or using the Python REST API:
 
-  ensembl_prodinf/db_copy_client.py -a list -u http://ens-prod-1.ebi.ac.uk:8000/hc/
+  ensembl_prodinf/db_copy_client.py --action list --uri http://ens-prod-1.ebi.ac.uk:8000/hc/
   
   or for EG:
    
-  ensembl_prodinf/db_copy_client.py -a list -u http://eg-prod-01.ebi.ac.uk:7000/hc/
+  ensembl_prodinf/db_copy_client.py --action list --uri http://eg-prod-01.ebi.ac.uk:7000/hc/
 
 Collate results
 #####
 If you have run the healthchecks on a large number of databases, you can collate all the results in one file:
 ::
-  python ensembl-prodinf-core/ensembl_prodinf/hc_client.py -u http://ens-prod-1.ebi.ac.uk:8000/hc/ -a collate -r ".*core_38_91.*" -o results.json
+  python ensembl-prodinf-core/ensembl_prodinf/hc_client.py --uri http://ens-prod-1.ebi.ac.uk:8000/hc/ --action collate --db_pattern ".*core_38_91.*" --output_file results.json
 
 Convert results in readable form
 #####
