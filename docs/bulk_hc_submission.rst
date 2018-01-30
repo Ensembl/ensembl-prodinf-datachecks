@@ -63,6 +63,7 @@ To run multiple hcs, you need to list each healthchecks name with a space betwee
   --hc_names CoreForeignKeys AutoIncrement
 
 You can also run individual healthchecks and healthcheck groups at the same time, e.g:
+::
   --hc_groups CoreXrefs --hc_names CoreForeignKeys
 
 Script usage:
