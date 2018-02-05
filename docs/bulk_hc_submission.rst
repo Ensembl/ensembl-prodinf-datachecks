@@ -21,9 +21,18 @@ Create file with list of databases to healthcheck, e.g: db_hc.txt
 Or for all the database of a given division:
 
 1. EG:
+Please find below the list of EG divisions short names:
+::
+  Bacteria	EB
+  Protists	EPr
+  Fungi	    EF
+  Metazoa	  EM
+  Plants	  EPl
+  Pan	      EG
+To get the list of databases for Fungi:
 ::
   RELEASE=38
-  ./ensembl-production/scripts/process_division.sh EM mysql-eg-pan-prod ensembl_production $RELEASE > fungi_db_hc.txt
+  ./ensembl-production/scripts/process_division.sh EF mysql-eg-pan-prod ensembl_production $RELEASE > fungi_db_hc.txt
 
 2. Ensembl:
 ::
@@ -32,6 +41,11 @@ Or for all the database of a given division:
 
 Submit the jobs using Python REST hc endpoint:
 #####
+
+Clone the ensembl-prodinf-core repo:
+::
+  git clone https://github.com/Ensembl/ensembl-prodinf-core
+  cd ensembl-prodinf-core
 
 To Submit the job via the REST enpoint
 ::
@@ -117,11 +131,11 @@ You can check job status either on the production interface: `http://ens-prod-1.
 
 or using the Python REST API:
 
-  ensembl_prodinf/db_copy_client.py --action list --uri http://ens-prod-1.ebi.ac.uk:8000/hc/
+  ensembl_prodinf/db_copy_client.py --action list --uri http://ens-prod-1.ebi.ac.uk:8001
   
   or for EG:
    
-  ensembl_prodinf/db_copy_client.py --action list --uri http://eg-prod-01.ebi.ac.uk:7000/hc/
+  ensembl_prodinf/db_copy_client.py --action list --uri http://eg-prod-01.ebi.ac.uk:7001
 
 Collate results
 #####
