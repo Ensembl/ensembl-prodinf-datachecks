@@ -101,7 +101,7 @@ The script accept the following arguments:
 Check job status
 #####
 
-You can check job status either on the production interface: `http://ens-prod-1.ebi.ac.uk:8000/#!/copylist` or `http://eg-prod-01.ebi.ac.uk:7000/#!/copylist` for EG
+You can check job status either on the production interface: `http://ens-prod-1.ebi.ac.uk:8000/#!/copy_list` or `http://eg-prod-01.ebi.ac.uk:7000/#!/copy_list` for EG
 
 or using the Python REST API:
 
