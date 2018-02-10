@@ -11,7 +11,7 @@ This method is really useful for running healthchecks on a large number of datab
 Create file with list of databases to healthcheck
 ############
 
-Create file with list of databases to copy, e.g: db_hc.txt
+Create file with list of databases to healthcheck, e.g: db_hc.txt
 ::
   cavia_porcellus_funcgen_91_4
   homo_sapiens_funcgen_91_38
@@ -21,9 +21,18 @@ Create file with list of databases to copy, e.g: db_hc.txt
 Or for all the database of a given division:
 
 1. EG:
+Please find below the list of EG divisions short names:
+::
+  Bacteria	EB
+  Protists	EPr
+  Fungi	    EF
+  Metazoa	  EM
+  Plants	  EPl
+  Pan	      EG
+To get the list of databases for Fungi:
 ::
   RELEASE=38
-  ./ensembl-production/scripts/process_division.sh EM mysql-eg-pan-prod ensembl_production $RELEASE > fungi_db_hc.txt
+  ./ensembl-production/scripts/process_division.sh EF mysql-eg-pan-prod ensembl_production $RELEASE > fungi_db_hc.txt
 
 2. Ensembl:
 ::
@@ -32,6 +41,11 @@ Or for all the database of a given division:
 
 Submit the jobs using Python REST hc endpoint:
 #####
+
+Clone the ensembl-prodinf-core repo:
+::
+  git clone https://github.com/Ensembl/ensembl-prodinf-core
+  cd ensembl-prodinf-core
 
 To Submit the job via the REST enpoint
 ::
@@ -49,11 +63,66 @@ To Submit the job via the REST enpoint
   cd $BASE_DIR/ensembl-prodinf-core 
   for db in $(cat db_hc.txt); do
     echo "Submitting HC check for $db"
-    output=`python ensembl_prodinf/hc_client.py -u $ENDPOINT -d "${SERVER}${db}" -p "${PRODUCTION}ensembl_production_${RELEASE}" -s $STAGING -l $LIVE -c "${COMPARA_MASTER}ensembl_compara_master" -g $GROUP -dfp $DATA_FILE_PATH  -a submit` || {
+    output=`python ensembl_prodinf/hc_client.py --uri $ENDPOINT --db_uri "${SERVER}${db}" --production_uri "${PRODUCTION}ensembl_production_${RELEASE}" --staging_uri $STAGING --live_uri $LIVE --compara_uri "${COMPARA_MASTER}ensembl_compara_master" --hc_groups $GROUP --data_files_path $DATA_FILE_PATH  --action submit` || {
           echo "Cannot submit $db" 1>&2
           exit 2
     }
   done
+  
+To run multiple hcs and groups
+#####
+
+To run multiple hcs, you need to list each healthchecks name with a space between each name, e.g:
+::
+  --hc_names CoreForeignKeys AutoIncrement
+
+You can also run individual healthchecks and healthcheck groups at the same time, e.g:
+::
+  --hc_groups CoreXrefs --hc_names CoreForeignKeys
+
+Script usage:
+#####
+
+The script accept the following arguments:
+::
+    usage: hc_client.py [-h] -u URI -a {submit,retrieve,list,delete,collate}
+                        [-i JOB_ID] [-v] [-o OUTPUT_FILE] [-d DB_URI]
+                        [-p PRODUCTION_URI] [-c COMPARA_URI] [-s STAGING_URI]
+                        [-l LIVE_URI] [-dfp DATA_FILES_PATH]
+                        [-n [HC_NAMES [HC_NAMES ...]]]
+                        [-g [HC_GROUPS [HC_GROUPS ...]]] [-r DB_PATTERN] [-f]
+
+    Run HCs via a REST service
+
+    optional arguments:
+      -h, --help            show this help message and exit
+      -u URI, --uri URI     HC REST service URI
+      -a {submit,retrieve,list,delete,collate}, --action {submit,retrieve,list,delete,collate}
+                            Action to take
+      -i JOB_ID, --job_id JOB_ID
+                            HC job identifier to retrieve
+      -v, --verbose         Verbose output
+      -o OUTPUT_FILE, --output_file OUTPUT_FILE
+                            File to write output as JSON
+      -d DB_URI, --db_uri DB_URI
+                            URI of database to test
+      -p PRODUCTION_URI, --production_uri PRODUCTION_URI
+                            URI of production database
+      -c COMPARA_URI, --compara_uri COMPARA_URI
+                            URI of compara master database
+      -s STAGING_URI, --staging_uri STAGING_URI
+                            URI of current staging server
+      -l LIVE_URI, --live_uri LIVE_URI
+                            URI of live server for comparison
+      -dfp DATA_FILES_PATH, --data_files_path DATA_FILES_PATH
+                            Data files path
+      -n [HC_NAMES [HC_NAMES ...]], --hc_names [HC_NAMES [HC_NAMES ...]]
+                            List of healthcheck names to run
+      -g [HC_GROUPS [HC_GROUPS ...]], --hc_groups [HC_GROUPS [HC_GROUPS ...]]
+                            List of healthcheck groups to run
+      -r DB_PATTERN, --db_pattern DB_PATTERN
+                            Pattern of DB URIs to restrict by
+      -f, --failure_only    Show failures only
 
 Check job status
 #####
@@ -62,17 +131,17 @@ You can check job status either on the production interface: `http://ens-prod-1.
 
 or using the Python REST API:
 
-  ensembl_prodinf/db_copy_client.py -a list -u http://ens-prod-1.ebi.ac.uk:8000/hc/
+  ensembl_prodinf/db_copy_client.py --action list --uri http://ens-prod-1.ebi.ac.uk:8001
   
   or for EG:
    
-  ensembl_prodinf/db_copy_client.py -a list -u http://eg-prod-01.ebi.ac.uk:7000/hc/
+  ensembl_prodinf/db_copy_client.py --action list --uri http://eg-prod-01.ebi.ac.uk:7001
 
 Collate results
 #####
 If you have run the healthchecks on a large number of databases, you can collate all the results in one file:
 ::
-  python ensembl-prodinf-core/ensembl_prodinf/hc_client.py -u http://ens-prod-1.ebi.ac.uk:8000/hc/ -a collate -r ".*core_38_91.*" -o results.json
+  python ensembl-prodinf-core/ensembl_prodinf/hc_client.py --uri http://ens-prod-1.ebi.ac.uk:8000/hc/ --action collate --db_pattern ".*core_38_91.*" --output_file results.json
 
 Convert results in readable form
 #####

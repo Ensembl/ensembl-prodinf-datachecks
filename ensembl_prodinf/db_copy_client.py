@@ -145,9 +145,9 @@ def print_inputs(i):
 
 if __name__ == '__main__':
             
-    parser = argparse.ArgumentParser(description='Copy HCs via a REST service')
+    parser = argparse.ArgumentParser(description='Copy Databases via a REST service')
 
-    parser.add_argument('-u', '--uri', help='REST service URI', required=True)
+    parser.add_argument('-u', '--uri', help='Copy database REST service URI', required=True)
     parser.add_argument('-a', '--action', help='Action to take', choices=['submit', 'retrieve', 'list', 'delete', 'email', 'kill_job'], required=True)
     parser.add_argument('-i', '--job_id', help='HC job identifier to retrieve')
     parser.add_argument('-v', '--verbose', help='Verbose output', action='store_true')
