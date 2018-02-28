@@ -12,7 +12,7 @@ def write_output(r, output_file):
         with output_file as f:
             f.write(r.text)  
     
-def submit_job(uri, db_uri, production_uri, compara_uri, staging_uri, live_uri, hc_names, hc_groups, data_files_path):
+def submit_job(uri, db_uri, production_uri, compara_uri, staging_uri, live_uri, hc_names, hc_groups, data_files_path, email):
     uri_regex = r"^(mysql://){1}(.+){1}(:.+){0,1}(@){1}(.+){1}(:){1}(\d+){1}(/){1}$"
     db_uri_regex = r"^(mysql://){1}(.+){1}(:.+){0,1}(@){1}(.+){1}(:){1}(\d+){1}(/){1}(.+){1}$"
     http_uri_regex = r"^(http){1}(s){0,1}(://){1}(.+){1}(:){1}(\d+){1}(/){1}(.+){0,1}$"
@@ -37,7 +37,8 @@ def submit_job(uri, db_uri, production_uri, compara_uri, staging_uri, live_uri, 
         'live_uri':live_uri,
         'hc_names':hc_names,
         'hc_groups':hc_groups,
-        'data_files_path':data_files_path
+        'data_files_path':data_files_path,
+        'email':email,
         }
     logging.debug(payload)
     r = requests.post(uri+'submit', json=payload)
@@ -151,6 +152,8 @@ def print_inputs(i):
     if 'hc_groups' in i:
         for hc in i['hc_groups']:
             logging.info("HC: " + hc)
+    if 'email' in i:
+      logging.info("Email: " + i['email'])
 
 if __name__ == '__main__':
             
@@ -171,6 +174,7 @@ if __name__ == '__main__':
     parser.add_argument('-g', '--hc_groups', help='List of healthcheck groups to run', nargs='*')
     parser.add_argument('-r', '--db_pattern', help='Pattern of DB URIs to restrict by')
     parser.add_argument('-f', '--failure_only', help='Show failures only', action='store_true')
+    parser.add_argument('-e', '--email', help='User email')
 
     args = parser.parse_args()
     
@@ -183,7 +187,7 @@ if __name__ == '__main__':
         args.uri = args.uri + '/'    
             
     if args.action == 'submit':
-        id = submit_job(args.uri, args.db_uri, args.production_uri, args.compara_uri, args.staging_uri, args.live_uri, args.hc_names, args.hc_groups, args.data_files_path)
+        id = submit_job(args.uri, args.db_uri, args.production_uri, args.compara_uri, args.staging_uri, args.live_uri, args.hc_names, args.hc_groups, args.data_files_path, args.email)
         logging.info('Job submitted with ID '+str(id))
     
     elif args.action == 'retrieve':

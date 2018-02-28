@@ -10,7 +10,7 @@ def write_output(r, output_file):
         with output_file as f:
             f.write(r.text)  
     
-def submit_job(uri, metadata_uri, database_uri, e_release, eg_release, release_date, current_release):
+def submit_job(uri, metadata_uri, database_uri, e_release, eg_release, release_date, current_release, email):
     db_uri_regex = r"^(mysql://){1}(.+){1}(:.+){0,1}(@){1}(.+){1}(:){1}(\d+){1}(/){1}(.+){1}$"
     http_uri_regex = r"^(http){1}(s){0,1}(://){1}(.+){1}(:){1}(\d+){1}(/){1}(.+){0,1}$"
     if not re.search(http_uri_regex, uri):
@@ -27,6 +27,7 @@ def submit_job(uri, metadata_uri, database_uri, e_release, eg_release, release_d
         'eg_release':eg_release,
         'release_date':release_date,
         'current_release':current_release,
+        'email':email,
         }
     logging.debug(payload)
     r = requests.post(uri+'submit', json=payload)
@@ -122,6 +123,8 @@ def print_inputs(i):
     logging.info("Is it the current release: " + i['current_release'])
     if 'eg_release' in i:
       logging.info("EG release number: " + i['eg_release'])
+    if 'email' in i:
+      logging.info("email: " + i['email'])
 
 if __name__ == '__main__':
             
@@ -156,13 +159,13 @@ if __name__ == '__main__':
 
         if args.input_file == None:
             logging.info("Submitting " + args.database_uri + "->" + args.metadata_uri)
-            id = submit_job(args.uri, args.metadata_uri, args.database_uri, args.e_release, args.eg_release, args.release_date, args.current_release)
+            id = submit_job(args.uri, args.metadata_uri, args.database_uri, args.e_release, args.eg_release, args.release_date, args.current_release, args.email)
             logging.info('Job submitted with ID '+str(id))
         else:
             for line in args.input_file:
                 uris = line.split()
                 logging.info("Submitting " + uris[0] + "->" + uris[1])
-                id = submit_job(args.uri, uris[0], uris[1], args.e_release, args.eg_release, args.release_date, args.current_release)
+                id = submit_job(args.uri, uris[0], uris[1], args.e_release, args.eg_release, args.release_date, args.current_release, args.email)
                 logging.info('Job submitted with ID '+str(id))
     
     elif args.action == 'retrieve':

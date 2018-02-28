@@ -10,7 +10,7 @@ def write_output(r, output_file):
         with output_file as f:
             f.write(r.text)  
     
-def submit_job(uri, source_db_uri, target_db_uri, only_tables, skip_tables, update, drop):
+def submit_job(uri, source_db_uri, target_db_uri, only_tables, skip_tables, update, drop, email):
     db_uri_regex = r"^(mysql://){1}(.+){1}(:.+){0,1}(@){1}(.+){1}(:){1}(\d+){1}(/){1}(.+){1}$"
     http_uri_regex = r"^(http){1}(s){0,1}(://){1}(.+){1}(:){1}(\d+){1}(/){1}(.+){0,1}$"
     if not re.search(http_uri_regex, uri):
@@ -33,6 +33,7 @@ def submit_job(uri, source_db_uri, target_db_uri, only_tables, skip_tables, upda
         'skip_tables':skip_tables,
         'update':update,
         'drop':drop,
+        'email':email
         }
     logging.debug(payload)
     r = requests.post(uri+'submit', json=payload)
@@ -136,12 +137,14 @@ def print_inputs(i):
     logging.info("Target URI: " + i['target_db_uri'])
     if 'only_tables' in i:
       logging.info("List of tables to copy: " + i['only_tables'])
-    elif 'skip_tables' in i:
+    if 'skip_tables' in i:
       logging.info("List of tables to skip: " + i['skip_tables'])
-    elif 'update' in i:
+    if 'update' in i:
       logging.info("Incremental database update using rsync checksum set to: " + i['update'])
-    elif 'drop' in i:
+    if 'drop' in i:
       logging.info("Drop database on Target server before copy set to: " + i['drop'])
+    if 'email' in i:
+      logging.info("email: " + i['email'])
 
 if __name__ == '__main__':
             
@@ -176,13 +179,13 @@ if __name__ == '__main__':
 
         if args.input_file == None:
             logging.info("Submitting " + args.source_db_uri + "->" + args.target_db_uri)
-            id = submit_job(args.uri, args.source_db_uri, args.target_db_uri, args.only_tables, args.skip_tables, args.update, args.drop)
+            id = submit_job(args.uri, args.source_db_uri, args.target_db_uri, args.only_tables, args.skip_tables, args.update, args.drop, args.email)
             logging.info('Job submitted with ID '+str(id))
         else:
             for line in args.input_file:
                 uris = line.split()
                 logging.info("Submitting " + uris[0] + "->" + uris[1])
-                id = submit_job(args.uri, uris[0], uris[1], args.only_tables, args.skip_tables, args.update, args.drop)
+                id = submit_job(args.uri, uris[0], uris[1], args.only_tables, args.skip_tables, args.update, args.drop, args.email)
                 logging.info('Job submitted with ID '+str(id))
     
     elif args.action == 'retrieve':
