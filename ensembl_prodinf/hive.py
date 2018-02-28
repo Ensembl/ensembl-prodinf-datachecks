@@ -5,6 +5,7 @@ from .utils import dict_to_perl_string, perl_string_to_python
 
 import time
 import json
+import re
 
 Base = declarative_base()
 
@@ -18,6 +19,17 @@ class Analysis(Base):
     def __repr__(self):
         return "<Analysis(analysis_id='%s', logic_name='%s')>" % (
             self.analysis_id, self.logic_name)
+
+class AnalysisData(Base):
+
+    __tablename__ = 'analysis_data'
+
+    analysis_data_id = Column(Integer, primary_key=True)
+    data = Column(String)
+
+    def __repr__(self):
+        return "<AnalysisData(analysis_data_id='%s', data='%s')>" % (
+            self.analysis_data_id, self.data)
 
 class Result(Base):
 
@@ -207,6 +219,16 @@ class HiveInstance:
         finally:
             s.close()
 
+    def get_analysis_data_input(self, analysis_data_id):
+
+        """ Get the job input stored in the analysis_data table """
+        s = Session()
+        try:
+            input_job = s.query(AnalysisData).filter(AnalysisData.analysis_data_id == analysis_data_id).first()
+            return input_job
+        finally:
+            s.close()
+
     def get_result_for_job_id(self, id):
 
         job = self.get_job_by_id(id)
@@ -218,7 +240,13 @@ class HiveInstance:
         """ Determine if the job has completed. If the job has semaphored children, they are also checked """
         """ Also return progress of jobs, completed and total """
         result = {"id":job.job_id}
-        result['input'] = perl_string_to_python(job.input_id)
+
+        if re.search(r"^(_extended_data_id){1}(\s){1}(\d+){1}", job.input_id):
+            extended_data = job.input_id.split(" ")
+            job_input = self.get_analysis_data_input(extended_data[1])
+            result['input'] = perl_string_to_python(job_input.data)
+        else:
+            result['input'] = perl_string_to_python(job.input_id)
         if job.status == 'DONE' and job.result!=None:
             result['status'] = 'complete'
             result['output'] = job.result.output_dict()
@@ -281,6 +309,15 @@ class HiveInstance:
             else:
                 return 'incomplete'
 
+    def get_job_children(self, job):
+
+        """ Get children job id of a given parent job_id """
+        s = Session()
+        try:
+            child_job = s.query(Job).filter(Job.prev_job_id == job.job_id).first()
+            return child_job
+        finally:
+            s.close()
 
     def get_semaphored_jobs(self,job,status=None):
 
@@ -321,6 +358,16 @@ class HiveInstance:
         try:
             jobs = s.query(Job).join(Analysis).filter(Analysis.logic_name == analysis_name).all()
             return list(map(lambda job: self.get_result_for_job(job), jobs))
+        finally:
+            s.close()
+
+    def get_all_results_children(self, analysis_name):
+
+        """Find all children jobs from the specified analysis"""
+        s = Session()
+        try:
+            jobs = s.query(Job).join(Analysis).filter(Analysis.logic_name == analysis_name).all()
+            return list(map(lambda job: self.get_result_for_job(self.get_job_children(job)), jobs))
         finally:
             s.close()
         
