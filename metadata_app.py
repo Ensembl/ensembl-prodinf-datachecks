@@ -458,7 +458,7 @@ def jobs():
           status: failed
     """
     logging.info("Retrieving jobs")
-    return jsonify(get_hive().get_all_results(app.analysis))
+    return jsonify(get_hive().get_all_results_children(app.analysis))
 
 if __name__ == "__main__":
     app.run(debug=True)
