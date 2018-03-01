@@ -50,10 +50,11 @@ For Ensembl:
   ENS_VERSION=91
   RELEASE_DATE="2017-12-06"
   CURRENT_RELEASE=1
+  EMAIL=john.doe@ebi.ac.uk
 
   cd $BASE_DIR/ensembl-prodinf-core 
   for db in $(cat metadata_load.txt); 
-  do ensembl_prodinf/metadata_client.py --action submit --uri ${ENDPOINT} --metadata_uri "${METADATA_SERVER}${METADATA}" --database_uri "${DATABASE_SERVER}${db}" --e_release ${ENS_VERSION} --release_date ${RELEASE_DATE} --current_release ${CURRENT_RELEASE};
+  do ensembl_prodinf/metadata_client.py --action submit --uri ${ENDPOINT} --metadata_uri "${METADATA_SERVER}${METADATA}" --database_uri "${DATABASE_SERVER}${db}" --e_release ${ENS_VERSION} --release_date ${RELEASE_DATE} --current_release ${CURRENT_RELEASE} --email ${EMAIL};
   done
 
 For EG:
@@ -66,10 +67,11 @@ For EG:
   RELEASE_DATE="2017-12-13"
   EG_VERSION=38
   CURRENT_RELEASE=1
+  EMAIL=john.doe@ebi.ac.uk
 
   cd $BASE_DIR/ensembl-prodinf-core 
   for db in $(cat eg_metadata_load.txt); 
-  do ensembl_prodinf/metadata_client.py --action submit --uri ${ENDPOINT} --metadata_uri "${METADATA_SERVER}${METADATA}" --database_uri "${DATABASE_SERVER}${db}" --e_release ${ENS_VERSION} --release_date ${RELEASE_DATE} --current_release ${CURRENT_RELEASE} --eg_release ${EG_VERSION};
+  do ensembl_prodinf/metadata_client.py --action submit --uri ${ENDPOINT} --metadata_uri "${METADATA_SERVER}${METADATA}" --database_uri "${DATABASE_SERVER}${db}" --e_release ${ENS_VERSION} --release_date ${RELEASE_DATE} --current_release ${CURRENT_RELEASE} --eg_release ${EG_VERSION} --email ${EMAIL};
   done
 
 
