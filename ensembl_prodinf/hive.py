@@ -169,12 +169,22 @@ class HiveInstance:
 
     def get_job_failure_msg_by_id(self, id):
 
-        """ Retrieve a job failure message """
+        """ Retrieve a job failure message or job child if exist"""
         s = Session()
-        try:
-            return s.query(LogMessage).filter(LogMessage.job_id == id).order_by(LogMessage.log_message_id.desc()).first()
-        finally:
-            s.close()
+        job = self.get_job_by_id(id)
+        if job == None:
+            raise ValueError("Job %s not found" % id)
+        children_job = self.get_job_children(job)
+        if children_job != None:
+            try:
+                return s.query(LogMessage).filter(LogMessage.job_id == children_job.job_id).order_by(LogMessage.log_message_id.desc()).first()
+            finally:
+                s.close()
+        else:
+            try:
+                return s.query(LogMessage).filter(LogMessage.job_id == id).order_by(LogMessage.log_message_id.desc()).first()
+            finally:
+                s.close()
 
     def get_worker_process_id(self, id):
 
@@ -221,7 +231,7 @@ class HiveInstance:
 
     def get_analysis_data_input(self, analysis_data_id):
 
-        """ Get the job input stored in the analysis_data table """
+        """ Get the job input stored in the analysis_data table. Get input from child job if exist"""
         s = Session()
         try:
             input_job = s.query(AnalysisData).filter(AnalysisData.analysis_data_id == analysis_data_id).first()
@@ -234,7 +244,11 @@ class HiveInstance:
         job = self.get_job_by_id(id)
         if job == None:
             raise ValueError("Job %s not found" % id)
-        return self.get_result_for_job(job)
+        children_job = self.get_job_children(job)
+        if children_job != None:
+            return self.get_result_for_job(children_job)
+        else:
+            return self.get_result_for_job(job)
 
     def get_result_for_job(self, job):
         """ Determine if the job has completed. If the job has semaphored children, they are also checked """
@@ -319,6 +333,16 @@ class HiveInstance:
         finally:
             s.close()
 
+    def get_job_parent(self, job):
+
+        """ Get parent job id of a given children job_id """
+        s = Session()
+        try:
+            parent_job = s.query(Job).filter(Job.job_id == job.prev_job_id).first()
+            return parent_job
+        finally:
+            s.close()
+
     def get_semaphored_jobs(self,job,status=None):
 
         """ Find all jobs that are semaphored children of the nominated job, optionall filtering by status 
@@ -363,25 +387,54 @@ class HiveInstance:
 
     def get_all_results_children(self, analysis_name):
 
-        """Find all children jobs from the specified analysis"""
+        """Find all children jobs from the specified analysis
+           Return parent job is children job doesn't exist"""
         s = Session()
         try:
             jobs = s.query(Job).join(Analysis).filter(Analysis.logic_name == analysis_name).all()
-            return list(map(lambda job: self.get_result_for_job(self.get_job_children(job)), jobs))
+            return list(map(lambda job: self.get_result_for_job(self.get_job_children(job)) if (self.get_job_children(job) != None) else self.get_result_for_job(job), jobs))
         finally:
             s.close()
         
     def delete_job(self, job):
-        s = Session()
+        children_job=self.get_job_children(job)
+        parent_job=self.get_job_parent(job)
+        if children_job != None:
+            s = Session()
+            try:
+                print "Deleting children job "+str(children_job.job_id)
+                if(children_job.result != None):
+                    s.delete(children_job.result)
+                s.delete(children_job)
+                s.commit()
+            except:
+                s.rollback()
+                raise
+            finally:
+                s.close()
+        if parent_job != None:
+            s = Session()
+            try:
+                print "Deleting parent job "+str(parent_job.job_id)
+                if(parent_job.result != None):
+                    s.delete(parent_job.result)
+                s.delete(parent_job)
+                s.commit()
+            except:
+                s.rollback()
+                raise
+            finally:
+                s.close()
         try:
+            s = Session()
             print "Deleting job "+str(job.job_id)
             if(job.result != None):
                 s.delete(job.result)
-            s.delete(job)            
+            s.delete(job)
             s.commit()
         except:
             s.rollback()
-            raise        
+            raise
         finally:
             s.close()
         
