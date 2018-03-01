@@ -246,13 +246,13 @@ class HiveInstance:
             raise ValueError("Job %s not found" % id)
         children_job = self.get_job_children(job)
         if children_job != None:
-            return self.get_result_for_job(children_job)
+            return self.get_result_for_job(children_job, progress=True)
         else:
-            return self.get_result_for_job(job)
+            return self.get_result_for_job(job, progress=True)
 
-    def get_result_for_job(self, job):
+    def get_result_for_job(self, job, progress=False):
         """ Determine if the job has completed. If the job has semaphored children, they are also checked """
-        """ Also return progress of jobs, completed and total """
+        """ Also return progress of jobs, completed and total if flag is on """
         result = {"id":job.job_id}
 
         if re.search(r"^(_extended_data_id){1}(\s){1}(\d+){1}", job.input_id):
@@ -266,7 +266,8 @@ class HiveInstance:
             result['output'] = job.result.output_dict()
         else:
             result['status'] = self.get_job_tree_status(job)
-            result['progress'] = self.get_jobs_progress(job)
+            if progress:
+                result['progress'] = self.get_jobs_progress(job)
         return result
 
 
