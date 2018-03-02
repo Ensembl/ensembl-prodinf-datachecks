@@ -194,7 +194,7 @@ def results(job_id):
     """
     try:
         logging.info("Retrieving job with ID " + str(job_id))
-        return jsonify(get_hive().get_result_for_job_id(job_id))
+        return jsonify(get_hive().get_result_for_job_id(job_id, child=True))
     except ValueError:
         return "Job " + str(job_id) + " not found", 404
 
@@ -253,7 +253,7 @@ def failure(job_id):
     """
     try:
         logging.info("Retrieving failure for job with ID " + str(job_id))
-        failure = get_hive().get_job_failure_msg_by_id(job_id)
+        failure = get_hive().get_job_failure_msg_by_id(job_id, child=True)
         return jsonify({"msg":failure.msg})
     except ValueError:
         return "Job " + str(job_id) + " not found", 404
@@ -314,7 +314,7 @@ def delete(job_id):
     job = get_hive().get_job_by_id(job_id)
     if(job == None):
         return "Job " + str(job_id) + " not found", 404
-    hive.delete_job(job)
+    hive.delete_job(job, child=True)
     return jsonify({"id":job_id})
 
 
@@ -458,7 +458,7 @@ def jobs():
           status: failed
     """
     logging.info("Retrieving jobs")
-    return jsonify(get_hive().get_all_results_children(app.analysis))
+    return jsonify(get_hive().get_all_results(app.analysis, child=True))
 
 if __name__ == "__main__":
     app.run(debug=True)
