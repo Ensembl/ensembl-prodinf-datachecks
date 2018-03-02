@@ -167,19 +167,25 @@ class HiveInstance:
         finally:
             s.close()
 
-    def get_job_failure_msg_by_id(self, id):
+    def get_job_failure_msg_by_id(self, id, child=False):
 
-        """ Retrieve a job failure message or job child if exist"""
+        """ Retrieve a job failure message or job child if exist and if child flag turned on"""
         s = Session()
         job = self.get_job_by_id(id)
         if job == None:
             raise ValueError("Job %s not found" % id)
-        children_job = self.get_job_children(job)
-        if children_job != None:
-            try:
-                return s.query(LogMessage).filter(LogMessage.job_id == children_job.job_id).order_by(LogMessage.log_message_id.desc()).first()
-            finally:
-                s.close()
+        if child:
+            child_job = self.get_job_child(job)
+            if child_job != None:
+                try:
+                    return s.query(LogMessage).filter(LogMessage.job_id == child_job.job_id).order_by(LogMessage.log_message_id.desc()).first()
+                finally:
+                    s.close()
+            else:
+                try:
+                    return s.query(LogMessage).filter(LogMessage.job_id == id).order_by(LogMessage.log_message_id.desc()).first()
+                finally:
+                    s.close()
         else:
             try:
                 return s.query(LogMessage).filter(LogMessage.job_id == id).order_by(LogMessage.log_message_id.desc()).first()
@@ -230,7 +236,7 @@ class HiveInstance:
             s.close()
 
     def get_analysis_data_input(self, analysis_data_id):
-
+        
         """ Get the job input stored in the analysis_data table. Get input from child job if exist"""
         s = Session()
         try:
@@ -239,18 +245,24 @@ class HiveInstance:
         finally:
             s.close()
 
-    def get_result_for_job_id(self, id):
+    def get_result_for_job_id(self, id, child=False):
+        
+        """ Get result for a given job id. If child flag is turned on and job child exist, get result for child job"""
 
         job = self.get_job_by_id(id)
         if job == None:
             raise ValueError("Job %s not found" % id)
-        children_job = self.get_job_children(job)
-        if children_job != None:
-            return self.get_result_for_job(children_job, progress=True)
+        if child:
+            child_job = self.get_job_child(job)
+            if child_job != None:
+                return self.get_result_for_job(child_job, progress=True)
+            else:
+               return self.get_result_for_job(job, progress=True)
         else:
             return self.get_result_for_job(job, progress=True)
 
     def get_result_for_job(self, job, progress=False):
+        
         """ Determine if the job has completed. If the job has semaphored children, they are also checked """
         """ Also return progress of jobs, completed and total if flag is on """
         result = {"id":job.job_id}
@@ -324,9 +336,9 @@ class HiveInstance:
             else:
                 return 'incomplete'
 
-    def get_job_children(self, job):
+    def get_job_child(self, job):
 
-        """ Get children job id of a given parent job_id """
+        """ Get child job for a given parent job """
         s = Session()
         try:
             child_job = s.query(Job).filter(Job.prev_job_id == job.job_id).first()
@@ -336,7 +348,7 @@ class HiveInstance:
 
     def get_job_parent(self, job):
 
-        """ Get parent job id of a given children job_id """
+        """ Get parent job for a given children job """
         s = Session()
         try:
             parent_job = s.query(Job).filter(Job.job_id == job.prev_job_id).first()
@@ -376,43 +388,40 @@ class HiveInstance:
         finally:
             s.close()
 
-    def get_all_results(self, analysis_name):
+    def get_all_results(self, analysis_name, child=False):
 
         """Find all jobs from the specified analysis"""
         s = Session()
         try:
             jobs = s.query(Job).join(Analysis).filter(Analysis.logic_name == analysis_name).all()
-            return list(map(lambda job: self.get_result_for_job(job), jobs))
-        finally:
-            s.close()
-
-    def get_all_results_children(self, analysis_name):
-
-        """Find all children jobs from the specified analysis
-           Return parent job is children job doesn't exist"""
-        s = Session()
-        try:
-            jobs = s.query(Job).join(Analysis).filter(Analysis.logic_name == analysis_name).all()
-            return list(map(lambda job: self.get_result_for_job(self.get_job_children(job)) if (self.get_job_children(job) != None) else self.get_result_for_job(job), jobs))
+            if child:
+                return list(map(lambda job: self.get_result_for_job(self.get_job_child(job)) if (self.get_job_child(job) != None) else self.get_result_for_job(job), jobs))
+            else:
+                return list(map(lambda job: self.get_result_for_job(job), jobs))
         finally:
             s.close()
         
-    def delete_job(self, job):
-        children_job=self.get_job_children(job)
+    def delete_job(self, job, child=False):
+        
+        """Delete a job from the hive database
+           If child flag turn on, try to delete child job if exist
+           Also get parent job if exist and delete it """
         parent_job=self.get_job_parent(job)
-        if children_job != None:
-            s = Session()
-            try:
-                print "Deleting children job "+str(children_job.job_id)
-                if(children_job.result != None):
-                    s.delete(children_job.result)
-                s.delete(children_job)
-                s.commit()
-            except:
-                s.rollback()
-                raise
-            finally:
-                s.close()
+        if child:
+            child_job=self.get_job_child(job)
+            if child_job != None:
+                s = Session()
+                try:
+                    print "Deleting children job "+str(child_job.job_id)
+                    if(child_job.result != None):
+                        s.delete(child_job.result)
+                    s.delete(child_job)
+                    s.commit()
+                except:
+                    s.rollback()
+                    raise
+                finally:
+                    s.close()
         if parent_job != None:
             s = Session()
             try:
@@ -438,4 +447,3 @@ class HiveInstance:
             raise
         finally:
             s.close()
-        
