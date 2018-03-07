@@ -90,7 +90,7 @@ Please see %s
 
 
 def submit_copy(src_uri, tgt_uri):
-    return db_copy_client.submit_job(cfg.copy_uri, src_uri, tgt_uri, None, None, False, True)
+    return db_copy_client.submit_job(cfg.db_endpoint, src_uri, tgt_uri, None, None, False, True)
 
 
 @app.task(bind=True)    
