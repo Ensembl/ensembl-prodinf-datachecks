@@ -3,6 +3,10 @@ from .utils import send_email
 import json
 import urllib2
 
+smtp_server = app.conf['smtp_server']
+from_email_address = app.conf['from_email_address']
+retry_wait = app.conf['retry_wait']
+
 @app.task(bind=True)
 def email_when_complete(self, url, address):
     """ Task to check a URL and send an email once the result has a non-incomplete status 
@@ -12,8 +16,13 @@ def email_when_complete(self, url, address):
     self.max_retries = None
     result = json.load(urllib2.urlopen(url))
     if (result['status'] == 'incomplete') or (result['status'] == 'running') or (result['status'] == 'submitted'):
-        raise self.retry()
+        raise self.retry(countdown=retry_wait)
     else:
-        send_email(to_address=address, subject=result['subject'], body=result['body'])
+        send_email(smtp_server, from_email_address, address, result['subject'], result['body'])
         return result
+
+@app.task(bind=True)
+def email(self, address, subject, body):
+    send_email(smtp_server, from_email_address, address, subject, body)
+    return
 

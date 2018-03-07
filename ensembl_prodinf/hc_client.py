@@ -5,13 +5,29 @@ import requests
 import json
 import re
 from collections import defaultdict
+import sys
 
 def write_output(r, output_file):
     if(output_file != None):
         with output_file as f:
             f.write(r.text)  
     
-def submit_job(uri, db_uri, production_uri, compara_uri, staging_uri, live_uri, hc_names, hc_groups, data_files_path):
+def submit_job(uri, db_uri, production_uri, compara_uri, staging_uri, live_uri, hc_names, hc_groups, data_files_path, email):
+    uri_regex = r"^(mysql://){1}(.+){1}(:.+){0,1}(@){1}(.+){1}(:){1}(\d+){1}(/){1}$"
+    db_uri_regex = r"^(mysql://){1}(.+){1}(:.+){0,1}(@){1}(.+){1}(:){1}(\d+){1}(/){1}(.+){1}$"
+    http_uri_regex = r"^(http){1}(s){0,1}(://){1}(.+){1}(:){1}(\d+){1}(/){1}(.+){0,1}$"
+    if not re.search(http_uri_regex, uri):
+        sys.exit("HC endpoint URL don't match pattern: http://server_name:port/")
+    if not re.search(db_uri_regex, db_uri):
+        sys.exit("Database URI don't match pattern: mysql://user(:pass)@server:port/db_name")
+    if not re.search(uri_regex, staging_uri):
+        sys.exit("Staging URI don't match pattern: mysql://user(:pass)@server:port/")
+    if not re.search(uri_regex, live_uri):
+        sys.exit("Live URI don't match pattern: mysql://user(:pass)@server:port/")
+    if not re.search(db_uri_regex, production_uri):
+        sys.exit("Production URI don't match pattern: mysql://user(:pass)@server:port/prod_db_name")
+    if not re.search(db_uri_regex, compara_uri):
+        sys.exit("Compara URI don't match pattern: mysql://user(:pass)@server:port/compara_db_name")
     logging.info("Submitting job")
     payload = {
         'db_uri':db_uri,
@@ -21,7 +37,8 @@ def submit_job(uri, db_uri, production_uri, compara_uri, staging_uri, live_uri, 
         'live_uri':live_uri,
         'hc_names':hc_names,
         'hc_groups':hc_groups,
-        'data_files_path':data_files_path
+        'data_files_path':data_files_path,
+        'email':email,
         }
     logging.debug(payload)
     r = requests.post(uri+'submit', json=payload)
@@ -29,12 +46,20 @@ def submit_job(uri, db_uri, production_uri, compara_uri, staging_uri, live_uri, 
     return r.json()['job_id']
     
 def delete_job(uri, job_id):
+    uri_regex = r"^(http){1}(s){0,1}(://){1}(.+){1}(:){1}(\d+){1}(/){1}(.+){0,1}$"
+    if not re.search(uri_regex, uri):
+        sys.exit("HC endpoint URL don't match pattern: http://server_name:port/")
+    if not re.search(r"\d+", job_id):
+        sys.exit("job_id should be a number")
     logging.info("Deleting job " + str(job_id))
     r = requests.get(uri + 'delete/' + str(job_id))
     r.raise_for_status()
     return True
     
 def list_jobs(uri, output_file, pattern, failure_only):
+    uri_regex = r"^(http){1}(s){0,1}(://){1}(.+){1}(:){1}(\d+){1}(/){1}(.+){0,1}$"
+    if not re.search(uri_regex, uri):
+        sys.exit("HC endpoint URL don't match pattern: http://server_name:port/")
     logging.info("Listing")
     r = requests.get(uri + 'jobs')
     r.raise_for_status()    
@@ -53,6 +78,9 @@ def list_jobs(uri, output_file, pattern, failure_only):
         output_file.write(json.dumps(output))
 
 def collate_jobs(uri, output_file, pattern):
+    uri_regex = r"^(http){1}(s){0,1}(://){1}(.+){1}(:){1}(\d+){1}(/){1}(.+){0,1}$"
+    if not re.search(uri_regex, uri):
+        sys.exit("HC endpoint URL don't match pattern: http://server_name:port/")
     logging.info("Collating jobs")
     r = requests.get(uri + 'jobs')
     r.raise_for_status()    
@@ -69,12 +97,22 @@ def collate_jobs(uri, output_file, pattern):
 
 def retrieve_job_failure(uri, job_id):
     logging.info("Retrieving job failure for job " + str(job_id))
+    uri_regex = r"^(http){1}(s){0,1}(://){1}(.+){1}(:){1}(\d+){1}(/){1}(.+){0,1}$"
+    if not re.search(uri_regex, uri):
+        sys.exit("HC endpoint URL don't match pattern: http://server_name:port/")
+    if not re.search(r"\d+", str(job_id)):
+        sys.exit("job_id should be a number")
     r = requests.get(uri + 'failures/' + str(job_id))
     r.raise_for_status()
     failure_msg = r.json()
     return failure_msg
 
-def retrieve_job(uri, job_id):
+def retrieve_job(uri, job_id, output_file):
+    uri_regex = r"^(http){1}(s){0,1}(://){1}(.+){1}(:){1}(\d+){1}(/){1}(.+){0,1}$"
+    if not re.search(uri_regex, uri):
+        sys.exit("HC endpoint URL don't match pattern: http://server_name:port/")
+    if not re.search(r"\d+", str(job_id)):
+        sys.exit("job_id should be a number")
     logging.info("Retrieving results for job " + str(job_id))
     r = requests.get(uri + 'results/' + str(job_id))
     r.raise_for_status()
@@ -93,6 +131,10 @@ def print_job(uri, job, print_results=False, print_input=False):
                 if result['messages'] != None:
                     for msg in result['messages']:
                         logging.info(msg)
+    elif job['status'] == 'incomplete':
+        if print_results == True:
+            logging.info("HC result: " + str(job['status']))
+            logging.info(str(job['progress']['complete'])+"/"+str(job['progress']['total'])+" job complete")
     elif job['status'] == 'failed':
         failures = retrieve_job_failure(uri, job['id'])
         logging.info("Job failed with error: "+ str(failures))
@@ -110,6 +152,8 @@ def print_inputs(i):
     if 'hc_groups' in i:
         for hc in i['hc_groups']:
             logging.info("HC: " + hc)
+    if 'email' in i:
+      logging.info("Email: " + i['email'])
 
 if __name__ == '__main__':
             
@@ -125,11 +169,12 @@ if __name__ == '__main__':
     parser.add_argument('-c', '--compara_uri', help='URI of compara master database')
     parser.add_argument('-s', '--staging_uri', help='URI of current staging server')
     parser.add_argument('-l', '--live_uri', help='URI of live server for comparison')
-    parser.add_argument('-f', '--data_files_path', help='Data files path')
+    parser.add_argument('-dfp', '--data_files_path', help='Data files path')
     parser.add_argument('-n', '--hc_names', help='List of healthcheck names to run', nargs='*')
     parser.add_argument('-g', '--hc_groups', help='List of healthcheck groups to run', nargs='*')
     parser.add_argument('-r', '--db_pattern', help='Pattern of DB URIs to restrict by')
     parser.add_argument('-f', '--failure_only', help='Show failures only', action='store_true')
+    parser.add_argument('-e', '--email', help='User email')
 
     args = parser.parse_args()
     
@@ -142,17 +187,14 @@ if __name__ == '__main__':
         args.uri = args.uri + '/'    
             
     if args.action == 'submit':
-
-        id = submit_job(args.uri, args.db_uri, args.production_uri, args.compara_uri, args.staging_uri, args.live_uri, args.hc_names, args.hc_groups)
+        id = submit_job(args.uri, args.db_uri, args.production_uri, args.compara_uri, args.staging_uri, args.live_uri, args.hc_names, args.hc_groups, args.data_files_path, args.email)
         logging.info('Job submitted with ID '+str(id))
     
     elif args.action == 'retrieve':
-    
         job = retrieve_job(args.uri, args.job_id, args.output_file)
-        print_job(args.uri, job, print_input=True, print_results=True)
+        print_job(args.uri, job, print_results=True, print_input=True)
     
     elif args.action == 'list':
-       
         jobs = list_jobs(args.uri, args.output_file, args.db_pattern, args.failure_only)   
 
     elif args.action == 'collate':

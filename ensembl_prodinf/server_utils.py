@@ -5,6 +5,9 @@ def get_load(host=None):
     status = run_process('uptime',process_uptime, host)
     return status
 
+def get_file_sizes(host=None,dir_name=None):     
+    return run_process('"(cd '+dir_name+' && du -sm *)"',process_du, host)
+ 
 def get_status(host=None,dir_name=None):
     status = {}
     if(host!=None):
@@ -44,6 +47,10 @@ def process_df(status, line):
 def process_ncores(status, line):
     elems = line.split()
     status['n_cpus'] = int(elems[0])
+
+def process_du(status, line):
+    elems = line.split()
+    status[elems[1]] = long(elems[0])
 
 def run_process(command, function, host=None):
     status = {}
