@@ -51,10 +51,12 @@ For Ensembl:
   RELEASE_DATE="2017-12-06"
   CURRENT_RELEASE=1
   EMAIL=john.doe@ebi.ac.uk
+  UPDATE_TYPE="Other"
+  COMMENT="Loading database for release 91"
 
   cd $BASE_DIR/ensembl-prodinf-core 
   for db in $(cat metadata_load.txt); 
-  do ensembl_prodinf/metadata_client.py --action submit --uri ${ENDPOINT} --metadata_uri "${METADATA_SERVER}${METADATA}" --database_uri "${DATABASE_SERVER}${db}" --e_release ${ENS_VERSION} --release_date ${RELEASE_DATE} --current_release ${CURRENT_RELEASE} --email ${EMAIL};
+  do ensembl_prodinf/metadata_client.py --action submit --uri ${ENDPOINT} --metadata_uri "${METADATA_SERVER}${METADATA}" --database_uri "${DATABASE_SERVER}${db}" --e_release ${ENS_VERSION} --release_date ${RELEASE_DATE} --current_release ${CURRENT_RELEASE} --email ${EMAIL} --update_type ${UPDATE_TYPE} --comment ${COMMENT};
   done
 
 For EG:
@@ -68,10 +70,12 @@ For EG:
   EG_VERSION=38
   CURRENT_RELEASE=1
   EMAIL=john.doe@ebi.ac.uk
+  UPDATE_TYPE="Other"
+  COMMENT="Loading database for release 91"
 
   cd $BASE_DIR/ensembl-prodinf-core 
   for db in $(cat eg_metadata_load.txt); 
-  do ensembl_prodinf/metadata_client.py --action submit --uri ${ENDPOINT} --metadata_uri "${METADATA_SERVER}${METADATA}" --database_uri "${DATABASE_SERVER}${db}" --e_release ${ENS_VERSION} --release_date ${RELEASE_DATE} --current_release ${CURRENT_RELEASE} --eg_release ${EG_VERSION} --email ${EMAIL};
+  do ensembl_prodinf/metadata_client.py --action submit --uri ${ENDPOINT} --metadata_uri "${METADATA_SERVER}${METADATA}" --database_uri "${DATABASE_SERVER}${db}" --e_release ${ENS_VERSION} --release_date ${RELEASE_DATE} --current_release ${CURRENT_RELEASE} --eg_release ${EG_VERSION} --email ${EMAIL} --update_type ${UPDATE_TYPE} --comment ${COMMENT};
   done
 
 
@@ -80,40 +84,46 @@ Script usage:
 
 The script accept the following arguments:
 ::
-    usage: metadata_client.py [-h] -u URI -a
-                             {submit,retrieve,list,delete,email,kill_job}
-                             [-i JOB_ID] [-v] [-o OUTPUT_FILE] [-f INPUT_FILE]
-                             [-m METADATA_URI] [-d DATABASE_URI]
-                             [-s E_RELEASE] [-r RELEASE_DATE] [-c CURRENT_RELEASE]
-                             [-g EG_RELEASE] [-e EMAIL]
+  usage: metadata_client.py [-h] -u URI -a
+                            {submit,retrieve,list,delete,email,kill_job}
+                            [-i JOB_ID] [-v] [-o OUTPUT_FILE] [-f INPUT_FILE]
+                            [-m METADATA_URI] [-d DATABASE_URI] [-s E_RELEASE]
+                            [-r RELEASE_DATE] [-c CURRENT_RELEASE]
+                            [-g EG_RELEASE] [-e EMAIL] [-t UPDATE_TYPE]
+                            [-n COMMENT]
 
-    Copy HCs via a REST service
+  Metadata load via a REST service
 
-    arguments:
-      -h, --help            show this help message and exit
-      -u URI, --uri URI     REST service URI
-      -a {submit,retrieve,list,delete,email,kill_job}, --action {submit,retrieve,list,delete,email,kill_job}
-                            Action to take
-      -i JOB_ID, --job_id JOB_ID
-                            HC job identifier to retrieve
-      -v, --verbose         Verbose output
-      -o OUTPUT_FILE, --output_file OUTPUT_FILE
-                            File to write output as JSON
-      -f INPUT_FILE, --input_file INPUT_FILE
-                            File containing list of source and target URIs
-      -s SOURCE_DB_URI, --source_db_uri SOURCE_DB_URI
-                            URI of database to copy from
-      -t TARGET_DB_URI, --target_db_uri TARGET_DB_URI
-                            URI of database to copy to
-      -y ONLY_TABLES, --only_tables ONLY_TABLES
-                            List of tables to copy
-      -n SKIP_TABLES, --skip_tables SKIP_TABLES
-                            List of tables to skip
-      -p UPDATE, --update UPDATE
-                            Incremental database update using rsync checksum
-      -d DROP, --drop DROP  Drop database on Target server before copy
-      -e EMAIL, --email EMAIL
-                            Email where to send the report
+  optional arguments:
+    -h, --help            show this help message and exit
+    -u URI, --uri URI     Metadata database REST service URI
+    -a {submit,retrieve,list,delete,email,kill_job}, --action {submit,retrieve,list,delete,email,kill_job}
+                          Action to take
+    -i JOB_ID, --job_id JOB_ID
+                          Metadata job identifier to retrieve
+    -v, --verbose         Verbose output
+    -o OUTPUT_FILE, --output_file OUTPUT_FILE
+                          File to write output as JSON
+    -f INPUT_FILE, --input_file INPUT_FILE
+                          File containing list of metadata and database URIs
+    -m METADATA_URI, --metadata_uri METADATA_URI
+                          URI of metadata database
+    -d DATABASE_URI, --database_uri DATABASE_URI
+                          URI of database to load
+    -s E_RELEASE, --e_release E_RELEASE
+                          Ensembl release number
+    -r RELEASE_DATE, --release_date RELEASE_DATE
+                          Release date
+    -c CURRENT_RELEASE, --current_release CURRENT_RELEASE
+                          Is this the current release
+    -g EG_RELEASE, --eg_release EG_RELEASE
+                          EG release number
+    -e EMAIL, --email EMAIL
+                          Email where to send the report
+    -t UPDATE_TYPE, --update_type UPDATE_TYPE
+                          Update type, e.g: New assembly
+    -n COMMENT, --comment COMMENT
+                          Comment
 
 Check job status
 #####
