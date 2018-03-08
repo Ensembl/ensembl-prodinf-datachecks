@@ -75,11 +75,11 @@ def list_jobs(uri, output_file):
         print_job(uri, job, print_results=False, print_input=False)
     write_output(r, output_file)      
             
-def retrieve_job(uri, job_id, output_file):    
+def retrieve_job(uri, job_id):    
     uri_regex = r"^(http){1}(s){0,1}(://){1}(.+){1}(:){1}(\d+){1}(/){1}(.+){0,1}(.+){0,1}$"
     if not re.search(uri_regex, uri):
         sys.exit("DB endpoint URL don't match pattern: http://server_name:port/")
-    if not re.search(r"\d+", job_id):
+    if not re.search(r"\d+", str(job_id)):
         sys.exit("job_id should be a number")
     logging.info("Retrieving results for job " + str(job_id))
     r = requests.get(uri + 'results/' + str(job_id))
@@ -190,7 +190,7 @@ if __name__ == '__main__':
     
     elif args.action == 'retrieve':
     
-        job = retrieve_job(args.uri, args.job_id, args.output_file)
+        job = retrieve_job(args.uri, args.job_id)
         print_job(args.uri, job, print_results=True, print_input=True)
     
     elif args.action == 'list':

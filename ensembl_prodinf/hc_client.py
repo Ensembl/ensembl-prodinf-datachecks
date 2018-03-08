@@ -107,7 +107,7 @@ def retrieve_job_failure(uri, job_id):
     failure_msg = r.json()
     return failure_msg
 
-def retrieve_job(uri, job_id, output_file):
+def retrieve_job(uri, job_id):
     uri_regex = r"^(http){1}(s){0,1}(://){1}(.+){1}(:){1}(\d+){1}(/){1}(.+){0,1}$"
     if not re.search(uri_regex, uri):
         sys.exit("HC endpoint URL don't match pattern: http://server_name:port/")
@@ -191,7 +191,7 @@ if __name__ == '__main__':
         logging.info('Job submitted with ID '+str(id))
     
     elif args.action == 'retrieve':
-        job = retrieve_job(args.uri, args.job_id, args.output_file)
+        job = retrieve_job(args.uri, args.job_id)
         print_job(args.uri, job, print_results=True, print_input=True)
     
     elif args.action == 'list':
