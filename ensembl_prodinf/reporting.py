@@ -1,6 +1,8 @@
 import json
 from logging import Handler
 import logging
+import threading
+import socket
 from time import gmtime, strftime
 import pika
 
@@ -58,3 +60,22 @@ class QueueAppenderHandler(Handler):
                       routing_key=record.report_type,
                       body=record_json)
         return True
+
+cxt = threading.local()
+
+def get_logger(queue_host, exchange, process, resource, params):
+    logger = logging.getLogger(process)
+    logger.setLevel(logging.DEBUG)
+    cxt.host = socket.gethostname()
+    cxt.process = process
+    set_logger_context(resource, params)
+    appender = QueueAppenderHandler(queue_host, exchange)
+    appender.addFilter(ContextFilter(cxt))
+    appender.setFormatter(JsonFormatter())
+    logger.addHandler(appender)
+    return logger
+
+def set_logger_context(resource, params):
+    cxt.resource = resource
+    cxt.params = params
+    return
