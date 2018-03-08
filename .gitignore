@@ -97,5 +97,10 @@ ENV/
 # mkdocs documentation
 /site
 
+# eclipse project
+.project
+.pydevproject
+
 # mypy
 .mypy_cache/
+/handover_config.py
