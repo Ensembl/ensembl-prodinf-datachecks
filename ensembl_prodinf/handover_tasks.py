@@ -29,24 +29,20 @@ import handover_config as cfg
 import uuid     
 import re
 import reporting
-import threading
 
-cxt = threading.local()  
-cxt.logger = None
 pool = reporting.get_pool(cfg.report_server)
-                
+logger = logging.getLogger('handover')
+ch = logging.StreamHandler()
+ch.setLevel(logging.ERROR)
+ch.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(threadName)s - %(levelname)s - %(message)s'))
+logger.addHandler(ch)
+if(cfg.report_server!=None):
+    qh = reporting.get_appender(pool, cfg.report_exchange, 'handover', None, [])
+    logger.context = qh.context
+    logger.addHandler(qh)
+     
 def get_logger():
-    if(cxt.logger == None) :
-        cxt.logger = logging.getLogger('handover')
-        ch = logging.StreamHandler()
-        ch.setLevel(logging.ERROR)
-        ch.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(threadName)s - %(levelname)s - %(message)s'))
-        cxt.logger.addHandler(ch)
-        if(cfg.report_server!=None):
-            qh = reporting.get_appender(pool, cfg.report_exchange, 'handover', None, [])
-            cxt.logger.context = qh.context
-            cxt.logger.addHandler(qh)
-    return cxt.logger                
+    return logger
                 
 def handover_database(spec):    
     """ Method to accept a new database for incorporation into the system 
