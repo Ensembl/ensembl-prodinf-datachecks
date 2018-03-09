@@ -28,10 +28,25 @@ from .utils import send_email
 import handover_config as cfg
 import uuid     
 import re
+import reporting
+import threading
 
-logger = logging.getLogger('handover')
-logger.setLevel(logging.DEBUG)
-# TODO set message-based appenders
+cxt = threading.local()  
+cxt.logger = None
+pool = reporting.get_pool(cfg.report_server)
+                
+def get_logger():
+    if(cxt.logger == None) :
+        cxt.logger = logging.getLogger('handover')
+        ch = logging.StreamHandler()
+        ch.setLevel(logging.ERROR)
+        ch.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(threadName)s - %(levelname)s - %(message)s'))
+        cxt.logger.addHandler(ch)
+        if(cfg.report_server!=None):
+            qh = reporting.get_appender(pool, cfg.report_exchange, 'handover', None, [])
+            cxt.logger.context = qh.context
+            cxt.logger.addHandler(qh)
+    return cxt.logger                
                 
 def handover_database(spec):    
     """ Method to accept a new database for incorporation into the system 
@@ -46,18 +61,19 @@ def handover_database(spec):
     * hc_job_id - job ID for healthcheck process
     * db_job_id - job ID for database copy process
     """
-    # TODO verify dict
-    logging.info("Handling " + str(spec))
+    # TODO verify dict    
+    reporting.set_logger_context(get_logger(), spec['src_uri'], spec)    
+    get_logger().info("Handling " + str(spec))
     if 'tgt_uri' not in spec:
         spec['tgt_uri'] = get_tgt_uri(spec['src_uri'])
     spec['handover_token'] = str(uuid.uuid1())                    
     check_db(spec['src_uri'])
     groups = groups_for_uri(spec['src_uri'])
     if(groups==None):
-        logger.info("No HCs needed, starting copy")
+        get_logger().info("No HCs needed, starting copy")
         submit_copy(spec)
     else: 
-        logger.info("Starting HCs")
+        get_logger().info("Starting HCs")
         submit_hc(spec, groups)
     return spec['handover_token']
 
@@ -70,10 +86,10 @@ def get_tgt_uri(src_uri):
 def check_db(uri):    
     """Check if source database exists"""
     if(database_exists(uri) == False):
-        logging.error(uri + " does not exist")
+        get_logger().error(uri + " does not exist")
         raise ValueError(uri + " does not exist")
     else:
-        logging.info(uri + " looks good to me")
+        get_logger().info(uri + " looks good to me")
         return
 
 
@@ -100,7 +116,7 @@ def submit_hc(spec, groups):
     hc_job_id = hc_client.submit_job(cfg.hc_uri, spec['src_uri'], cfg.production_uri, cfg.compara_uri, cfg.staging_uri, cfg.live_uri, None, groups, cfg.data_files_path, None)
     spec['hc_job_id'] = hc_job_id
     task_id = process_checked_db.delay(hc_job_id, spec)
-    logging.debug("Submitted DB for checking as " + str(task_id))
+    get_logger().debug("Submitted DB for checking as " + str(task_id))
     send_email(to_address=spec['contact'], subject='HC submitted', body=str(spec['src_uri']) + ' has been submitted for checking', smtp_server=cfg.smtp_server)
     return task_id
 
@@ -110,18 +126,18 @@ def process_checked_db(self, hc_job_id, spec):
     * submit copy if HCs succeed
     * send error email if not
     """
-    
+    reporting.set_logger_context(get_logger(), spec['src_uri'], spec)    
     # allow infinite retries 
     self.max_retries = None
-    logging.info("Checking HCs for " + spec['src_uri'] + " from job " + str(hc_job_id))
+    get_logger().info("Checking HCs for " + spec['src_uri'] + " from job " + str(hc_job_id))
     result = hc_client.retrieve_job(cfg.hc_uri, hc_job_id)
     if (result['status'] == 'incomplete') or (result['status'] == 'running') or (result['status'] == 'submitted'):
-        logging.info("Job incomplete, retrying")
+        get_logger().info("Job incomplete, retrying")
         raise self.retry()
     
     # check results
     if (result['status'] == 'failed'):
-        logging.info("HCs failed to run")    
+        get_logger().info("HCs failed to run")    
         msg = """
 Running healthchecks vs %s failed to execute.
 Please see %s
@@ -129,7 +145,7 @@ Please see %s
         send_email(to_address=spec['contact'], subject='HC failed to run', body=msg, smtp_server=cfg.smtp_server)         
         return 
     elif (result['output']['status'] == 'failed'):
-        logging.info("HCs found problems")
+        get_logger().info("HCs found problems")
         msg = """
 Running healthchecks vs %s completed but found failures.
 Please see %s
@@ -137,16 +153,16 @@ Please see %s
         send_email(to_address=spec['contact'], subject='HC ran but failed', body=msg, smtp_server=cfg.smtp_server)  
         return
     else:
-        logging.info("HCs fine, starting copy")
+        get_logger().info("HCs fine, starting copy")
         submit_copy(spec)
 
 
 def submit_copy(spec):
-    """Submit the source database for copying to the target. Returns a celery job identifier"""
+    """Submit the source database for copying to the target. Returns a celery job identifier"""    
     copy_job_id = db_copy_client.submit_job(cfg.copy_uri, spec['src_uri'], spec['tgt_uri'], None, None, False, True, None)
     spec['copy_job_id'] = copy_job_id
     task_id = process_copied_db.delay(copy_job_id, spec)    
-    logging.debug("Submitted DB for copying as " + str(task_id))
+    get_logger().debug("Submitted DB for copying as " + str(task_id))
     return task_id
 
 
@@ -155,16 +171,17 @@ def process_copied_db(self, copy_job_id, spec):
     """Wait for copy to complete and then respond accordingly:
     * if success, submit to metadata database
     * if failure, flag error using email"""
-    # allow infinite retries 
+    reporting.set_logger_context(get_logger(), spec['src_uri'], spec)    
+    # allow infinite retries     
     self.max_retries = None
-    logging.info("Checking " + str(spec) + " using " + str(copy_job_id))
+    get_logger().info("Checking " + str(spec) + " using " + str(copy_job_id))
     result = db_copy_client.retrieve_job(cfg.copy_uri, copy_job_id)
     if (result['status'] == 'incomplete') or (result['status'] == 'running') or (result['status'] == 'submitted'):
-        logging.info("Job incomplete, retrying")
+        get_logger().info("Job incomplete, retrying")
         raise self.retry() 
     
     if (result['status'] == 'failed'):
-        logging.info("Copy failed")
+        get_logger().info("Copy failed")
         msg = """
 Copying %s to %s failed.
 Please see %s
@@ -172,10 +189,10 @@ Please see %s
         send_email(to_address=spec['contact'], subject='Database copy failed', body=msg, smtp_server=cfg.smtp_server)          
         return
     else:
-        logging.info("Copying complete, need to submit metadata")
+        get_logger().info("Copying complete, need to submit metadata")
         meta_job_id = submit_metadata_update(spec['tgt_uri'])
         task_id = process_db_metadata.delay(meta_job_id, spec)    
-        logging.debug("Submitted DB for meta update as " + str(task_id))
+        get_logger().debug("Submitted DB for meta update as " + str(task_id))
         return task_id
     
 
@@ -190,7 +207,8 @@ def process_db_metadata(self, meta_job_id, spec):
     """Wait for metadata update to complete and then respond accordingly:
     * if success, submit event to event handler for further processing
     * if failure, flag error using email"""
-    logging.info("Assuming completed meta update " + str(meta_job_id))
+    reporting.set_logger_context(get_logger(), spec['src_uri'], spec)    
+    get_logger().info("Assuming completed meta update " + str(meta_job_id))
     # TODO wait for job to complete
     # TODO retrieve event from metadata job
     # TODO pass event to event handler endpoint to trigger more processing
