@@ -30,7 +30,7 @@ Or for all the database of a given division:
 ::
   ENS_VERSION=91
   SERVER=mysql-ensembl-mirror
-  mysql --batch --raw --skip-column-names $($SERVER details mysql) information_schema -e "select schema_name from SCHEMATA where (schema_name like '%core%' or schema_name like '%otherfeatures%' or schema_name like '%rnaseq%' or schema_name like '%cdna%' or schema_name like '%funcgen%%' or schema_name like '%variation%' or schema_name like '%compara%') and schema_name like '%${ENS_VERSION}%' and schema_name not like 'master_schema%'" > metadata_load.txt
+  mysql --batch --raw --skip-column-names $($SERVER details mysql) information_schema -e "select schema_name from SCHEMATA where (schema_name like '%core%' or schema_name like '%otherfeatures%' or schema_name like '%rnaseq%' or schema_name like '%cdna%' or schema_name like '%funcgen%%' or schema_name like '%variation%' or schema_name like '%compara%' or schema_name like '%ontology%') and schema_name like '%${ENS_VERSION}%' and schema_name not like 'master_schema%'" > metadata_load.txt
 Submit the jobs using Python REST db copy endpoint:
 #####
 
@@ -57,7 +57,7 @@ For Ensembl:
 
   cd $BASE_DIR/ensembl-prodinf-core 
   for db in $(cat metadata_load.txt); 
-  do ensembl_prodinf/metadata_client.py --action submit --uri ${ENDPOINT} --metadata_uri "${METADATA_SERVER}${METADATA}" --database_uri "${DATABASE_SERVER}${db}" --e_release ${ENS_VERSION} --release_date ${RELEASE_DATE} --current_release ${CURRENT_RELEASE} --email ${EMAIL} --update_type ${UPDATE_TYPE} --comment ${COMMENT} --source ${SOURCE};
+  do ensembl_prodinf/metadata_client.py --action submit --uri ${ENDPOINT} --metadata_uri "${METADATA_SERVER}${METADATA}" --database_uri "${DATABASE_SERVER}${db}" --e_release ${ENS_VERSION} --release_date ${RELEASE_DATE} --current_release ${CURRENT_RELEASE} --email "${EMAIL}" --update_type "${UPDATE_TYPE}" --comment "${COMMENT}" --source "${SOURCE}";
   done
 
 For EG:
@@ -77,7 +77,7 @@ For EG:
 
   cd $BASE_DIR/ensembl-prodinf-core 
   for db in $(cat eg_metadata_load.txt); 
-  do ensembl_prodinf/metadata_client.py --action submit --uri ${ENDPOINT} --metadata_uri "${METADATA_SERVER}${METADATA}" --database_uri "${DATABASE_SERVER}${db}" --e_release ${ENS_VERSION} --release_date ${RELEASE_DATE} --current_release ${CURRENT_RELEASE} --eg_release ${EG_VERSION} --email ${EMAIL} --update_type ${UPDATE_TYPE} --comment ${COMMENT} --source ${SOURCE};
+  do ensembl_prodinf/metadata_client.py --action submit --uri ${ENDPOINT} --metadata_uri "${METADATA_SERVER}${METADATA}" --database_uri "${DATABASE_SERVER}${db}" --e_release ${ENS_VERSION} --release_date ${RELEASE_DATE} --current_release ${CURRENT_RELEASE} --eg_release ${EG_VERSION} --email "${EMAIL}" --update_type "${UPDATE_TYPE}" --comment "${COMMENT}" --source "${SOURCE}";
   done
 
 
