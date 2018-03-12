@@ -47,7 +47,7 @@ Clone the ensembl-prodinf-core repo:
   git clone https://github.com/Ensembl/ensembl-prodinf-core
   cd ensembl-prodinf-core
 
-To Submit the job via the REST enpoint
+To Submit the job via the REST enpoint for Ensembl
 ::
 
   SERVER=$(mysql-ens-vertannot-staging details url) #e.g: mysql://ensro@mysql-ens-vertannot-staging:4573/
@@ -56,7 +56,7 @@ To Submit the job via the REST enpoint
   LIVE=$(mysql-ensembl-mirror details url)
   STAGING=$(mysql-ens-sta-1 details url)
   PRODUCTION=$(mysql-ens-sta-1 details url)
-  ENDPOINT=http://ens-prod-1.ebi.ac.uk:8000/hc/ #or http://eg-prod-01.ebi.ac.uk:7000/hc/ for EG
+  ENDPOINT=http://ens-prod-1.ebi.ac.uk:8000/hc/
   DATA_FILE_PATH=/nfs/panda/ensembl/production/ensemblftp/data_files/
   RELEASE=91
   
@@ -64,6 +64,27 @@ To Submit the job via the REST enpoint
   for db in $(cat db_hc.txt); do
     echo "Submitting HC check for $db"
     output=`python ensembl_prodinf/hc_client.py --uri $ENDPOINT --db_uri "${SERVER}${db}" --production_uri "${PRODUCTION}ensembl_production_${RELEASE}" --staging_uri $STAGING --live_uri $LIVE --compara_uri "${COMPARA_MASTER}ensembl_compara_master" --hc_groups $GROUP --data_files_path $DATA_FILE_PATH  --action submit` || {
+          echo "Cannot submit $db" 1>&2
+          exit 2
+    }
+  done
+  
+To Submit the job via the REST enpoint for EG
+::
+
+  SERVER=$(mysql-eg-staging-1 details url)
+  GROUP=EGCoreHandover
+  COMPARA_MASTER=$(mysql-eg-pan-prod details url)
+  LIVE=$(mysql-eg-publicsql details url)
+  STAGING=$(mysql-eg-staging-1 details url)
+  PRODUCTION=$(mysql-eg-pan-prod details url)
+  ENDPOINT=http://ens-prod-1.ebi.ac.uk:7000/hc/
+  DATA_FILE_PATH=/nfs/panda/ensembl/production/ensemblftp/data_files/
+  
+  cd $BASE_DIR/ensembl-prodinf-core 
+  for db in $(cat db_hc.txt); do
+    echo "Submitting HC check for $db"
+    output=`python ensembl_prodinf/hc_client.py --uri $ENDPOINT --db_uri "${SERVER}${db}" --production_uri "${PRODUCTION}ensembl_production" --staging_uri $STAGING --live_uri $LIVE --compara_uri "${COMPARA_MASTER}ensembl_compara_master" --hc_groups $GROUP --data_files_path $DATA_FILE_PATH  --action submit` || {
           echo "Cannot submit $db" 1>&2
           exit 2
     }
