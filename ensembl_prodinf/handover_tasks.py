@@ -31,18 +31,9 @@ import re
 import reporting
 
 pool = reporting.get_pool(cfg.report_server)
-logger = logging.getLogger('handover')
-ch = logging.StreamHandler()
-ch.setLevel(logging.ERROR)
-ch.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(threadName)s - %(levelname)s - %(message)s'))
-logger.addHandler(ch)
-if(cfg.report_server!=None):
-    qh = reporting.get_appender(pool, cfg.report_exchange, 'handover', None, [])
-    logger.context = qh.context
-    logger.addHandler(qh)
      
-def get_logger():
-    return logger
+def get_logger():    
+    return reporting.get_logger(pool, cfg.report_exchange, 'handover', None, {})
                 
 def handover_database(spec):    
     """ Method to accept a new database for incorporation into the system 
@@ -62,6 +53,7 @@ def handover_database(spec):
     get_logger().info("Handling " + str(spec))
     if 'tgt_uri' not in spec:
         spec['tgt_uri'] = get_tgt_uri(spec['src_uri'])
+    # create unique identifier
     spec['handover_token'] = str(uuid.uuid1())                    
     check_db(spec['src_uri'])
     groups = groups_for_uri(spec['src_uri'])
@@ -87,7 +79,6 @@ def check_db(uri):
     else:
         get_logger().info(uri + " looks good to me")
         return
-
 
 core_pattern = re.compile(".*[a-z]_(core|rnaseq|cdna|otherfeatures)_[0-9].*")   
 variation_pattern = re.compile(".*[a-z]_variation_[0-9].*")   
