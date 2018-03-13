@@ -24,13 +24,13 @@ Or for all the database of a given division:
 ::
   EG_VERSION=38
   SERVER=mysql-eg-staging-2
-  mysql --batch --raw --skip-column-names $($SERVER details mysql) information_schema -e "select schema_name from SCHEMATA where (schema_name like '%core%' or schema_name like '%otherfeatures%' or schema_name like '%rnaseq%' or schema_name like '%cdna%' or schema_name like '%funcgen%%' or schema_name like '%variation%' or schema_name like '%compara%') and schema_name like '%${EG_VERSION}%' and schema_name not like 'master_schema%'" > eg_metadata_load.txt
+  mysql --batch --raw --skip-column-names $($SERVER details mysql) information_schema -e "select schema_name from SCHEMATA where (schema_name like '%core%' or schema_name like '%otherfeatures%' or schema_name like '%rnaseq%' or schema_name like '%cdna%' or schema_name like '%funcgen%%' or schema_name like '%variation%' or schema_name like '%compara%' or schema_name like '%mart%') and schema_name like '%${EG_VERSION}%' and schema_name not like 'master_schema%'" > eg_metadata_load.txt
 
 2. Ensembl:
 ::
   ENS_VERSION=91
   SERVER=mysql-ensembl-mirror
-  mysql --batch --raw --skip-column-names $($SERVER details mysql) information_schema -e "select schema_name from SCHEMATA where (schema_name like '%core%' or schema_name like '%otherfeatures%' or schema_name like '%rnaseq%' or schema_name like '%cdna%' or schema_name like '%funcgen%%' or schema_name like '%variation%' or schema_name like '%compara%' or schema_name like '%ontology%') and schema_name like '%${ENS_VERSION}%' and schema_name not like 'master_schema%'" > metadata_load.txt
+  mysql --batch --raw --skip-column-names $($SERVER details mysql) information_schema -e "select schema_name from SCHEMATA where (schema_name like '%core%' or schema_name like '%otherfeatures%' or schema_name like '%rnaseq%' or schema_name like '%cdna%' or schema_name like '%funcgen%%' or schema_name like '%variation%' or schema_name like '%compara%' or schema_name like '%ontology%' or schema_name like '%mart%') and schema_name like '%${ENS_VERSION}%' and schema_name not like 'master_schema%'" > metadata_load.txt
 Submit the jobs using Python REST db copy endpoint:
 #####
 
