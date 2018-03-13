@@ -12,7 +12,7 @@ def write_output(r, output_file):
         with output_file as f:
             f.write(r.text)  
     
-def submit_job(uri, db_uri, production_uri, compara_uri, staging_uri, live_uri, hc_names, hc_groups, data_files_path, email):
+def submit_job(uri, db_uri, production_uri, compara_uri, staging_uri, live_uri, hc_names, hc_groups, data_files_path, email, tag):
     uri_regex = r"^(mysql://){1}(.+){1}(:.+){0,1}(@){1}(.+){1}(:){1}(\d+){1}(/){1}$"
     db_uri_regex = r"^(mysql://){1}(.+){1}(:.+){0,1}(@){1}(.+){1}(:){1}(\d+){1}(/){1}(.+){1}$"
     http_uri_regex = r"^(http){1}(s){0,1}(://){1}(.+){1}(:){1}(\d+){1}(/){1}(.+){0,1}$"
@@ -39,6 +39,7 @@ def submit_job(uri, db_uri, production_uri, compara_uri, staging_uri, live_uri, 
         'hc_groups':hc_groups,
         'data_files_path':data_files_path,
         'email':email,
+        'tag':tag
         }
     logging.debug(payload)
     r = requests.post(uri+'submit', json=payload)
@@ -78,10 +79,7 @@ def list_jobs(uri, output_file, pattern, failure_only):
         output_file.write(json.dumps(output))
 
 def collate_jobs(uri, output_file, pattern):
-    uri_regex = r"^(http){1}(s){0,1}(://){1}(.+){1}(:){1}(\d+){1}(/){1}(.+){0,1}$"
-    if not re.search(uri_regex, uri):
-        sys.exit("HC endpoint URL don't match pattern: http://server_name:port/")
-    logging.info("Collating jobs")
+    logging.info("Collating jobs using tag " + str(pattern))
     r = requests.get(uri + 'jobs')
     r.raise_for_status()    
     if pattern == None:
@@ -89,9 +87,14 @@ def collate_jobs(uri, output_file, pattern):
     re_pattern = re.compile(pattern)
     output = defaultdict(list)
     for job in r.json():
-        if re_pattern.match(job['input']['db_uri']) and ('output' in job and job['output']['status'] == 'failed'):
-            for h,r in {k: v for k, v in job['output']['results'].iteritems() if v['status'] == 'failed'}.items():
-                [output[h].append(job['input']['db_uri']+"\t"+m) for m in r['messages']]
+        try:
+            if re_pattern.match(job['input']['tag']) and ('output' in job and job['output']['status'] == 'failed'):
+                job_id = job['id']
+                logging.info("Found tag " + str(pattern) + " for job: " + str(job_id) )
+                for h,r in {k: v for k, v in job['output']['results'].iteritems() if v['status'] == 'failed'}.items():
+                    [output[h].append(job['input']['db_uri']+"\t"+m) for m in r['messages']]
+        except:
+            pass
     if output_file!= None:
         output_file.write(json.dumps(output))
 
@@ -154,6 +157,8 @@ def print_inputs(i):
             logging.info("HC: " + hc)
     if 'email' in i:
       logging.info("Email: " + i['email'])
+    if 'tag' in i:
+       logging.info("Tag: " + i['tag'])
 
 if __name__ == '__main__':
             
@@ -175,6 +180,7 @@ if __name__ == '__main__':
     parser.add_argument('-r', '--db_pattern', help='Pattern of DB URIs to restrict by')
     parser.add_argument('-f', '--failure_only', help='Show failures only', action='store_true')
     parser.add_argument('-e', '--email', help='User email')
+    parser.add_argument('-t', '--tag', help='Tag use to collate result and facilitate filtering')
 
     args = parser.parse_args()
     
@@ -187,7 +193,7 @@ if __name__ == '__main__':
         args.uri = args.uri + '/'    
             
     if args.action == 'submit':
-        id = submit_job(args.uri, args.db_uri, args.production_uri, args.compara_uri, args.staging_uri, args.live_uri, args.hc_names, args.hc_groups, args.data_files_path, args.email)
+        id = submit_job(args.uri, args.db_uri, args.production_uri, args.compara_uri, args.staging_uri, args.live_uri, args.hc_names, args.hc_groups, args.data_files_path, args.email, args.tag)
         logging.info('Job submitted with ID '+str(id))
     
     elif args.action == 'retrieve':
@@ -199,7 +205,7 @@ if __name__ == '__main__':
 
     elif args.action == 'collate':
        
-        jobs = collate_jobs(args.uri, args.output_file, args.db_pattern)   
+        jobs = collate_jobs(args.uri, args.output_file, args.tag)   
     
     elif args.action == 'delete':
         delete_job(args.uri, args.job_id)
