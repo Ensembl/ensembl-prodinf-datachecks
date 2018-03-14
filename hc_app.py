@@ -41,7 +41,7 @@ def submit_job():
     This is using docstring for specifications
     ---
     tags:
-      - submit
+      - jobs
     parameters:
       - in: body
         name: body
@@ -49,7 +49,7 @@ def submit_job():
         required: false
         schema:
           $ref: '#/definitions/submit'
-    operationId: submit
+    operationId: jobs
     consumes:
       - application/json
     produces:
@@ -272,7 +272,7 @@ def delete_job(job_id):
         required: true
         default: 1
         description: id of the job
-    operationId: delete
+    operationId: jobs
     consumes:
       - application/json
     produces:
