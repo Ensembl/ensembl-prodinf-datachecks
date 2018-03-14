@@ -19,7 +19,6 @@ Step 1 is run in a client (e.g a flask endpoint), all subsequent steps are run i
 '''
 from ensembl_prodinf.handover_celery_app import app
 
-import logging 
 import db_copy_client
 import hc_client
 from sqlalchemy_utils.functions import database_exists

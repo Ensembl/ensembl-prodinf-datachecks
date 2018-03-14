@@ -9,6 +9,5 @@ from ensembl_prodinf.server_utils import get_status
 from ensembl_prodinf.reporting import get_logger, set_logger_context 
 from ensembl_prodinf.email_celery_app import app as email_celery_app
 from ensembl_prodinf.handover_celery_app import app as handover_celery_app
+from ensembl_prodinf.event_celery_app import app as event_celery_app
 from ensembl_prodinf.reporting import QueueAppenderHandler, ContextFilter, JsonFormatter
-
-
