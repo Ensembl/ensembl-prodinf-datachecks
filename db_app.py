@@ -53,14 +53,14 @@ cors = CORS(app)
 json_pattern = re.compile("application/json")
 
 
-@app.route('/list_databases', methods=['GET'])
+@app.route('/databases', methods=['GET'])
 def list_databases_endpoint():
     """
     Endpoint to retrieve a list of databases from a server given as URI
     This is using docstring for specifications
     ---
     tags:
-      - list_databases
+      - databases
     parameters:
       - in : query
         name: db_uri
@@ -74,7 +74,7 @@ def list_databases_endpoint():
         required: true
         default: homo_sapiens
         description: query use to find databases
-    operationId: list_databases
+    operationId: databases
     consumes:
       - application/json
     produces:
@@ -126,14 +126,14 @@ def list_databases_endpoint():
     except Exception as e:
         return "Could not list databases: "+str(e), 500
 
-@app.route('/database_sizes', methods=['GET'])
+@app.route('/databases/sizes', methods=['GET'])
 def database_sizes_endpoint():
     """
     Endpoint to retrieve a list of databases and their size from a MySQL server given as URI
     This is using docstring for specifications
     ---
     tags:
-      - database_sizes
+      - databases
     parameters:
       - in : query
         name: db_uri
@@ -215,14 +215,14 @@ def database_sizes_endpoint():
     except Exception as e:
         return "Could not list database sizes: "+str(e), 500
 
-@app.route('/status/<host>', methods=['GET'])
+@app.route('/hosts/<host>', methods=['GET'])
 def get_status_endpoint(host):
     """
     Endpoint to retrieve the status of a give MySQL host
     This is using docstring for specifications
     ---
     tags:
-      - status
+      - hosts
     parameters:
       - name: host
         in: path
@@ -230,7 +230,7 @@ def get_status_endpoint(host):
         required: true
         default: server_name
         description: MySQL server host name
-    operationId: status
+    operationId: hosts
     consumes:
       - application/json
     produces:
@@ -289,14 +289,14 @@ def get_status_endpoint(host):
     except Exception as e:
         return "Could not get status: "+str(e), 500
 
-@app.route('/load/<host>', methods=['GET'])
+@app.route('/hosts/<host>/load', methods=['GET'])
 def get_load_endpoint(host):
     """
     Endpoint to retrieve the load of a given MySQL server
     This is using docstring for specifications
     ---
     tags:
-      - load
+      - hosts
     parameters:
       - name: host
         in: path
@@ -304,7 +304,7 @@ def get_load_endpoint(host):
         required: true
         default: server_name
         description: MySQL server host name
-    operationId: load
+    operationId: hosts
     consumes:
       - application/json
     produces:
@@ -350,14 +350,14 @@ def get_load_endpoint(host):
         return "Could not get status: "+str(e), 500
 
 
-@app.route('/list_servers/<user>', methods=['GET'])
+@app.route('/servers/<user>', methods=['GET'])
 def list_servers_endpoint(user):
     """
     Endpoint to list the mysql servers accesible by a given user
     This is using docstring for specifications
     ---
     tags:
-      - list_servers
+      - servers
     parameters:
       - name: user
         in: path
@@ -371,7 +371,7 @@ def list_servers_endpoint(user):
         required: true
         default: server_name
         description: MySQL server host name used to filter down the list
-    operationId: list_servers
+    operationId: servers
     consumes:
       - application/json
     produces:
@@ -427,14 +427,14 @@ def list_servers_endpoint(user):
         return "User " + user + " not found", 404
 
 
-@app.route('/submit', methods=['POST'])
+@app.route('/jobs', methods=['POST'])
 def submit():
     """
     Endpoint to submit a database copy job
     This is using docstring for specifications
     ---
     tags:
-      - submit
+      - jobs
     parameters:
       - in: body
         name: body
@@ -442,7 +442,7 @@ def submit():
         requiered: false
         schema:
           $ref: '#/definitions/submit'
-    operationId: submit
+    operationId: jobs
     consumes:
       - application/json
     produces:
@@ -508,22 +508,26 @@ def submit():
         return "Could not handle input of type " + request.headers['Content-Type'], 415
 
 
-@app.route('/results/<int:job_id>', methods=['GET'])
-def results(job_id):
+@app.route('/jobs/<int:job_id>', methods=['GET'])
+def jobs(job_id):
     """
     Endpoint to retrieve a given job result using job_id
     This is using docstring for specifications
     ---
     tags:
-      - results
+      - jobs
     parameters:
       - name: job_id
         in: path
         type: integer
         required: true
-        default: 1
         description: id of the job
-    operationId: results
+      - name: format
+        in: query
+        type: string
+        required: false
+        description: optional output format (failures, email)
+    operationId: jobs
     consumes:
       - application/json
     produces:
@@ -570,65 +574,21 @@ def results(job_id):
             target_db_uri: mysql://user:password@server:port/saccharomyces_cerevisiae_core_91_4
           status: complete
     """
-    try:
-        logging.info("Retrieving job with ID " + str(job_id))
-        return jsonify(get_hive().get_result_for_job_id(job_id))
-    except ValueError:
-        return "Job " + str(job_id) + " not found", 404
+    fmt = request.args.get('format')
+    if fmt == 'email':
+        return results_email(request.args.get('email'), job_id)
+    elif fmt == 'failures':
+        return failure(job_id)
+    elif fmt == None:
+        try:
+            logging.info("Retrieving job with ID " + str(job_id))
+            return jsonify(get_hive().get_result_for_job_id(job_id))
+        except ValueError:
+            return "Job " + str(job_id) + " not found", 404
+    else:    
+        return "Format "+str(fmt)+" not known", 400
 
-
-@app.route('/failure/<int:job_id>', methods=['GET'])
 def failure(job_id):
-    """
-    Endpoint to retrieve a given job failure using job_id
-    This is using docstring for specifications
-    ---
-    tags:
-      - failure
-    parameters:
-      - name: job_id
-        in: path
-        type: integer
-        required: true
-        default: 13
-        description: id of the job
-    operationId: failure
-    consumes:
-      - application/json
-    produces:
-      - application/json
-    security:
-      failure_auth:
-        - 'write:failure'
-        - 'read:failure'
-    schemes: ['http', 'https']
-    deprecated: false
-    externalDocs:
-      description: Project repository
-      url: http://github.com/rochacbruno/flasgger
-    definitions:
-      job_id:
-        type: object
-        properties:
-          job_id:
-            type: integer
-            items:
-              $ref: '#/definitions/job_id'
-      failure:
-        type: object
-        properties:
-          failure:
-            type: string
-            items:
-              $ref: '#/definitions/failure'
-    responses:
-      200:
-        description: Retrieve failure of a given job using job_id
-        schema:
-          $ref: '#/definitions/job_id'
-        examples:
-          msg: 'Could not find myisamchk in PATH at /homes/ensdb-prod/ensembl-production/modules/Bio/EnsEMBL/Production/Pipeline/CopyDatabases/CopyDatabaseHive.pm line 80.'
-    """
     try:
         logging.info("Retrieving failure for job with ID " + str(job_id))
         failure = get_hive().get_job_failure_msg_by_id(job_id)
@@ -636,43 +596,46 @@ def failure(job_id):
     except ValueError:
         return "Job " + str(job_id) + " not found", 404
 
-
-@app.route('/kill_job/<int:job_id>', methods=['GET'])
-def kill_job(job_id):
-    hive = get_hive()
+def results_email(email, job_id):
+    logging.info("Retrieving job with ID " + str(job_id) + " for " + str(email))
     job = get_hive().get_job_by_id(job_id)
     if(job == None):
         return "Job " + str(job_id) + " not found", 404
-    logging.debug("Getting worker_id for job_id " + str(job_id))
-    worker = get_hive().get_worker_id(job.role_id)
-    logging.debug("Getting process_id for worker_id " + str(worker.worker_id))
-    process_id = get_hive().get_worker_process_id(worker.worker_id)
-    logging.debug("Process_id is " + str(process_id.process_id))
-    os.kill(int(process_id.process_id), signal.SIGTERM)
-    time.sleep(5)
-    # Check if the process that we killed is alive.
-    if (is_running(int(process_id.process_id))):
-        return "Wasn't able to kill the process: " + str(process_id.process_id), 404
-    else:
-        return jsonify({"process_id":process_id.process_id})
+    results = get_hive().get_result_for_job_id(job_id)
+    if results['status'] == 'complete':
+        results['subject'] = 'Copy database from %s to %s successful' % (results['output']['source_db_uri'], results['output']['target_db_uri'])
+        results['body'] = "Copy from %s to %s is successful\n" % (results['output']['source_db_uri'], results['output']['target_db_uri'])
+        results['body'] += "Copy took %s" % (results['output']['runtime'])
+    elif results['status'] == 'failed':
+        failure = get_hive().get_job_failure_msg_by_id(job_id)
+        results['subject'] = 'Copy database from %s to %s failed' % (results['input']['source_db_uri'], results['input']['target_db_uri'])
+        results['body'] = 'Copy failed with following message:\n'
+        results['body'] += '%s' % (failure.msg)
+    results['output'] = None
+    return jsonify(results)
 
 
-@app.route('/delete/<int:job_id>', methods=['GET'])
+@app.route('/jobs/<int:job_id>', methods=['DELETE'])
 def delete(job_id):
     """
     Endpoint to delete a given job result using job_id
     This is using docstring for specifications
     ---
     tags:
-      - delete
+      - jobs
     parameters:
       - name: job_id
         in: path
         type: integer
         required: true
-        default: 1
         description: id of the job
-    operationId: delete
+      - name: kill
+        in: query
+        type: integer
+        required: false
+        default: 0
+        description: set to 1 to kill the process
+    operationId: jobs
     consumes:
       - application/json
     produces:
@@ -709,96 +672,35 @@ def delete(job_id):
         examples:
           id: 1
     """
-    hive = get_hive()
+    if request.args.kill == 1:
+        kill_job(job_id)
     job = get_hive().get_job_by_id(job_id)
     if(job == None):
         return "Job " + str(job_id) + " not found", 404
     hive.delete_job(job)
     return jsonify({"id":job_id})
 
-
-@app.route('/results_email/<int:job_id>', methods=['GET'])
-def results_email(job_id):
-    """
-    Endpoint to display job result sent to email defined in input
-    This is using docstring for specifications
-    ---
-    tags:
-      - results_email
-    parameters:
-      - name: job_id
-        in: path
-        type: integer
-        required: true
-        default: 4
-        description: id of the job
-    operationId: results_email
-    consumes:
-      - application/json
-    produces:
-      - application/json
-    security:
-      results_email_auth:
-        - 'write:results_email'
-        - 'read:results_email'
-    schemes: ['http', 'https']
-    deprecated: false
-    externalDocs:
-      description: Project repository
-      url: http://github.com/rochacbruno/flasgger
-    definitions:
-      job_id:
-        type: object
-        properties:
-          job_id:
-            type: integer
-            items:
-              $ref: '#/definitions/job_id'
-      results_email:
-        type: string
-        properties:
-          results_email:
-            type: string
-            items:
-              $ref: '#/definitions/results_email'
-    responses:
-      200:
-        description: result in email friendly format that was sent to email defined in input
-        schema:
-          $ref: '#/definitions/job_id'
-        examples:
-          body: 'Copy from mysql://user@server:port/saccharomyces_cerevisiae_core_91_4 to mysql://user:password@server:port/saccharomyces_cerevisiae_core_91_4 is successful Copy took 31 seconds' 
-          id: 1
-          input: 
-            drop: 1 
-            source_db_uri: mysql://user@server:port/saccharomyces_cerevisiae_core_91_4 
-            target_db_uri: mysql://user:password@server:port/saccharomyces_cerevisiae_core_91_4 
-            timestamp: 1515494114.263158
-          output: null 
-          status: complete 
-          subject: 'Copy database from mysql://user@server:port/saccharomyces_cerevisiae_core_91_4 to mysql://user:password@server:port/saccharomyces_cerevisiae_core_91_4 successful'
-    """
-    email = request.args.get('email')
-    logging.info("Retrieving job with ID " + str(job_id) + " for " + str(email))
+def kill_job(job_id):
     job = get_hive().get_job_by_id(job_id)
     if(job == None):
         return "Job " + str(job_id) + " not found", 404
-    results = get_hive().get_result_for_job_id(job_id)
-    if results['status'] == 'complete':
-        results['subject'] = 'Copy database from %s to %s successful' % (results['output']['source_db_uri'], results['output']['target_db_uri'])
-        results['body'] = "Copy from %s to %s is successful\n" % (results['output']['source_db_uri'], results['output']['target_db_uri'])
-        results['body'] += "Copy took %s" % (results['output']['runtime'])
-    elif results['status'] == 'failed':
-        failure = get_hive().get_job_failure_msg_by_id(job_id)
-        results['subject'] = 'Copy database from %s to %s failed' % (results['input']['source_db_uri'], results['input']['target_db_uri'])
-        results['body'] = 'Copy failed with following message:\n'
-        results['body'] += '%s' % (failure.msg)
-    results['output'] = None
-    return jsonify(results)
+    logging.debug("Getting worker_id for job_id " + str(job_id))
+    worker = get_hive().get_worker_id(job.role_id)
+    logging.debug("Getting process_id for worker_id " + str(worker.worker_id))
+    process_id = get_hive().get_worker_process_id(worker.worker_id)
+    logging.debug("Process_id is " + str(process_id.process_id))
+    os.kill(int(process_id.process_id), signal.SIGTERM)
+    time.sleep(5)
+    # Check if the process that we killed is alive.
+    if (is_running(int(process_id.process_id))):
+        return "Wasn't able to kill the process: " + str(process_id.process_id), 404
+    else:
+        return jsonify({"process_id":process_id.process_id})
+
 
 
 @app.route('/jobs', methods=['GET'])
-def jobs():
+def list_jobs():
     """
     Endpoint to retrieve all the jobs results from the database
     This is using docstring for specifications
