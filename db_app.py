@@ -672,7 +672,7 @@ def delete(job_id):
         examples:
           id: 1
     """
-    if request.args.kill == 1:
+    if 'kill' in request.args.keys() and request.args['kill'] == 1:
         kill_job(job_id)
     job = get_hive().get_job_by_id(job_id)
     if(job == None):
