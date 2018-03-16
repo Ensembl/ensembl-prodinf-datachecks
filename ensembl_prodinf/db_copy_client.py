@@ -4,147 +4,69 @@ import logging
 import requests
 import sys
 import re
+from rest_client import RestClient
+from server_utils import assert_mysql_db_uri
+from numpy import source
 
-def write_output(r, output_file):
-    if(output_file != None):
-        with output_file as f:
-            f.write(r.text)  
+class DbCopyClient(RestClient):
+
+    def submit_job(self, source_db_uri, target_db_uri, only_tables, skip_tables, update, drop, email):
+
+        assert_mysql_db_uri(source_db_uri)
+        assert_mysql_db_uri(target_db_uri)
+        
+        if only_tables:
+            if (not re.search(r"^([^ ]+){1}$", only_tables) or not re.search(r"^([^ ]+){1}(,){1}([^ ]+){1}$", only_tables)):
+                raise ValueError("List of tables need to be comma separated, eg: table1,table2,table3")
+        if skip_tables:
+            if (not re.search(r"^([^ ]+){1}$", skip_tables) or not re.search(r"^([^ ]+){1}(,){1}([^ ]+){1}$", skip_tables)):
+                raise ValueError("List of tables need to be comma separated, eg: table1,table2,table3")
     
-def submit_job(uri, source_db_uri, target_db_uri, only_tables, skip_tables, update, drop, email):
-    db_uri_regex = r"^(mysql://){1}(.+){1}(:.+){0,1}(@){1}(.+){1}(:){1}(\d+){1}(/){1}(.+){1}$"
-    http_uri_regex = r"^(http){1}(s){0,1}(://){1}(.+){1}(:){1}(\d+){1}(/){1}(.+){0,1}$"
-    if not re.search(http_uri_regex, uri):
-        sys.exit("DB endpoint URL don't match pattern: http://server_name:port/")
-    if not re.search(db_uri_regex, source_db_uri):
-        sys.exit("Database URI don't match pattern: mysql://user(:pass)@server:port/")
-    if not re.search(db_uri_regex, source_db_uri):
-        sys.exit("Database URI don't match pattern: mysql://user(:pass)@server:port/")
-    if only_tables:
-        if (not re.search(r"^([^ ]+){1}$", only_tables) or not re.search(r"^([^ ]+){1}(,){1}([^ ]+){1}$", only_tables)):
-            sys.exit("List of tables need to be comma separated, eg: table1,table2,table3")
-    if skip_tables:
-        if (not re.search(r"^([^ ]+){1}$", skip_tables) or not re.search(r"^([^ ]+){1}(,){1}([^ ]+){1}$", skip_tables)):
-            sys.exit("List of tables need to be comma separated, eg: table1,table2,table3")
-    logging.info("Submitting job")
-    payload = {
-        'source_db_uri':source_db_uri,
-        'target_db_uri':target_db_uri,
-        'only_tables':only_tables,
-        'skip_tables':skip_tables,
-        'update':update,
-        'drop':drop,
-        'email':email
+        logging.info("Submitting job")
+        payload = {
+            'source_db_uri':source_db_uri,
+            'target_db_uri':target_db_uri,
+            'only_tables':only_tables,
+            'skip_tables':skip_tables,
+            'update':update,
+            'drop':drop,
+            'email':email
         }
-    logging.debug(payload)
-    r = requests.post(uri+'submit', json=payload)
-    r.raise_for_status()
-    return r.json()['job_id']
+        return super(DbCopyClient, self).submit_job(payload)
+
+    def kill_job(self, job_id):
+        return super(DbCopyClient, self).kill_job(job_id, 1)
     
-def delete_job(uri, job_id):
-    uri_regex = r"^(http){1}(s){0,1}(://){1}(.+){1}(:){1}(\d+){1}(/){1}(.+){0,1}$"
-    if not re.search(uri_regex, uri):
-        sys.exit("DB endpoint URL don't match pattern: http://server_name:port/")
-    if not re.search(r"\d+", job_id):
-        sys.exit("job_id should be a number")
-    logging.info("Deleting job " + str(job_id))
-    r = requests.get(uri + 'delete/' + job_id)
-    r.raise_for_status()
-    return True
+    def print_job(self, job, print_results=False, print_input=False):
+        logging.info("Job %s (%s) to (%s) - %s" % (job['id'], job['input']['source_db_uri'], job['input']['target_db_uri'], job['status']))
+        if print_input == True:
+            self.print_inputs(job['input'])
+        if job['status'] == 'complete':
+            if print_results == True:
+                logging.info("Copy result: " + str(job['status']))
+                logging.info("Copy took: " +str(job['output']['runtime']))
+        elif job['status'] == 'running':
+            if print_results == True:
+                logging.info("HC result: " + str(job['status']))
+                logging.info(str(job['progress']['complete'])+"/"+str(job['progress']['total'])+" task complete")
+                logging.info("Status: "+str(job['progress']['message']))
+        elif job['status'] == 'failed':
+            failure_msg = self.retrieve_job_failure(job['id'])
+            logging.info("Job failed with error: "+ str(failure_msg['msg']))
 
-def kill_job(uri, job_id):
-    uri_regex = r"^(http){1}(s){0,1}(://){1}(.+){1}(:){1}(\d+){1}(/){1}(.+){0,1}$"
-    if not re.search(uri_regex, uri):
-        sys.exit("DB endpoint URL don't match pattern: http://server_name:port/")
-    if not re.search(r"\d+", job_id):
-        sys.exit("job_id should be a number")
-    logging.info("Killing hive job " + str(job_id))
-    r = requests.get(uri + 'kill_job/' + job_id)
-    r.raise_for_status()
-    return True
-    
-def list_jobs(uri, output_file):
-    uri_regex = r"^(http){1}(s){0,1}(://){1}(.+){1}(:){1}(\d+){1}(/){1}(.+){0,1}$"
-    if not re.search(uri_regex, uri):
-        sys.exit("DB endpoint URL don't match pattern: http://server_name:port/")
-    logging.info("Listing")
-    r = requests.get(uri + 'jobs')
-    r.raise_for_status()
-    return r.json()
-
-    for job in r.json():
-        print_job(uri, job, print_results=False, print_input=False)
-    write_output(r, output_file)      
-            
-def retrieve_job(uri, job_id):    
-    uri_regex = r"^(http){1}(s){0,1}(://){1}(.+){1}(:){1}(\d+){1}(/){1}(.+){0,1}(.+){0,1}$"
-    if not re.search(uri_regex, uri):
-        sys.exit("DB endpoint URL don't match pattern: http://server_name:port/")
-    if not re.search(r"\d+", str(job_id)):
-        sys.exit("job_id should be a number")
-    logging.info("Retrieving results for job " + str(job_id))
-    r = requests.get(uri + 'results/' + job_id)
-    r.raise_for_status()
-    job = r.json()
-    return job
-
-def results_email(uri, job_id, email):
-    uri_regex = r"^(http){1}(s){0,1}(://){1}(.+){1}(:){1}(\d+){1}(/){1}(.+){0,1}$"
-    if not re.search(uri_regex, uri):
-        sys.exit("DB endpoint URL don't match pattern: http://server_name:port/")
-    if not re.search(r"\d+", job_id):
-        sys.exit("job_id should be a number")
-    if not re.search(r"^(.+){1}(@){1}(.+){1}$", email):
-        sys.exit("email should match pattern john.doe@ebi.ac.uk")
-    logging.info("Sending job detail by email " + str(job_id))
-    r = requests.get(uri + 'results_email/' + str(job_id) + "?email=" + str(email))
-    r.raise_for_status()
-    return r.json()
-
-def retrieve_job_failure(uri, job_id):    
-    uri_regex = r"^(http){1}(s){0,1}(://){1}(.+){1}(:){1}(\d+){1}(/){1}(.+){0,1}$"
-    if not re.search(uri_regex, uri):
-        sys.exit("DB endpoint URL don't match pattern: http://server_name:port/")
-    if not re.search(r"\d+", job_id):
-        sys.exit("job_id should be a number")
-    logging.info("Retrieving job failure for job " + str(job_id))
-    r = requests.get(uri + 'failure/' + str(job_id))
-    r.raise_for_status()
-    failure_msg = r.json()
-    return failure_msg
-    
-def print_job(uri, job, print_results=False, print_input=False):
-    uri_regex = r"^(http){1}(s){0,1}(://){1}(.+){1}(:){1}(\d+){1}(/){1}(.+){0,1}$"
-    if not re.search(uri_regex, uri):
-        sys.exit("DB endpoint URL don't match pattern: http://server_name:port/")
-    logging.info("Job %s (%s) to (%s) - %s" % (job['id'], job['input']['source_db_uri'], job['input']['target_db_uri'], job['status']))
-    if print_input == True:
-        print_inputs(job['input'])
-    if job['status'] == 'complete':
-        if print_results == True:
-            logging.info("Copy result: " + str(job['status']))
-            logging.info("Copy took: " +str(job['output']['runtime']))
-    elif job['status'] == 'running':
-        if print_results == True:
-            logging.info("HC result: " + str(job['status']))
-            logging.info(str(job['progress']['complete'])+"/"+str(job['progress']['total'])+" task complete")
-            logging.info("Status: "+str(job['progress']['message']))
-    elif job['status'] == 'failed':
-      failure_msg = retrieve_job_failure(uri, job['id'])
-      logging.info("Job failed with error: "+ str(failure_msg['msg']))
-
-def print_inputs(i):
-    logging.info("Source URI: " + i['source_db_uri'])
-    logging.info("Target URI: " + i['target_db_uri'])
-    if 'only_tables' in i:
-      logging.info("List of tables to copy: " + i['only_tables'])
-    if 'skip_tables' in i:
-      logging.info("List of tables to skip: " + i['skip_tables'])
-    if 'update' in i:
-      logging.info("Incremental database update using rsync checksum set to: " + i['update'])
-    if 'drop' in i:
-      logging.info("Drop database on Target server before copy set to: " + i['drop'])
-    if 'email' in i:
-      logging.info("email: " + i['email'])
+    def print_inputs(self, i):
+        logging.info("Source URI: " + i['source_db_uri'])
+        logging.info("Target URI: " + i['target_db_uri'])
+        if 'only_tables' in i:
+            logging.info("List of tables to copy: " + i['only_tables'])
+        if 'skip_tables' in i:
+            logging.info("List of tables to skip: " + i['skip_tables'])
+        if 'update' in i:
+            logging.info("Incremental database update using rsync checksum set to: " + i['update'])
+        if 'drop' in i:
+            logging.info("Drop database on Target server before copy set to: " + i['drop'])
+        if 'email' in i:
+            logging.info("email: " + i['email'])
 
 if __name__ == '__main__':
             
@@ -174,38 +96,40 @@ if __name__ == '__main__':
     
     if args.uri.endswith('/') == False:
         args.uri = args.uri + '/'    
+    
+    client = DbCopyClient(args.uri)
             
     if args.action == 'submit':
 
         if args.input_file == None:
             logging.info("Submitting " + args.source_db_uri + "->" + args.target_db_uri)
-            id = submit_job(args.uri, args.source_db_uri, args.target_db_uri, args.only_tables, args.skip_tables, args.update, args.drop, args.email)
-            logging.info('Job submitted with ID '+str(id))
+            job_id = client.submit_job(args.source_db_uri, args.target_db_uri, args.only_tables, args.skip_tables, args.update, args.drop, args.email)
+            logging.info('Job submitted with ID '+str(job_id))
         else:
             for line in args.input_file:
                 uris = line.split()
                 logging.info("Submitting " + uris[0] + "->" + uris[1])
-                id = submit_job(args.uri, uris[0], uris[1], args.only_tables, args.skip_tables, args.update, args.drop, args.email)
-                logging.info('Job submitted with ID '+str(id))
+                job_id = client.submit_job(uris[0], uris[1], args.only_tables, args.skip_tables, args.update, args.drop, args.email)
+                logging.info('Job submitted with ID '+str(job_id))
     
     elif args.action == 'retrieve':
     
-        job = retrieve_job(args.uri, args.job_id)
-        print_job(args.uri, job, print_results=True, print_input=True)
+        job = client.retrieve_job(args.job_id)
+        client.print_job(job, print_results=True, print_input=True)
     
     elif args.action == 'list':
        
-        jobs = list_jobs(args.uri, args.output_file)   
+        jobs = client.list_jobs()   
         for job in jobs:
-            print_job(args.uri, job)
+            client.print_job(job)
     
     elif args.action == 'delete':
-        delete_job(args.uri, args.job_id)
+        client.delete_job(args.job_id)
         logging.info("Job " + str(args.job_id) + " was successfully deleted")
 
     elif args.action == 'email':
-        results_email(args.uri, args.job_id, args.email)
+        client.results_email(args.job_id, args.email)
 
     elif args.action == 'kill_job':
-        kill_job(args.uri, args.job_id)
+        client.kill_job(args.job_id)
         
