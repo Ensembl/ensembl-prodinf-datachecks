@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from ensembl_prodinf import reporting
 import re
 import json
+from flasgger import Swagger
 
+from ensembl_prodinf import reporting
 from ensembl_prodinf import HiveInstance
 import event_config
 
@@ -17,7 +18,7 @@ app = Flask(__name__, instance_relative_config=True)
 print app.config
 app.config.from_object('event_config')
 app.config.from_pyfile('event_config.py')
-
+swagger = Swagger(app)
 
 class EventNotFoundError(Exception):
     """Exception showing event not found"""        
@@ -63,6 +64,33 @@ json_pattern = re.compile("application/json")
 
 @app.route('/jobs', methods=['POST'])
 def submit_job():
+    """
+    Endpoint to submit an event to process
+    ---
+    tags:
+      - jobs
+    parameters:
+      - in: body
+        name: body
+        description: event
+        required: false
+        schema:
+          $ref: '#/definitions/submit'
+    operationId: jobs
+    consumes:
+      - application/json
+    produces:
+      - application/json
+    security:
+      submit_auth:
+        - 'write:submit'
+        - 'read:submit'
+    schemes: ['http', 'https']
+    deprecated: false
+    externalDocs:
+      description: Project repository
+      url: http://github.com/rochacbruno/flasgger
+    """
     if json_pattern.match(request.headers['Content-Type']):
         event = request.json['event']
         results = {"processes":[], "event":event}
@@ -87,6 +115,57 @@ def submit_job():
 
 @app.route('/jobs/<string:process>/<int:job_id>', methods=['GET'])
 def job(process, job_id):
+    """
+    Endpoint to retrieve a given job result for a process and job id
+    ---
+    tags:
+      - jobs
+    parameters:
+      - name: process
+        in: path
+        type: string
+        required: true
+        default: 1
+        description: process name
+      - name: job_id
+        in: path
+        type: integer
+        required: true
+        default: 1
+        description: id of the job
+    operationId: jobs
+    produces:
+      - application/json
+    security:
+      results_auth:
+        - 'write:results'
+        - 'read:results'
+    schemes: ['http', 'https']
+    deprecated: false
+    externalDocs:
+      description: Project repository
+      url: http://github.com/rochacbruno/flasgger
+    definitions:
+      job_id:
+        type: object
+        properties:
+          job_id:
+            type: integer
+            items:
+              $ref: '#/definitions/job_id'
+      result:
+        type: object
+        properties:
+          result:
+            type: string
+            items:
+              $ref: '#/definitions/result'
+    responses:
+      200:
+        description: Result of an event job
+        schema:
+          $ref: '#/definitions/job_id'
+    """    
     output_format = request.args.get('format')
     if output_format == 'email':
         email = request.args.get('email')
@@ -108,6 +187,61 @@ def results(process, job_id):
 
 @app.route('/jobs/<string:process>/<int:job_id>', methods=['DELETE'])
 def delete_job(process, job_id):
+    """
+    Endpoint to delete a given job result using job_id
+    ---
+    tags:
+      - jobs
+    parameters:
+      - name: process
+        in: path
+        type: string
+        required: true
+        default: 1
+        description: process name
+      - name: job_id
+        in: path
+        type: integer
+        required: true
+        default: 1
+        description: id of the job
+    operationId: jobs
+    consumes:
+      - application/json
+    produces:
+      - application/json
+    security:
+      delete_auth:
+        - 'write:delete'
+        - 'read:delete'
+    schemes: ['http', 'https']
+    deprecated: false
+    externalDocs:
+      description: Project repository
+      url: http://github.com/rochacbruno/flasgger
+    definitions:
+      job_id:
+        type: object
+        properties:
+          job_id:
+            type: integer
+            items:
+              $ref: '#/definitions/job_id'
+      id:
+        type: integer
+        properties:
+          id:
+            type: integer
+            items:
+              $ref: '#/definitions/id'
+    responses:
+      200:
+        description: Job_id that has been deleted
+        schema:
+          $ref: '#/definitions/job_id'
+        examples:
+          id: 1
+    """    
     hive = get_hive(process)
     job = hive.get_job_by_id(job_id)
     if(job == None):
@@ -128,14 +262,88 @@ def results_email(email, process, job_id):
 
 @app.route('/jobs/<string:process>', methods=['GET'])
 def jobs(process):
+    """
+    Endpoint to retrieve all the jobs results from the database
+    ---
+    tags:
+      - jobs
+    parameters:
+      - name: process
+        in: path
+        type: string
+        required: true
+        default: 1
+        description: process name
+    operationId: jobs
+    consumes:
+      - application/json
+    produces:
+      - application/json
+    security:
+      jobs_auth:
+        - 'write:jobs'
+        - 'read:jobs'
+    schemes: ['http', 'https']
+    deprecated: false
+    externalDocs:
+      description: Project repository
+      url: http://github.com/rochacbruno/flasgger
+    responses:
+      200:
+        description: Retrieve all the jobs results from the database
+        schema:
+          $ref: '#/definitions/job_id'
+    """ 
     get_logger().info("Retrieving jobs")
     return jsonify(get_hive(process).get_all_results(get_analysis(process)))
 
 
 @app.route('/events')
 def events():
+    """
+    Endpoint to retrieve all known event types
+    ---
+    tags:
+      - events
+    operationId: events
+    produces:
+      - application/json
+    security:
+      jobs_auth:
+        - 'write:jobs'
+        - 'read:jobs'
+    schemes: ['http', 'https']
+    deprecated: false
+    externalDocs:
+      description: Project repository
+      url: http://github.com/rochacbruno/flasgger
+    responses:
+      200:
+        description: Retrieve all the events
+    """     
     return jsonify(event_lookup.keys()) 
 
 @app.route('/processes')
 def processes():
+    """
+    Endpoint to retrieve all known processes handled
+    ---
+    tags:
+      - processes
+    operationId: processes
+    produces:
+      - application/json
+    security:
+      jobs_auth:
+        - 'write:jobs'
+        - 'read:jobs'
+    schemes: ['http', 'https']
+    deprecated: false
+    externalDocs:
+      description: Project repository
+      url: http://github.com/rochacbruno/flasgger
+    responses:
+      200:
+        description: Retrieve all the processes
+    """     
     return jsonify(process_lookup.keys()) 
