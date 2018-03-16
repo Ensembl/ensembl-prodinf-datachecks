@@ -20,8 +20,11 @@ class RestClient(object):
         r.raise_for_status()
         return r.json()['job_id']
     
-    def delete_job(self, job_id):
-        r = requests.delete(self.jobs_id.format(self.uri, str(job_id)))
+    def delete_job(self, job_id, kill=False):
+        delete_uri = self.jobs_id.format(self.uri, str(job_id))
+        if kill:
+            delete_uri += '?kill=1'
+        r = requests.delete(delete_uri)
         r.raise_for_status()
         return True
     
@@ -37,6 +40,12 @@ class RestClient(object):
         r.raise_for_status()
         failure_msg = r.json()
         return failure_msg
+
+    def retrieve_job_email(self, job_id):
+        logging.info("Retrieving job as email for job " + str(job_id))
+        r = requests.get(self.jobs_id.format(self.uri, str(job_id)) + '?format=email')
+        r.raise_for_status()
+        return r.json()
 
     def retrieve_job(self, job_id):
         logging.info("Retrieving results for job " + str(job_id))
