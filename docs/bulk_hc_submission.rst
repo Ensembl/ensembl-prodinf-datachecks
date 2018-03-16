@@ -47,7 +47,7 @@ Clone the ensembl-prodinf-core repo:
   git clone https://github.com/Ensembl/ensembl-prodinf-core
   cd ensembl-prodinf-core
 
-To Submit the job via the REST enpoint
+To Submit the job via the REST enpoint for Ensembl
 ::
 
   SERVER=$(mysql-ens-vertannot-staging details url) #e.g: mysql://ensro@mysql-ens-vertannot-staging:4573/
@@ -56,14 +56,37 @@ To Submit the job via the REST enpoint
   LIVE=$(mysql-ensembl-mirror details url)
   STAGING=$(mysql-ens-sta-1 details url)
   PRODUCTION=$(mysql-ens-sta-1 details url)
-  ENDPOINT=http://ens-prod-1.ebi.ac.uk:8000/hc/ #or http://eg-prod-01.ebi.ac.uk:7000/hc/ for EG
+  ENDPOINT=http://ens-prod-1.ebi.ac.uk:8000/hc/
   DATA_FILE_PATH=/nfs/panda/ensembl/production/ensemblftp/data_files/
   RELEASE=91
+  TAG=my_hc_run
   
   cd $BASE_DIR/ensembl-prodinf-core 
   for db in $(cat db_hc.txt); do
     echo "Submitting HC check for $db"
-    output=`python ensembl_prodinf/hc_client.py --uri $ENDPOINT --db_uri "${SERVER}${db}" --production_uri "${PRODUCTION}ensembl_production_${RELEASE}" --staging_uri $STAGING --live_uri $LIVE --compara_uri "${COMPARA_MASTER}ensembl_compara_master" --hc_groups $GROUP --data_files_path $DATA_FILE_PATH  --action submit` || {
+    output=`python ensembl_prodinf/hc_client.py --uri $ENDPOINT --db_uri "${SERVER}${db}" --production_uri "${PRODUCTION}ensembl_production_${RELEASE}" --staging_uri $STAGING --live_uri $LIVE --compara_uri "${COMPARA_MASTER}ensembl_compara_master" --hc_groups $GROUP --data_files_path $DATA_FILE_PATH --tag $TAG  --action submit` || {
+          echo "Cannot submit $db" 1>&2
+          exit 2
+    }
+  done
+  
+To Submit the job via the REST enpoint for EG
+::
+
+  SERVER=$(mysql-eg-staging-1 details url)
+  GROUP=EGCoreHandover
+  COMPARA_MASTER=$(mysql-eg-pan-prod details url)
+  LIVE=$(mysql-eg-publicsql details url)
+  STAGING=$(mysql-eg-staging-1 details url)
+  PRODUCTION=$(mysql-eg-pan-prod details url)
+  ENDPOINT=http://ens-prod-1.ebi.ac.uk:7000/hc/
+  DATA_FILE_PATH=/nfs/panda/ensembl/production/ensemblftp/data_files/
+  TAG=my_hc_run
+  
+  cd $BASE_DIR/ensembl-prodinf-core 
+  for db in $(cat db_hc.txt); do
+    echo "Submitting HC check for $db"
+    output=`python ensembl_prodinf/hc_client.py --uri $ENDPOINT --db_uri "${SERVER}${db}" --production_uri "${PRODUCTION}ensembl_production" --staging_uri $STAGING --live_uri $LIVE --compara_uri "${COMPARA_MASTER}ensembl_compara_master" --hc_groups $GROUP --data_files_path $DATA_FILE_PATH --tag $TAG  --action submit` || {
           echo "Cannot submit $db" 1>&2
           exit 2
     }
@@ -86,11 +109,12 @@ Script usage:
 The script accept the following arguments:
 ::
     usage: hc_client.py [-h] -u URI -a {submit,retrieve,list,delete,collate}
-                        [-i JOB_ID] [-v] [-o OUTPUT_FILE] [-d DB_URI]
-                        [-p PRODUCTION_URI] [-c COMPARA_URI] [-s STAGING_URI]
-                        [-l LIVE_URI] [-dfp DATA_FILES_PATH]
-                        [-n [HC_NAMES [HC_NAMES ...]]]
-                        [-g [HC_GROUPS [HC_GROUPS ...]]] [-r DB_PATTERN] [-f]
+                    [-i JOB_ID] [-v] [-o OUTPUT_FILE] [-d DB_URI]
+                    [-p PRODUCTION_URI] [-c COMPARA_URI] [-s STAGING_URI]
+                    [-l LIVE_URI] [-dfp DATA_FILES_PATH]
+                    [-n [HC_NAMES [HC_NAMES ...]]]
+                    [-g [HC_GROUPS [HC_GROUPS ...]]] [-r DB_PATTERN] [-f]
+                    [-e EMAIL] [-t TAG]
 
     Run HCs via a REST service
 
@@ -123,6 +147,9 @@ The script accept the following arguments:
       -r DB_PATTERN, --db_pattern DB_PATTERN
                             Pattern of DB URIs to restrict by
       -f, --failure_only    Show failures only
+      -e EMAIL, --email EMAIL
+                            User email
+      -t TAG, --tag TAG     Tag use to collate result and facilitate filtering
 
 Check job status
 #####
@@ -139,9 +166,9 @@ or using the Python REST API:
 
 Collate results
 #####
-If you have run the healthchecks on a large number of databases, you can collate all the results in one file:
+If you have run the healthchecks on a large number of databases, you can collate all the results in one file using the tag:
 ::
-  python ensembl-prodinf-core/ensembl_prodinf/hc_client.py --uri http://ens-prod-1.ebi.ac.uk:8000/hc/ --action collate --db_pattern ".*core_38_91.*" --output_file results.json
+  python ensembl-prodinf-core/ensembl_prodinf/hc_client.py --uri http://ens-prod-1.ebi.ac.uk:8000/hc/ --action collate --tag "my_hc_run" --output_file results.json
 
 Convert results in readable form
 #####
