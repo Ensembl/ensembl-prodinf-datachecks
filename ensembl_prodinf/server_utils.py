@@ -4,6 +4,7 @@ import subprocess
 http_uri_regex = r"^(http){1}(s){0,1}(://){1}(.+){1}(:){1}(\d+){1}(/){1}(.+){0,1}$"
 uri_regex = r"^(mysql://){1}(.+){1}(:.+){0,1}(@){1}(.+){1}(:){1}(\d+){1}(/){1}$"
 db_uri_regex = r"^(mysql://){1}(.+){1}(:.+){0,1}(@){1}(.+){1}(:){1}(\d+){1}(/){1}(.+){1}$"    
+email_regex = r"^(.+){1}(@){1}(.+){1}$",
 
 def assert_http_uri(uri):
     if not re.search(http_uri_regex, uri):
@@ -17,6 +18,9 @@ def assert_mysql_db_uri(uri):
     if not re.search(db_uri_regex, uri):
         raise ValueError("MySQL database URL doesn't match pattern: mysql://user(:pass)@server:port/prod_db_name")   
 
+def assert_email(email):
+    if not re.search(email_regex, email):
+        raise ValueError("Email doesn't match pattern: user@domain")
 
 def get_load(host=None): 
     status = run_process('uptime', process_uptime, host)
