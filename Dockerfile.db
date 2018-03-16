@@ -1,0 +1,10 @@
+FROM python:2.7
+COPY requirements.txt gunicorn.conf db_app.py db_config.py /
+COPY celery_app_config.py.example /celery_app_config.py
+COPY ssh_config /root/.ssh/config
+RUN pip install -r requirements.txt && \
+	chmod -R 700 /root/.ssh && \
+	mkdir /instance && \
+ 	touch /instance/db_config.py
+EXPOSE 4002
+ENTRYPOINT ["/usr/local/bin/gunicorn", "--config", "/gunicorn.conf", "-b", ":4002", "db_app:app"]

@@ -1,0 +1,5 @@
+FROM python:2.7
+COPY celery_requirements.txt /requirements.txt
+COPY celery_app_config.py.example /celery_app_config.py
+RUN pip install -r requirements.txt
+ENTRYPOINT celery -A ensembl_prodinf worker --concurrency=20 --loglevel=info

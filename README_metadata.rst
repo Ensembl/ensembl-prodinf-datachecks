@@ -13,10 +13,10 @@ Hive Setup
 
 Before you can use the HC endpoint, you need a beekeeper running the pipeline defined by `Bio::EnsEMBL::Production::Pipeline::PipeConfig::CopyDatabase_conf`. To build and initiate the pipeline:
 ```
-git clone https://github.com/Ensembl/ensembl-production
-cd ensembl-production
+git clone https://github.com/Ensembl/ensembl-metadata
+cd ensembl-metadata
 SRV=your_mysql_command_wrapper from where your hive will be running.
-init_pipeline.pl Bio::EnsEMBL::Production::Pipeline::PipeConfig::CopyDatabase_conf $($SRV details hive)
+init_pipeline.pl Bio::EnsEMBL::MetaData::Pipeline::MetadataUpdater_conf $($SRV details hive)
 ```
 
 Next, run the `beekeeper.pl` supplied by the output with the arguments `--keep_alive -sleep 0.5`. This ensures the hive runs continually, picking up new jobs as they are submitted.
@@ -32,24 +32,24 @@ Secondly, you can provide an instance file, the location of which depends if you
 
 For virtualenv:
 ```
-mkdir -p vars/db_app-instance
-cp db_config.py.instance_example vars/db_app-instance/db_config.py 
+mkdir -p vars/metadata_app-instance
+cp metadata_config.py.instance_example vars/metadata_app-instance/metadata_config.py 
 ```
 
 Otherwise:
 ```
 mkdir instance
-cp db_config.py.instance_example instance/db_config.py 
+cp metadata_config.py.instance_example instance/metadata_config.py 
 ```
 
 Edit them as required. SERVER_URIS_FILE must point to a JSON file containing lists of server names for autocomplete e.g.
 ```
 SERVER_URIS_FILE = 'server_uris.json'
-HIVE_URI='mysql://myuser:mypass@myhost:3306/standalone_db_hive'
+HIVE_URI='mysql://myuser:mypass@myhost:3306/metadata_updater'
 ```
 An example can be found in `server_uris.json.example`.
 
-Note that you can leave instance files empty, and use the defaults found in db_config.py, or override them at run time with environment variables.
+Note that you can leave instance files empty, and use the defaults found in metadata_config.py, or override them at run time with environment variables.
 
 The following environment variables are supported:
 * SERVER_URIS_FILE - path to JSON file containing server details
@@ -64,15 +64,15 @@ Important: for the status endpoint to work, you must run the app as a user who c
 
 To start the main application as a standalone Flask application:
 ```
-export FLASK_APP=db_app.py
+export FLASK_APP=metadata_app.py
 cd ensembl-prodinf-srv
-flask run --port 5002 --host 0.0.0.0
+flask run --port 5003 --host 0.0.0.0
 ```
 or to start the main application as a standalone using gunicorn with 4 threads:
 ```
 pyenv activate ensprod_inf
 cd ensembl-prodinf-srv
-gunicorn -w 4 -b 0.0.0.0:5002 db_app:app
+gunicorn -w 4 -b 0.0.0.0:5003 metadata_app:app
 ```
 
 Note that for production, a different deployment option should be used as the standalone flask app can only serve one request at a time.
@@ -82,7 +82,7 @@ Using Docker
 
 To build a Docker image, first copy `ssh_config.example` to `ssh_config` and make any changes required (e.g. path to ssh keys) and then build:
 ```
-docker build -t ensembl_prodinf/db_app -f Dockerfile.db .
+docker build -t ensembl_prodinf/metadata_app -f Dockerfile.metadata .
 ```
 Supported environment variables (see above) should be supplied as arguments to the run command as shown in the example above.
 
@@ -97,5 +97,5 @@ docker run -p 127.0.0.1:4002:4002 \
        --mount type=bind,src=$PWD/server_uris/,target=/server_uris \
        --env HIVE_URI='mysql://user:pwd@localhost:3306/my_hive_db' \
        --env SERVER_URIS_FILE='/server_uris/server_uris.json' \
-       ensembl_prodinf/db_app
+       ensembl_prodinf/metadata_app
 ```

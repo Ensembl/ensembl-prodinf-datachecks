@@ -1,0 +1,4 @@
+git+git://github.com/Ensembl/ensembl-prodinf-core#egg=ensembl_prodinf
+celery==4.1.0
+requests==2.18.4
+SQLAlchemy==1.1.11
