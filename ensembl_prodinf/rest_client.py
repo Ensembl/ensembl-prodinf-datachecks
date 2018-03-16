@@ -1,24 +1,16 @@
 #!/usr/bin/env python
 import logging
 import requests
-import re
-import argparse
-
-http_uri_regex = r"^(http){1}(s){0,1}(://){1}(.+){1}(:){1}(\d+){1}(/){1}(.+){0,1}$"
-        
-def write_output(r, output_file):
-    if(output_file != None):
-        with output_file as f:
-            f.write(r.text)  
-            
-class RestClient:
+import argparse   
+from server_utils import assert_http_uri
+         
+class RestClient(object):
     
     jobs = '{}jobs'
     jobs_id = '{}jobs/{}'
     
     def __init__(self, uri):
-        if not re.search(http_uri_regex, uri):
-            raise ValueError("HC endpoint URL don't match pattern: http://server_name:port/")
+        assert_http_uri(uri)
         self.uri = uri
     
     def submit_job(self, payload):
@@ -37,7 +29,7 @@ class RestClient:
         logging.info("Listing")
         r = requests.get(self.jobs.format(self.uri))
         r.raise_for_status()    
-        return r.json
+        return r.json()
 
     def retrieve_job_failure(self, job_id):
         logging.info("Retrieving job failure for job " + str(job_id))
@@ -55,6 +47,12 @@ class RestClient:
     
     def print_job(self, job, print_results=False, print_input=False):
         logging.info(job)
+        
+    def write_output(self, r, output_file):
+        if(output_file != None):
+            with output_file as f:
+                f.write(r.text)  
+    
     
 if __name__ == '__main__':
             
