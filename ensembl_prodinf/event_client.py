@@ -67,7 +67,7 @@ if __name__ == '__main__':
     client = EventClient(args.uri)
             
     if args.action == 'submit':
-        job_id = client.submit_job(args.db_uri, json.loads(args.event))
+        job_id = client.submit_job(json.loads(args.event))
         logging.info('Job submitted with ID '+str(job_id))
     
     elif args.action == 'retrieve':
