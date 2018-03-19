@@ -4,7 +4,7 @@ import subprocess
 http_uri_regex = r"^(http){1}(s){0,1}(://){1}(.+){1}(:){1}(\d+){1}(/){1}(.+){0,1}$"
 uri_regex = r"^(mysql://){1}(.+){1}(:.+){0,1}(@){1}(.+){1}(:){1}(\d+){1}(/){1}$"
 db_uri_regex = r"^(mysql://){1}(.+){1}(:.+){0,1}(@){1}(.+){1}(:){1}(\d+){1}(/){1}(.+){1}$"    
-email_regex = r"^(.+){1}(@){1}(.+){1}$",
+email_regex = r"^(.+){1}(@){1}(.+){1}$"
 
 def assert_http_uri(uri):
     if not re.search(http_uri_regex, uri):
