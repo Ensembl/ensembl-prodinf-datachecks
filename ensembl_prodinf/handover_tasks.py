@@ -19,8 +19,8 @@ Step 1 is run in a client (e.g a flask endpoint), all subsequent steps are run i
 '''
 from ensembl_prodinf.handover_celery_app import app
 
-import db_copy_client
-import hc_client
+from hc_client import HcClient
+from db_copy_client import DbCopyClient
 from sqlalchemy_utils.functions import database_exists
 from sqlalchemy.engine.url import make_url
 from .utils import send_email
@@ -30,6 +30,8 @@ import re
 import reporting
 
 pool = reporting.get_pool(cfg.report_server)
+hc_client = HcClient(cfg.hc_uri)
+db_copy_client = DbCopyClient(cfg.copy_uri)
      
 def get_logger():    
     return reporting.get_logger(pool, cfg.report_exchange, 'handover', None, {})
@@ -99,7 +101,7 @@ def groups_for_uri(uri):
 
 def submit_hc(spec, groups):
     """Submit the source database for healthchecking. Returns a celery job identifier"""
-    hc_job_id = hc_client.submit_job(cfg.hc_uri, spec['src_uri'], cfg.production_uri, cfg.compara_uri, cfg.staging_uri, cfg.live_uri, None, groups, cfg.data_files_path, None)
+    hc_job_id = hc_client.submit_job(spec['src_uri'], cfg.production_uri, cfg.compara_uri, cfg.staging_uri, cfg.live_uri, None, groups, cfg.data_files_path, spec['contact'], spec['handover_token'])
     spec['hc_job_id'] = hc_job_id
     task_id = process_checked_db.delay(hc_job_id, spec)
     get_logger().debug("Submitted DB for checking as " + str(task_id))
@@ -116,7 +118,7 @@ def process_checked_db(self, hc_job_id, spec):
     # allow infinite retries 
     self.max_retries = None
     get_logger().info("Checking HCs for " + spec['src_uri'] + " from job " + str(hc_job_id))
-    result = hc_client.retrieve_job(cfg.hc_uri, hc_job_id)
+    result = hc_client.retrieve_job(hc_job_id)
     if (result['status'] == 'incomplete') or (result['status'] == 'running') or (result['status'] == 'submitted'):
         get_logger().info("Job incomplete, retrying")
         raise self.retry()
@@ -145,7 +147,7 @@ Please see %s
 
 def submit_copy(spec):
     """Submit the source database for copying to the target. Returns a celery job identifier"""    
-    copy_job_id = db_copy_client.submit_job(cfg.copy_uri, spec['src_uri'], spec['tgt_uri'], None, None, False, True, None)
+    copy_job_id = db_copy_client.submit_job(spec['src_uri'], spec['tgt_uri'], None, None, False, True, None)
     spec['copy_job_id'] = copy_job_id
     task_id = process_copied_db.delay(copy_job_id, spec)    
     get_logger().debug("Submitted DB for copying as " + str(task_id))
