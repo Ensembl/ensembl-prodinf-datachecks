@@ -7,6 +7,7 @@ from flasgger import Swagger
 
 from ensembl_prodinf import reporting
 from ensembl_prodinf import HiveInstance
+from ensembl_prodinf.event_tasks import process_result
 import event_config
 
 pool = reporting.get_pool(event_config.report_server)
@@ -102,9 +103,11 @@ def submit_job():
                 hive = get_hive(process)
                 analysis = get_analysis(process)
                 job = hive.create_job(analysis, {'event':event})
+                event_task = process_result.delay(event, process, job.job_id)
                 results['processes'].append({
                     "process":process,
-                    "job":job.job_id
+                    "job":job.job_id,
+                    "task":event_task.id
                 })
             except ProcessNotFoundError:
                 return "Process " + str(process) + " not found", 404
