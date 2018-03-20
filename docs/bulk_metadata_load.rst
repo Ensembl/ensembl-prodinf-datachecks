@@ -24,7 +24,7 @@ Or for all the database of a given division:
 ::
   EG_VERSION=38
   SERVER=mysql-eg-staging-2
-  mysql --batch --raw --skip-column-names $($SERVER details mysql) information_schema -e "select schema_name from SCHEMATA where (schema_name like '%core%' or schema_name like '%otherfeatures%' or schema_name like '%rnaseq%' or schema_name like '%cdna%' or schema_name like '%funcgen%%' or schema_name like '%variation%' or schema_name like '%compara%' or schema_name like '%mart%') and schema_name like '%${EG_VERSION}%' and schema_name not like 'master_schema%'" > eg_metadata_load.txt
+  mysql --batch --raw --skip-column-names $($SERVER details mysql) information_schema -e "select schema_name from SCHEMATA where (schema_name like '%core%' or schema_name like '%otherfeatures%' or schema_name like '%rnaseq%' or schema_name like '%cdna%' or schema_name like '%funcgen%%' or schema_name like '%variation%' or schema_name like '%compara%' or schema_name like '%mart%') and ( schema_name like '%${EG_VERSION}_{ENS_VERSION}_%' or  schema_name like '%${EG_VERSION}' ) and schema_name not like 'master_schema%'" > eg_metadata_load.txt
 
 2. Ensembl:
 ::
