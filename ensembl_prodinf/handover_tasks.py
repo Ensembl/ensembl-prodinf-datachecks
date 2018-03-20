@@ -163,7 +163,7 @@ def process_copied_db(self, copy_job_id, spec):
     # allow infinite retries     
     self.max_retries = None
     get_logger().info("Checking " + str(spec) + " using " + str(copy_job_id))
-    result = db_copy_client.retrieve_job(cfg.copy_uri, copy_job_id)
+    result = db_copy_client.retrieve_job(copy_job_id)
     if (result['status'] == 'incomplete') or (result['status'] == 'running') or (result['status'] == 'submitted'):
         get_logger().info("Job incomplete, retrying")
         raise self.retry() 
