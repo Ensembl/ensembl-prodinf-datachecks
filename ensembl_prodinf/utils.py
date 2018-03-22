@@ -2,10 +2,21 @@
 from email.mime.text import MIMEText
 from smtplib import SMTP
 import json
-import getpass
 import logging
 
-default_user = '%s@ebi.ac.uk' % getpass.getuser()
+default_user = None
+def get_default_user():
+    if default_user == None:
+        import os
+        for name in ('LOGNAME', 'USER', 'LNAME', 'USERNAME'):
+            user = os.environ.get(name)
+            if user:
+                default_user = user
+                break
+    if default_user == None:
+        import pwd
+        default_user = pwd.getpwuid(os.getuid())[0]
+    return default_user
 
 def send_email(**kwargs):
     """ Utility method for sending an email"""
