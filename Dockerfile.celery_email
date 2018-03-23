@@ -1,5 +1,12 @@
 FROM python:2.7
-COPY celery_requirements.txt /requirements.txt
-COPY celery_app_config.py.example /celery_app_config.py
-RUN pip install -r requirements.txt
-ENTRYPOINT celery -A ensembl_prodinf worker --concurrency=20 --loglevel=info
+WORKDIR /app
+COPY celery_requirements.txt /app/requirements.txt
+COPY email_celery_app_config.py.example /app/email_celery_app_config.py
+RUN  groupadd appusers && \
+    useradd appuser -G appusers && \
+    mkdir -p /app && \
+    chown appuser:appusers /app && \
+    cd /app && pip install -r requirements.txt
+USER appuser:appusers
+ENV USER ensembl-production
+ENTRYPOINT celery -A ensembl_prodinf.email_tasks -Q email worker --concurrency=20 --loglevel=info
