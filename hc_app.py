@@ -32,7 +32,14 @@ def get_hive():
 cors = CORS(app)
 
 # use re to support different charsets
-json_pattern = re.compile("application/json")
+json_pattern = re.compile("application/json"
+@app.route('/', methods=['GET'])
+def info():
+    return jsonify(app.config['SWAGGER')
+
+@app.route('/ping', methods=['GET'])
+def ping():
+    return jsonify({"status":"ok"})
 
 @app.route('/jobs', methods=['POST'])
 def submit_job():

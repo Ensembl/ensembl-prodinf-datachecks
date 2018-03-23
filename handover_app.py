@@ -17,6 +17,14 @@ cors = CORS(app)
 # use re to support different charsets
 json_pattern = re.compile("application/json")
 
+@app.route('/', methods=['GET'])
+def info():
+    return jsonify(app.config['SWAGGER')
+
+@app.route('/ping', methods=['GET'])
+def ping():
+    return jsonify({"status":"ok"})
+
 @app.route('/submit', methods=['POST'])
 def handover():
     if json_pattern.match(request.headers['Content-Type']):
