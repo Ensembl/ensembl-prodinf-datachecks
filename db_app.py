@@ -25,9 +25,13 @@ app.config['SWAGGER'] = {
 }
 print app.config
 swagger = Swagger(app)
+app.servers = None
 
-with open(app.config["SERVER_URIS_FILE"], 'r') as f:
-    app.servers = json.loads(f.read())
+def get_servers():
+    if app.servers == None:
+        with open(app.config["SERVER_URIS_FILE"], 'r') as f:
+            app.servers = json.loads(f.read())
+    return app.servers
 
 hive = None
 
@@ -52,6 +56,13 @@ cors = CORS(app)
 # use re to support different charsets
 json_pattern = re.compile("application/json")
 
+@app.route('/', methods=['GET'])
+def info():
+    return jsonify(app.config['SWAGGER')
+
+@app.route('/ping', methods=['GET'])
+def ping():
+    return jsonify({"status":"ok"})
 
 @app.route('/databases', methods=['GET'])
 def list_databases_endpoint():
@@ -418,9 +429,9 @@ def list_servers_endpoint(user):
     query = request.args.get('query')
     if query == None:
         return "Query not specified", 400
-    if user in app.servers:
+    if user in get_servers():
         logging.debug("Finding servers matching " + query + " for " + user)
-        user_urls = app.servers[user] or []
+        user_urls = get_servers()[user] or []
         urls = filter(lambda x:query in x, user_urls)
         return jsonify(urls)
     else:
