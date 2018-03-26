@@ -1,16 +1,18 @@
 FROM python:2.7
 WORKDIR /app
 COPY requirements.txt gunicorn.conf db_app.py db_config.py /app/
-COPY celery_app_config.py.example /app/celery_app_config.py
+COPY email_celery_app_config.py.example /app/email_celery_app_config.py
 COPY ssh_config /home/appuser/.ssh/config
-RUN groupadd appusers && \
-    useradd appuser -G appusers && \
-    chown -R appuser:appusers /app && \
+RUN useradd -u 1000 -g 0 appuser && \
     pip install -r requirements.txt && \
-    chown -R appuser:appusers /home/appuser/.ssh && \ 
-    chmod -R 700 /home/appuser/.ssh && \
     mkdir /instance && \
-    touch /instance/db_config.py
-USER appuser:appusers
+    touch /instance/db_config.py && \
+    chgrp -R 0 /instance && \
+    chgrp -R 0 /app && \
+    chmod -R 770 /instance && \
+    chmod -R 770 /app && \
+    chown -R 1000:0 /home/appuser && \
+    chmod -R 700 /home/appuser/.ssh/
+USER 1000:0
 EXPOSE 4002
 ENTRYPOINT ["/usr/local/bin/gunicorn", "--config", "/app/gunicorn.conf", "-b", ":4002", "db_app:app"]
