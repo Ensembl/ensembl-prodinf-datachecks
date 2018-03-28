@@ -118,7 +118,7 @@ class Job(Base):
 
     def __repr__(self):
         return "<Job(job_id='%s', analysis='%s', input_id='%s', status='%s', result='%s', role=%s)>" % (
-            self.job_id, self.analysis.logic_name, self.input_id, self.status, self.result.output, self.role_id if self.result != None else None)
+            self.job_id, self.analysis.logic_name, self.input_id, self.status, (self.result.output if self.result!=None else None), self.role_id if self.result != None else None)
 
 Session = sessionmaker()
 class HiveInstance:
