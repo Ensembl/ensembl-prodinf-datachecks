@@ -44,7 +44,7 @@ class JsonFormatter(logging.Formatter):
 
     def format(self, record):
         obj = {
-            "report_type":record.report_type,
+            "report_type":record.levelname,
             "host":record.host,
             "process":record.process,
             "resource":record.resource,
