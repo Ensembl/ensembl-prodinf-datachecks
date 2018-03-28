@@ -11,28 +11,31 @@ logging.basicConfig()
 class UtilsTest(unittest.TestCase):
 
     def test_filter(self):
-        
-        context = threading.local() 
-        context.host = "myhost"
-        context.process = "myprocess"
-        context.resource = "myres"
+
+        context = {
+          'host' : "myhost",
+          'process' : "myprocess",
+          'resource' : "myres"
+        }
+
         f = ContextFilter(context)
         msg = "Hello world"
-        record = logging.LogRecord("logger", "INFO", None, "1", msg, None, None, None)
+        record = logging.LogRecord("logger", 20, None, "1", msg, None, None, None)
+        print record.levelname
         result = f.filter(record)
         self.assertTrue(result, "Checking filter return")
-        self.assertEquals(record.host, context.host)
-        self.assertEquals(record.process, context.process)
-        self.assertEquals(record.resource, context.resource)
+        self.assertEquals(record.host, context['host'])
+        self.assertEquals(record.process, context['process'])
+        self.assertEquals(record.resource, context['resource'])
         self.assertEquals(record.msg, msg)
-        context.process = "mynewprocess"
+        context['process'] = "mynewprocess"
         msg = "Goodbye world"
-        record = logging.LogRecord("logger", "INFO", None, "1", msg, None, None, None)
+        record = logging.LogRecord("logger", 20, None, "1", msg, None, None, None)
         result = f.filter(record)
         self.assertTrue(result, "Checking filter return")
-        self.assertEquals(record.host, context.host)
-        self.assertEquals(record.process, context.process)
-        self.assertEquals(record.resource, context.resource)
+        self.assertEquals(record.host, context['host'])
+        self.assertEquals(record.process, context['process'])
+        self.assertEquals(record.resource, context['resource'])
         self.assertEquals(record.msg, msg)
 
     def test_formatter(self):
