@@ -1,16 +1,23 @@
 pipeline {
-  agent any
-  def app
+  agent {
+   docker {
+     image 'python:2.7-slim'
+   }
+  }
   stages {
     stage('Clone repository') {
-        checkout scm
+        steps {
+          checkout scm
+        }
     }
     stage('Set up') {
-        sh 'pip install -r requirements.txt'
+        steps {
+          sh 'pip install -r requirements.txt'
+        }
     }
     
-    stage('Test image') {
-        app.inside {
+    stage('Test') {
+        steps {
             sh 'nosetests tests'
         }
     }
