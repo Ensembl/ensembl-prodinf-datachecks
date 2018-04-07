@@ -5,7 +5,6 @@ from sqlalchemy.exc import IntegrityError
 import datetime
 import logging
 logging.basicConfig()
-#logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO)
 Base = declarative_base()
 
 class LockEnum(Enum):
@@ -76,17 +75,18 @@ Session = sessionmaker()
 class ResourceLocker:
 
     def __init__(self, url, timeout=3600):
+        self.url = url
         engine = create_engine(url, pool_recycle=timeout, echo=False)
         Base.metadata.create_all(engine)
         Session.configure(bind=engine)
 
-    def get_client(self, name):
+    def get_client(self, name, session):
         """Get or create a client with the given name"""
-        return self._get_object(Client, name=name)
+        return self._get_object(Client, name=name, session=session)
     
-    def get_resource(self, uri):
+    def get_resource(self, uri, session):
         """Get or create a resource with the given URI"""
-        return self._get_object(Resource, uri=uri)
+        return self._get_object(Resource, uri=uri, session=session)
 
     def _get_object(self, obj_type, **kwargs):
         """Fetch or create a basic object from the database.
@@ -94,7 +94,8 @@ class ResourceLocker:
         If it has already been created, return it.
         If a duplicate exists, retry the method.
         """
-        session = Session()
+        has_session = 'session' in kwargs
+        session = kwargs.pop('session', Session())
         try:                    
             obj = session.query(obj_type).filter_by(**kwargs).first()
             if obj:
@@ -106,10 +107,10 @@ class ResourceLocker:
                 return obj
         except IntegrityError:
             # duplicate entry, so try again to fetch with a fresh session
-            session.close()
+            kwargs['session'] = session
             return self._get_object(obj_type, **kwargs)
         finally:
-            session.close()    
+            if has_session == False: session.close() 
 
     def _load(self, lock):
         lock.resource
@@ -134,11 +135,12 @@ class ResourceLocker:
             session.close()
              
     def lock(self, client_name, resource_uri, lock_type):
-        client = self.get_client(client_name)
-        resource = self.get_resource(resource_uri)
+        logging.info("Locking {} for {} for {}", client_name, resource_uri, lock_type)
         session = Session()
+        client = self.get_client(client_name, session)
+        resource = self.get_resource(resource_uri, session)
         try:
-            session.execute('lock table resource_lock write')
+            self.lock_db(session)            
             if(lock_type == 'read'):
                 # can only create if no write locks found on resource
                 n_locks = session.query(ResourceLock).filter_by(resource=resource, lock_type='write').count()
@@ -157,9 +159,31 @@ class ResourceLocker:
                     session.commit()                    
             else:
                 raise ValueError("Unsupported lock_type".format(str(lock_type)))
-            session.execute('unlock tables')
+            self.unlock_db(session)            
         finally:            
             session.close()
         return
-            
     
+    def unlock(self, lock):
+        session = Session()
+        if(type(lock) is int):
+            lock = session.query(ResourceLock).filter_by(id=lock).first()
+            if lock == None:
+                raise ValueError("No lock found for ID "+str(lock))
+        try:
+            logging.info("Deleting lock "+str(lock))
+            self.lock_db(session)
+            session.delete(lock)
+            session.commit()
+            self.unlock_db(session)
+        finally:            
+            session.close()
+        return
+
+    def lock_db(self, session):
+        if(self.url.startswith('mysql')):
+            session.execute('lock table resource_lock write')
+
+    def unlock_db(self, session):
+        if(self.url.startswith('mysql')):
+            session.execute('unlock tables')
