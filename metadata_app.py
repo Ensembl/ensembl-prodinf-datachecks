@@ -47,22 +47,22 @@ cors = CORS(app)
 # use re to support different charsets
 json_pattern = re.compile("application/json")
 
-@app.route('/submit', methods=['POST'])
-def submit():
+@app.route('/jobs', methods=['POST'])
+def submit_job():
     """
     Endpoint to submit a database to be processed and added to the metadata database
     This is using docstring for specifications
     ---
     tags:
-      - submit
+      - jobs
     parameters:
       - in: body
         name: body
         description: copy database job object
-        requiered: false
+        required: false
         schema:
           $ref: '#/definitions/submit'
-    operationId: submit
+    operationId: jobs
     consumes:
       - application/json
     produces:
@@ -131,14 +131,14 @@ def submit():
         return "Could not handle input of type " + request.headers['Content-Type'], 415
 
 
-@app.route('/results/<int:job_id>', methods=['GET'])
-def results(job_id):
+@app.route('/jobs/<int:job_id>', methods=['GET'])
+def job_result(job_id):
     """
     Endpoint to retrieve a given job result using job_id
     This is using docstring for specifications
     ---
     tags:
-      - results
+      - jobs
     parameters:
       - name: job_id
         in: path
@@ -146,7 +146,17 @@ def results(job_id):
         required: true
         default: 1
         description: id of the job
-    operationId: results
+      - name: format
+        in: query
+        type: string
+        required: false
+        description: optional parameter (email, failure)
+      - name: email
+        in: query
+        type: string
+        required: false
+        description: Email address to use in report 
+    operationId: jobs
     consumes:
       - application/json
     produces:
@@ -192,11 +202,44 @@ def results(job_id):
             database_uri: mysql://user:password@server:port/saccharomyces_cerevisiae_core_91_4
           status: complete
     """
-    try:
-        logging.info("Retrieving job with ID " + str(job_id))
-        return jsonify(get_hive().get_result_for_job_id(job_id, child=True))
-    except ValueError:
+    fmt = request.args.get('format')
+    logging.debug("Format "+str(fmt))
+    if fmt == 'email':
+        email = request.args.get('email')
+        return job_email(email, job_id)
+    elif fmt == 'failures':
+        return job_failures(job_id)
+    elif fmt == None:
+        try:    
+            logging.info("Retrieving job with ID " + str(job_id))
+            return jsonify(get_hive().get_result_for_job_id(job_id))
+        except ValueError:
+            return "Job " + str(job_id) + " not found", 404
+    else:
+        return "Format "+fmt+" not valid", 400
+
+def job_email(email, job_id):
+    logging.info("Retrieving job with ID " + str(job_id) + " for " + str(email))
+    job = get_hive().get_job_by_id(job_id)
+    if(job == None):
         return "Job " + str(job_id) + " not found", 404
+    results = get_hive().get_result_for_job_id(job_id)
+    if results['status'] == 'complete':
+        results['subject'] = 'Healthchecks for %s - %s' % (results['output']['db_name'], results['output']['status'])
+        results['body'] = "Results for %s:\n" % (results['output']['db_uri'])
+        for (test, result) in results['output']['results'].iteritems():
+            results['body'] += "* %s : %s\n" % (test, result['status'])
+            if result['messages'] != None:
+                for msg in result['messages']:
+                    results['body'] += "** %s\n" % (msg)
+    elif results['status'] == 'failed':
+        failures=get_hive().get_jobs_failure_msg(job_id)
+        results['subject'] = 'Healthcheck job failed'
+        results['body'] = 'Healthcheck job failed with following message:\n'
+        for (jobid,msg) in failures.iteritems():
+            results['body'] += "* Job ID %s : %s\n" % (jobid, msg)
+    results['output'] = None
+    return jsonify(results)
 
 
 @app.route('/failure/<int:job_id>', methods=['GET'])
@@ -258,14 +301,22 @@ def failure(job_id):
     except ValueError:
         return "Job " + str(job_id) + " not found", 404
 
-@app.route('/delete/<int:job_id>', methods=['GET'])
-def delete(job_id):
+def job_failures(job_id):
+    try:
+        logging.info("Retrieving failure for job with ID " + str(job_id))
+        failures=get_hive().get_jobs_failure_msg(job_id)
+        return jsonify(failures)
+    except ValueError:
+        return "Job " + str(job_id) + " not found", 404
+
+@app.route('/jobs/<int:job_id>', methods=['DELETE'])
+def delete_job(job_id):
     """
     Endpoint to delete a given job result using job_id
     This is using docstring for specifications
     ---
     tags:
-      - delete
+      - jobs
     parameters:
       - name: job_id
         in: path
@@ -273,7 +324,7 @@ def delete(job_id):
         required: true
         default: 1
         description: id of the job
-    operationId: delete
+    operationId: jobs
     consumes:
       - application/json
     produces:
@@ -316,85 +367,6 @@ def delete(job_id):
         return "Job " + str(job_id) + " not found", 404
     hive.delete_job(job, child=True)
     return jsonify({"id":job_id})
-
-
-@app.route('/results_email/<int:job_id>', methods=['GET'])
-def results_email(job_id):
-    """
-    Endpoint to display job result sent to email defined in input
-    This is using docstring for specifications
-    ---
-    tags:
-      - results_email
-    parameters:
-      - name: job_id
-        in: path
-        type: integer
-        required: true
-        default: 4
-        description: id of the job
-    operationId: results_email
-    consumes:
-      - application/json
-    produces:
-      - application/json
-    security:
-      results_email_auth:
-        - 'write:results_email'
-        - 'read:results_email'
-    schemes: ['http', 'https']
-    deprecated: false
-    externalDocs:
-      description: Project repository
-      url: http://github.com/rochacbruno/flasgger
-    definitions:
-      job_id:
-        type: object
-        properties:
-          job_id:
-            type: integer
-            items:
-              $ref: '#/definitions/job_id'
-      results_email:
-        type: string
-        properties:
-          results_email:
-            type: string
-            items:
-              $ref: '#/definitions/results_email'
-    responses:
-      200:
-        description: result in email friendly format that was sent to email defined in input
-        schema:
-          $ref: '#/definitions/job_id'
-        examples:
-          body: 'Metadata load of mysql://user@server:port/saccharomyces_cerevisiae_core_91_4 in mysql://user:password@server:port/ensembl_metadata is successful. Load took 31 seconds' 
-          id: 1
-          input: 
-            metadata_uri: mysql://user:password@server:port/ensembl_metadata
-            database_uri: mysql://user:password@server:port/saccharomyces_cerevisiae_core_91_4 
-            timestamp: 1515494114.263158
-          output: null 
-          status: complete 
-          subject: 'Load of mysql://user@server:port/saccharomyces_cerevisiae_core_91_4 to mysql://user:password@server:port/saccharomyces_cerevisiae_core_91_4 successful'
-    """
-    email = request.args.get('email')
-    logging.info("Retrieving job with ID " + str(job_id) + " for " + str(email))
-    job = get_hive().get_job_by_id(job_id)
-    if(job == None):
-        return "Job " + str(job_id) + " not found", 404
-    results = get_hive().get_result_for_job_id(job_id)
-    if results['status'] == 'complete':
-        results['subject'] = 'Metadata load of database %s to %s successful' % (results['output']['database_uri'], results['output']['metadata_uri'])
-        results['body'] = "Meatadata load of database %s to %s is successful\n" % (results['output']['database_uri'], results['output']['metadata_uri'])
-        results['body'] += "Load took %s" % (results['output']['runtime'])
-    elif results['status'] == 'failed':
-        failure = get_hive().get_job_failure_msg_by_id(job_id)
-        results['subject'] = 'Metadata load of database %s to %s failed' % (results['input']['database_uri'], results['input']['metadata_uri'])
-        results['body'] = 'Metadata load failed with:\n'
-        results['body'] += '%s' % (failure.msg)
-    results['output'] = None
-    return jsonify(results)
 
 
 @app.route('/jobs', methods=['GET'])
