@@ -82,7 +82,15 @@ class LockException(Exception):
 Session = sessionmaker()
 class ResourceLocker:
 
+    """Utility class for the locking and unlocking of resources    
+    """
+
     def __init__(self, url, timeout=3600):
+        """Create a new ResourceLocker instance
+        Attributes:
+          url - URL of backing database
+          timeout - (optional) time in seconds to keep connections to database open. Defaults to 3600s
+        """
         self.url = url
         engine = create_engine(url, pool_recycle=timeout, echo=False)
         Base.metadata.create_all(engine)
@@ -127,11 +135,16 @@ class ResourceLocker:
                 logging.debug("Closing session")
                 session.close() 
 
-    def _load(self, lock):
-        lock.resource
-        lock.client
-
     def get_locks(self, **kwargs):
+        """Fetch current locks from the database
+        Optional named arguments for filtering:
+          id - resource_lock_id
+          lock_type - read or write
+          resource - URI of resource
+          client - name of client
+        Returns:
+          List of ResourceLock objects
+        """
         session = Session()                
         try:
             q = session.query(ResourceLock)
@@ -144,18 +157,29 @@ class ResourceLocker:
             if 'client' in kwargs:
                 q = q.filter(Client.name == kwargs['client'])
             locks = q.all()
-            for l in locks: self._load(l)
+            for l in locks: lazy_load(l)
             return locks
         finally:
             session.close()
              
     def lock(self, client_name, resource_uri, lock_type):
+        """Lock the specified resource.
+        Arguments:
+          client - name of client
+          resource - URI of resource
+          lock_type - read or write
+        Returns:
+          ResourceLock
+        Raises:
+          LockException if resource cannot be locked
+          ValueException if lock type not read or write
+        """
         logging.info("Locking {} for {} for {}", client_name, resource_uri, lock_type)
         session = Session()
         client = self.get_client(client_name, session)
         resource = self.get_resource(resource_uri, session)
         try:
-            self.lock_db(session)            
+            self._lock_db(session)            
             if(lock_type == 'read'):
                 # can only create if no write locks found on resource
                 n_locks = session.query(ResourceLock).filter_by(resource=resource, lock_type='write').count()
@@ -180,12 +204,20 @@ class ResourceLocker:
                     return lock
             else:
                 raise ValueError("Unsupported lock_type".format(str(lock_type)))
-            self.unlock_db(session)          
+            self._unlock_db(session)          
         finally:            
             session.close()
         return
     
     def unlock(self, lock):
+        """Release the specified lock
+        Arguments:
+          lock - either ResourceLock or ID of lock 
+        Returns:
+           None
+        Raises:
+          ValueError if lock not found
+        """
         session = Session()
         if(type(lock) is int):
             lock = session.query(ResourceLock).filter_by(id=lock).first()
@@ -193,19 +225,21 @@ class ResourceLocker:
                 raise ValueError("No lock found for ID "+str(lock))
         try:
             logging.info("Deleting lock "+str(lock))
-            self.lock_db(session)
+            self._lock_db(session)
             session.delete(lock)
             session.commit()
-            self.unlock_db(session)
+            self._unlock_db(session)
         finally:            
             session.close()
         return
 
-    def lock_db(self, session):
+    def _lock_db(self, session):
+        """Utility to obtain a lock over the MySQL tables to ensure no race condition"""
         if(self.url.startswith('mysql')):
             session.execute('lock table resource_lock write')
-
-    def unlock_db(self, session):
+            
+    def _unlock_db(self, session):
+        """Utility to obtain release a lock over the MySQL tables"""
         if(self.url.startswith('mysql')):
             session.execute('unlock tables')
             
