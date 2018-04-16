@@ -4,7 +4,15 @@ from sqlalchemy.orm import sessionmaker, relationship
 from sqlalchemy.exc import IntegrityError
 import datetime
 import logging
+from pip._vendor.lockfile import symlinklockfile
 logging.basicConfig()
+
+def lazy_load(obj):
+    """
+    Helper method to call all attribs on an obj to load them before detaching from the session
+    """
+    [getattr(obj, method) for method in dir(obj) if callable(getattr(obj, method))]
+
 Base = declarative_base()
 
 class LockEnum(Enum):
@@ -80,11 +88,11 @@ class ResourceLocker:
         Base.metadata.create_all(engine)
         Session.configure(bind=engine)
 
-    def get_client(self, name, session):
+    def get_client(self, name, session=None):
         """Get or create a client with the given name"""
         return self._get_object(Client, name=name, session=session)
     
-    def get_resource(self, uri, session):
+    def get_resource(self, uri, session=None):
         """Get or create a resource with the given URI"""
         return self._get_object(Resource, uri=uri, session=session)
 
@@ -96,6 +104,9 @@ class ResourceLocker:
         """
         has_session = 'session' in kwargs
         session = kwargs.pop('session', Session())
+        if session == None:
+            has_session = False
+            session = Session()
         try:                    
             obj = session.query(obj_type).filter_by(**kwargs).first()
             if obj:
@@ -104,13 +115,17 @@ class ResourceLocker:
                 obj = obj_type(**kwargs)
                 session.add(obj)
                 session.commit()
+                # lazily load attrs so they can be accessed in a detached object
+                lazy_load(obj)
                 return obj
         except IntegrityError:
             # duplicate entry, so try again to fetch with a fresh session
             kwargs['session'] = session
             return self._get_object(obj_type, **kwargs)
         finally:
-            if has_session == False: session.close() 
+            if has_session == False:
+                logging.debug("Closing session")
+                session.close() 
 
     def _load(self, lock):
         lock.resource
@@ -147,19 +162,25 @@ class ResourceLocker:
                 if(n_locks>0):
                     raise LockException("Write lock found on {} - cannot lock for reading".format(str(n_locks), resource_uri))
                 else:
-                    session.add(ResourceLock(resource=resource, client=client, lock_type=lock_type))
+                    lock = ResourceLock(resource=resource, client=client, lock_type=lock_type)
+                    session.add(lock)
                     session.commit()                    
+                    lazy_load(lock)
+                    return lock
             elif(lock_type == 'write'):
                 # can only create if no other locks found on resource
                 n_locks = session.query(ResourceLock).filter_by(resource=resource).count()
                 if(n_locks>0):
                     raise LockException("{} lock(s) found on {}".format(str(n_locks), resource_uri))
                 else:
-                    session.add(ResourceLock(resource=resource, client=client, lock_type=lock_type))
+                    lock = ResourceLock(resource=resource, client=client, lock_type=lock_type)
+                    session.add(lock)
                     session.commit()                    
+                    lazy_load(lock)
+                    return lock
             else:
                 raise ValueError("Unsupported lock_type".format(str(lock_type)))
-            self.unlock_db(session)            
+            self.unlock_db(session)          
         finally:            
             session.close()
         return
@@ -187,3 +208,5 @@ class ResourceLocker:
     def unlock_db(self, session):
         if(self.url.startswith('mysql')):
             session.execute('unlock tables')
+            
+    
