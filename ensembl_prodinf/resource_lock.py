@@ -231,7 +231,93 @@ class ResourceLocker:
         finally:            
             session.close()
         return
-
+    
+    def get_clients(self):
+        """Return all current clients
+        Returns:
+           List of Client objects
+        """
+        session = Session()
+        try:
+            clients = session.query(Client).all()
+            for client in clients:
+                lazy_load(client)
+            return clients
+        finally:            
+            session.close()
+        return
+    
+    def delete_client(self, client):
+        """Delete the specified client
+        Arguments:
+          lock - either name, id or Client object
+        Returns:
+           None
+        Raises:
+          ValueError if lock not found
+        """
+        session = Session()
+        if(type(client) is int):
+            client = session.query(Client).filter_by(id=client).first()
+            if client == None:
+                raise ValueError("No client found for ID ")
+        if(type(client) is str):
+            client = session.query(Client).filter_by(name=client).first()
+            if client == None:
+                raise ValueError("No client found for name")
+        try:
+            logging.info("Deleting client "+str(client))
+            self._lock_db(session)
+            session.delete(client)
+            session.commit()
+            self._unlock_db(session)
+        finally:            
+            session.close()
+        return
+    
+    def get_resources(self):
+        """Return all current resources
+        Returns:
+           List of Resource objects
+        """
+        session = Session()
+        try:
+            resources = session.query(Resource).all()
+            for resource in resources:
+                lazy_load(resource)
+            return resources
+        finally:            
+            session.close()
+        return
+   
+    def delete_resource(self, resource):
+        """Delete the specified client
+        Arguments:
+          lock - either uri, id or Resource object
+        Returns:
+           None
+        Raises:
+          ValueError if lock not found
+        """
+        session = Session()
+        if(type(resource) is int):
+            resource = session.query(Resource).filter_by(id=resource).first()
+            if resource == None:
+                raise ValueError("No client found for ID ")
+        if(type(resource) is str):
+            resource = session.query(Resource).filter_by(uri=resource).first()
+            if resource == None:
+                raise ValueError("No client found for name")
+        try:
+            logging.info("Deleting resource "+str(resource))
+            self._lock_db(session)
+            session.delete(resource)
+            session.commit()
+            self._unlock_db(session)
+        finally:            
+            session.close()
+        return    
+    
     def _lock_db(self, session):
         """Utility to obtain a lock over the MySQL tables to ensure no race condition"""
         if(self.url.startswith('mysql')):

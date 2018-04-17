@@ -37,6 +37,9 @@ class UtilsTest(unittest.TestCase):
             client2 = locker.get_client(cname)
             self.assertEqual(client.client_id, client2.client_id, "Client retrieved")
             self.assertEqual(client.name, client2.name, "Client name retrieved")
+            self.assertEqual(1, len(locker.get_clients()))
+            locker.delete_client(cname)
+            self.assertEqual(0, len(locker.get_clients()))
                         
         self.run_test(ctest)
         return
@@ -49,6 +52,9 @@ class UtilsTest(unittest.TestCase):
             res2 = locker.get_resource(ruri)
             self.assertEqual(res.resource_id,res2.resource_id, "Resource retrieved")
             self.assertEqual(res.uri, res2.uri, "Resource uri retrieved")
+            self.assertEqual(1, len(locker.get_resources()))
+            locker.delete_resource(ruri)
+            self.assertEqual(0, len(locker.get_resources()))
             
         self.run_test(rtest)
         return
