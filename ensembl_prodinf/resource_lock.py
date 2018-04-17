@@ -4,7 +4,6 @@ from sqlalchemy.orm import sessionmaker, relationship
 from sqlalchemy.exc import IntegrityError
 import datetime
 import logging
-from pip._vendor.lockfile import symlinklockfile
 logging.basicConfig()
 
 def lazy_load(obj):
