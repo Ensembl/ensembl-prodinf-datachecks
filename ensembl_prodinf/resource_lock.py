@@ -137,7 +137,6 @@ class ResourceLocker:
     def get_locks(self, **kwargs):
         """Fetch current locks from the database
         Optional named arguments for filtering:
-          id - resource_lock_id
           lock_type - read or write
           resource - URI of resource
           client - name of client
@@ -147,8 +146,6 @@ class ResourceLocker:
         session = Session()                
         try:
             q = session.query(ResourceLock)
-            if 'id' in kwargs:
-                q = q.filter(ResourceLock.resource_lock_id == kwargs['id'])                 
             if 'lock_type' in kwargs:
                 q = q.filter(ResourceLock.lock_type == kwargs['lock_type'])                 
             if 'resource' in kwargs:
@@ -160,6 +157,22 @@ class ResourceLocker:
             return locks
         finally:
             session.close()
+
+    def get_lock(self, lock_id):
+        """Fetch lock with ID from database
+        Argument:
+          lock_id - ID of lock
+        Returns:
+          ResourceLock
+        """
+        session = Session()                
+        try:
+            lock = session.query(ResourceLock).filter_by(resource_lock_id=lock_id).first()
+            lazy_load(lock)
+            return lock
+        finally:
+            session.close()
+
              
     def lock(self, client_name, resource_uri, lock_type):
         """Lock the specified resource.

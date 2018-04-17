@@ -68,6 +68,11 @@ class UtilsTest(unittest.TestCase):
             self.assertEqual(ruri, lock.resource.uri, "Resource correct")  
             locks = [l for l in locker.get_locks() if(l.resource_lock_id == lock.resource_lock_id)]
             self.assertEqual(1, len(locks), "Lock exists")
+            lock2 = locker.get_lock(lock.resource_lock_id)
+            self.assertEqual(lock.resource_lock_id, lock2.resource_lock_id, "Lock ID correct")
+            self.assertEqual(rlock, lock2.lock_type, "Lock type correct")
+            self.assertEqual(cname, lock2.client.name, "Client correct")     
+            self.assertEqual(ruri, lock2.resource.uri, "Resource correct")              
             locker.unlock(lock)   
             locks = [l for l in locker.get_locks() if(l.resource_lock_id == lock.resource_lock_id)]
             self.assertEqual(0, len(locks), "Lock does not exist")            
