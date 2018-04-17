@@ -5,7 +5,6 @@ from sqlalchemy.exc import IntegrityError
 import datetime
 import logging
 logging.basicConfig()
-
 def lazy_load(obj):
     """
     Helper method to call all attribs on an obj to load them before detaching from the session
@@ -40,6 +39,9 @@ class ResourceLock(Base):
     
     def __repr__(self):
         return "<ResourceLock(resource_lock_id={}, lock_type='{}', client='{}', resource='{}')>".format(self.resource_lock_id, self.lock_type, self.client.name, self.resource.uri)
+    
+    def to_dict(self):
+        return {"resource_lock_id": self.resource_lock_id, "client":self.client.to_dict(), "resource":self.resource.to_dict(), "lock_type":self.lock_type, "created":self.created}
 
 class Resource(Base):
     """Class respresenting an abstract resource like a database or a file
@@ -56,6 +58,10 @@ class Resource(Base):
     def __repr__(self):
         return "<Resource(resource_id={}, uri='{}')>".format(
             self.resource_id, self.uri)
+
+    def to_dict(self):
+        return {"resource_id": self.resource_id, "uri":self.uri}
+
 
 class Client(Base):
     """Class respresenting an abstract client who needs access to a resource.
@@ -74,6 +80,10 @@ class Client(Base):
     def __repr__(self):
         return "<Client(client_id={}, name='{}')>".format(
             self.client_id, self.name)
+
+    def to_dict(self):
+        return {"client_id": self.client_id, "name":self.name}
+
 
 class LockException(Exception):
     pass
@@ -103,6 +113,22 @@ class ResourceLocker:
         """Get or create a resource with the given URI"""
         return self._get_object(Resource, uri=uri, session=session)
 
+    def get_client_by_id(self, client_id):
+        """Get client with the specified ID"""
+        session = Session()
+        try:                    
+            return session.query(Client).filter_by(client_id=client_id).first()
+        finally:
+            session.close() 
+    
+    def get_resource_by_id(self, resource_id):
+        """Get resource with the specified ID"""
+        session = Session()
+        try:                    
+            return session.query(Resource).filter_by(resource_id=resource_id).first()
+        finally:
+            session.close() 
+
     def _get_object(self, obj_type, **kwargs):
         """Fetch or create a basic object from the database.
         If the object is not present, create it.
@@ -120,8 +146,10 @@ class ResourceLocker:
                 return obj
             else:
                 obj = obj_type(**kwargs)
+                self._lock_db(session)
                 session.add(obj)
                 session.commit()
+                self._unlock_db(session)
                 # lazily load attrs so they can be accessed in a detached object
                 lazy_load(obj)
                 return obj
@@ -146,14 +174,18 @@ class ResourceLocker:
         session = Session()                
         try:
             q = session.query(ResourceLock)
-            if 'lock_type' in kwargs:
-                q = q.filter(ResourceLock.lock_type == kwargs['lock_type'])                 
-            if 'resource' in kwargs:
-                q = q.filter(Resource.uri == kwargs['resource'])
-            if 'client' in kwargs:
-                q = q.filter(Client.name == kwargs['client'])
+            resource = kwargs.get('resource_uri')
+            client = kwargs.get('client_name')
+            lock_type = kwargs.get('lock_type')
+            if lock_type != None:
+                q = q.filter(ResourceLock.lock_type == lock_type)                 
+            if resource != None:
+                q = q.join(Resource).filter(Resource.uri == resource)
+            if client != None:
+                q = q.join(Client).filter(Client.name == client)
             locks = q.all()
-            for l in locks: lazy_load(l)
+            for l in locks: 
+                lazy_load(l)
             return locks
         finally:
             session.close()
@@ -232,7 +264,7 @@ class ResourceLocker:
         """
         session = Session()
         if(type(lock) is int):
-            lock = session.query(ResourceLock).filter_by(id=lock).first()
+            lock = session.query(ResourceLock).filter_by(resource_lock_id=lock).first()
             if lock == None:
                 raise ValueError("No lock found for ID "+str(lock))
         try:
@@ -271,7 +303,7 @@ class ResourceLocker:
         """
         session = Session()
         if(type(client) is int):
-            client = session.query(Client).filter_by(id=client).first()
+            client = session.query(Client).filter_by(client_id=client).first()
             if client == None:
                 raise ValueError("No client found for ID ")
         if(type(client) is str):
@@ -314,7 +346,7 @@ class ResourceLocker:
         """
         session = Session()
         if(type(resource) is int):
-            resource = session.query(Resource).filter_by(id=resource).first()
+            resource = session.query(Resource).filter_by(resource_id=resource).first()
             if resource == None:
                 raise ValueError("No client found for ID ")
         if(type(resource) is str):
@@ -334,7 +366,7 @@ class ResourceLocker:
     def _lock_db(self, session):
         """Utility to obtain a lock over the MySQL tables to ensure no race condition"""
         if(self.url.startswith('mysql')):
-            session.execute('lock table resource_lock write')
+            session.execute('lock table client write, resource write, resource_lock write')
             
     def _unlock_db(self, session):
         """Utility to obtain release a lock over the MySQL tables"""
