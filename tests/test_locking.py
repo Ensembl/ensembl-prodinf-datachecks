@@ -66,8 +66,22 @@ class UtilsTest(unittest.TestCase):
             self.assertTrue(lock.resource_lock_id>0, "Lock has ID")       
             self.assertEqual(cname, lock.client.name, "Client correct")     
             self.assertEqual(ruri, lock.resource.uri, "Resource correct")  
-            locks = [l for l in locker.get_locks() if(l.resource_lock_id == lock.resource_lock_id)]
+            locks = [l for l in locker.get_locks() if(l.resource_lock_id == lock.resource_lock_id)]            
             self.assertEqual(1, len(locks), "Lock exists")
+            
+            # test retrieval by client name
+            self.assertEqual(1, len(locker.get_locks(client_name=cname)), "Lock found")
+            self.assertEqual(0, len(locker.get_locks(client_name='badman')), "Lock not found")
+            # test retrieval by resource
+            self.assertEqual(1, len(locker.get_locks(resource_uri=ruri)), "Lock found")
+            self.assertEqual(0, len(locker.get_locks(resource_uri='badres')), "Lock not found")
+            # test retrieval by type  
+            self.assertEqual(1, len(locker.get_locks(lock_type='read')), "Lock found")
+            self.assertEqual(0, len(locker.get_locks(lock_type='write')), "Lock not found")            
+            # test retrieval by all
+            self.assertEqual(1, len(locker.get_locks(lock_type='read', client_name=cname, resource_uri=ruri)), "Lock found")            
+            self.assertEqual(0, len(locker.get_locks(lock_type='read', client_name='badclient', resource_uri=ruri)), "Lock found")            
+                      
             lock2 = locker.get_lock(lock.resource_lock_id)
             self.assertEqual(lock.resource_lock_id, lock2.resource_lock_id, "Lock ID correct")
             self.assertEqual(rlock, lock2.lock_type, "Lock type correct")
@@ -76,6 +90,8 @@ class UtilsTest(unittest.TestCase):
             locker.unlock(lock)   
             locks = [l for l in locker.get_locks() if(l.resource_lock_id == lock.resource_lock_id)]
             self.assertEqual(0, len(locks), "Lock does not exist")            
+            lock3 = locker.get_lock(lock.resource_lock_id)
+            self.assertEqual(None, lock3, "Lock not found")           
             return
              
         self.run_test(rltest)
@@ -90,6 +106,20 @@ class UtilsTest(unittest.TestCase):
             self.assertEqual(ruri, lock.resource.uri, "Resource correct") 
             locks = [l for l in locker.get_locks() if(l.resource_lock_id == lock.resource_lock_id)]
             self.assertEqual(1, len(locks), "Lock exists")
+            
+                        # test retrieval by client name
+            self.assertEqual(1, len(locker.get_locks(client_name=cname)), "Lock found")
+            self.assertEqual(0, len(locker.get_locks(client_name='badman')), "Lock not found")
+            # test retrieval by resource
+            self.assertEqual(1, len(locker.get_locks(resource_uri=ruri)), "Lock found")
+            self.assertEqual(0, len(locker.get_locks(resource_uri='badres')), "Lock not found")
+            # test retrieval by type  
+            self.assertEqual(1, len(locker.get_locks(lock_type='write')), "Lock found")
+            self.assertEqual(0, len(locker.get_locks(lock_type='read')), "Lock not found")            
+            # test retrieval by all
+            self.assertEqual(1, len(locker.get_locks(lock_type='write', client_name=cname, resource_uri=ruri)), "Lock found")            
+            self.assertEqual(0, len(locker.get_locks(lock_type='write', client_name='badclient', resource_uri=ruri)), "Lock found")  
+            
             locker.unlock(lock)   
             locks = [l for l in locker.get_locks() if(l.resource_lock_id == lock.resource_lock_id)]
             self.assertEqual(0, len(locks), "Lock does not exist")       
