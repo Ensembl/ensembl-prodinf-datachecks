@@ -1,4 +1,4 @@
-git+git://github.com/Ensembl/ensembl-prodinf-core@experimental/handover#egg=ensembl_prodinf
+git+git://github.com/Ensembl/ensembl-prodinf-core@master#egg=ensembl_prodinf
 amqp==2.2.2
 appdirs==1.4.0
 billiard==3.5.0.3
