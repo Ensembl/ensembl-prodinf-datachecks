@@ -7,5 +7,5 @@ RUN useradd appuser -u 1000 -g 0 && \
     mkdir instance && \
     touch instance/hc_config.py
 USER 1000:0
-EXPOSE 4001
-ENTRYPOINT ["/usr/local/bin/gunicorn", "--config", "/app/gunicorn.conf", "-b", ":4001", "lock_app:app"]
+EXPOSE 4004
+ENTRYPOINT ["/usr/local/bin/gunicorn", "--config", "/app/gunicorn.conf", "-b", ":4004", "lock_app:app"]
