@@ -94,7 +94,9 @@ app.config['SWAGGER'] = {
 
 app.config.from_object('lock_config')
 app.config.from_pyfile('lock_config.py', silent=True)
-print app.config
+if app.config.get("LOCK_URI") == None:
+    raise ValueError("LOCK_URI not set in configuration")
+
 swagger = Swagger(app)
 
 locker = None
@@ -124,11 +126,46 @@ json_pattern = re.compile("application/json")
 
 @app.route('/', methods=['GET'])
 def info():
-    return jsonify(app.config['SWAGGER'])
-
+    """
+    Get basic information about the REST app
+    ---
+    tags:
+      - info
+    operationId: info
+    produces:
+      - application/json
+    schemes: ['http', 'https']
+    responses:
+      200:
+        description: App details
+        schema:
+           properties:
+               title:
+                   type: string
+                   example: Production resource lock REST endpoints 
+    """
+    return jsonify({"title":app.config['SWAGGER']['title']})
 
 @app.route('/ping', methods=['GET'])
 def ping():
+    """
+    Get status of service
+    ---
+    tags:
+     - info
+    operationId: ping
+    produces:
+      - application/json
+    schemes: ['http', 'https']
+    responses:
+      200:
+        description: App details
+        schema:
+           properties:
+               status:
+                   type: string
+                   example: ok 
+    """
     return jsonify({"status":"ok"})
 
 
