@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+from flasgger import Swagger
 import logging
 import re
 
@@ -11,7 +12,7 @@ logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(leve
 app = Flask(__name__, instance_relative_config=True)
 app.config.from_object('handover_config')
 app.config.from_pyfile('handover_config.py')
-
+swagger = Swagger(app)
 cors = CORS(app)
 
 # use re to support different charsets
@@ -19,7 +20,8 @@ json_pattern = re.compile("application/json")
 
 @app.route('/', methods=['GET'])
 def info():
-    return jsonify(app.config['SWAGGER')
+    app.config['SWAGGER']= {'title': 'Handover REST endpoints','uiversion': 2}
+    return jsonify(app.config['SWAGGER'])
 
 @app.route('/ping', methods=['GET'])
 def ping():
