@@ -21,3 +21,4 @@ compara_handover_group = os.environ.get("COMPARA_HANDOVER_GROUP", "ComparaHandov
 smtp_server = os.environ.get("SMTP_SERVER", 'smtp.ebi.ac.uk')
 report_server = os.environ.get("REPORT_SERVER", "amqp://guest:guest@localhost:5672/%2F")
 report_exchange = os.environ.get("REPORT_EXCHANGE", 'report_exchange')
+data_files_path = os.environ.get("DATA_FILE_PATH" , '/data_files/')
