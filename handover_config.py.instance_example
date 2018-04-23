@@ -2,7 +2,3 @@
 DEBUG = True
 HOST = '0.0.0.0'
 PORT = 5001
-STAGING_URI = 
-HANDOVER_HC = {
-	"core":""
-}
