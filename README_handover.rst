@@ -17,7 +17,7 @@ Configuration
 There are two configuration files you need to have copies of locally:
 ```
 mkdir instance
-cp hc_config.py.instance_example instance/hc_config.py
+cp handover_config.py.instance_example instance/handover_config.py
 cp celery_app_config.py.example celery_app_config.py
 ```
 
@@ -29,6 +29,7 @@ The Celery task manager is currently used for scheduling checks on completed job
 
 To start a celery worker to handle email:
 ```
+pyenv activate ensprod_inf
 celery -A ensembl_prodinf.handover_tasks worker -l info
 ```
 
