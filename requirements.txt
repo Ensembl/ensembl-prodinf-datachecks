@@ -29,6 +29,7 @@ PyYAML==3.12
 requests==2.18.4
 six==1.10.0
 SQLAlchemy==1.1.11
+SQLAlchemy-Utils==0.33.2
 urllib3==1.22
 vine==1.1.4
 Werkzeug==0.11.15
