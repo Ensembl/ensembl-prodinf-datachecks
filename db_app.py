@@ -512,7 +512,7 @@ def submit():
         email = request.json.get('email')
         if email != None and email != '':
             logging.debug("Submitting email request for  " + email)
-            email_results = email_when_complete.delay(request.url_root + "jobs/" + str(job.job_id), email) + "?format=email"
+            email_results = email_when_complete.delay(request.url_root + "jobs/" + str(job.job_id) + "?format=email", email)
             results['email_task'] = email_results.id
         return jsonify(results);
     else:
