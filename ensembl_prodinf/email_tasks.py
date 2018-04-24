@@ -18,7 +18,7 @@ def email_when_complete(self, url, address):
     if (result['status'] == 'incomplete') or (result['status'] == 'running') or (result['status'] == 'submitted'):
         raise self.retry(countdown=retry_wait)
     else:
-        send_email(smtp_server, from_email_address, address, result['subject'], result['body'])
+        send_email()
         return result
 
 @app.task(bind=True)
