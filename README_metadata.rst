@@ -60,7 +60,6 @@ The following environment variables are supported:
 
 Running
 =======
-Important: for the status endpoint to work, you must run the app as a user who can ssh onto any servers you want to find the status for.
 
 To start the main application as a standalone Flask application:
 ```
