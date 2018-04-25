@@ -7,11 +7,19 @@ from rest_client import RestClient
 
 class EventClient(RestClient):
     
+    """
+    Simple client for submitting an event to the event service and checking on progress
+    This uses the base RestClient, but all endpoint URIs for checking on submited events
+    have process as a path element, so this client combines the job_id and process together
+    """
+    
     def submit_job(self, event):        
+        """Submit an event for processing"""
         logging.info("Submitting job")
         return RestClient.submit_job(self,event)
     
     def list_jobs(self, process):
+        """List all jobs for a given process"""
         logging.info("Listing")
         r = requests.get(self.jobs.format(self.uri)+'/'+process)
         r.raise_for_status()    
@@ -33,11 +41,13 @@ class EventClient(RestClient):
         raise AttributeError("Job collation not supported")    
     
     def processes(self):
+        """Retrieve a list of processes that the service can schedule"""
         r = requests.get(self.uri+'processes')
         r.raise_for_status()    
         return r.json()
 
     def events(self):
+        """Retrieve a list of events that the service can handle"""
         r = requests.get(self.uri+'events')
         r.raise_for_status()    
         return r.json()
