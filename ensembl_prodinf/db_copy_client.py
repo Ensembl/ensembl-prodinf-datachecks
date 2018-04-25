@@ -6,9 +6,23 @@ from rest_client import RestClient
 from server_utils import assert_mysql_db_uri
 
 class DbCopyClient(RestClient):
+    
+    """
+    Client for submitting database copy jobs to the db copy REST API
+    """
 
     def submit_job(self, source_db_uri, target_db_uri, only_tables, skip_tables, update, drop, email):
-
+        """
+        Submit a new job
+        Arguments:
+          source_db_uri : URI of MySQL schema to copy from
+          target_db_uri : URI of MySQL schema to copy to 
+          only_tables : list of tables to copy (others are skipped)
+          skip_tables : list of tables to skip from the copy
+          update : set to True to run an incremental update
+          drop : set to True to drop the schema first
+          email : optional address for job completion email
+        """
         assert_mysql_db_uri(source_db_uri)
         assert_mysql_db_uri(target_db_uri)
         
@@ -32,9 +46,21 @@ class DbCopyClient(RestClient):
         return super(DbCopyClient, self).submit_job(payload)
 
     def kill_job(self, job_id):
+        """
+        Kill a running job
+        Arguments:
+          job_id : Job to kill
+        """
         return super(DbCopyClient, self).kill_job(job_id, 1)
     
     def print_job(self, job, print_results=False, print_input=False):
+        """
+        Print out details of a job
+        Arguments:
+          job : Job to render
+          print_results : set to True to show results
+          print_input : set to True to show input
+        """
         logging.info("Job %s (%s) to (%s) - %s" % (job['id'], job['input']['source_db_uri'], job['input']['target_db_uri'], job['status']))
         if print_input == True:
             self.print_inputs(job['input'])
@@ -52,6 +78,13 @@ class DbCopyClient(RestClient):
             logging.info("Job failed with error: "+ str(failure_msg['msg']))
 
     def print_inputs(self, i):
+        
+        """
+        Print out details of job input
+        Arguments:
+          i : job input
+        """
+        
         logging.info("Source URI: " + i['source_db_uri'])
         logging.info("Target URI: " + i['target_db_uri'])
         if 'only_tables' in i:
