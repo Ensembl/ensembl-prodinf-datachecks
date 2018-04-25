@@ -112,9 +112,9 @@ def get_logger(pool, exchange, process, resource, params):
     return thread_instance.logger
 
 def _get_appender(pool, exchange, process):
-  """Internal method to create a queue appender for the logger"""
+    """Internal method to create a queue appender for the logger"""
     appender = QueueAppenderHandler(pool, exchange)
-    appender.context = {    
+    appender.context = {
         'host':socket.gethostname(),
         'process':process
     }
@@ -137,11 +137,11 @@ def set_logger_context(logger, resource, params):
 
 def get_pool(queue_url, **kwargs):
   
-  """
-  Get an instance of Pika pool. This is a pool of Pika connections which can be used to write messages to RabbitMQ.
-  Arguments:
-    queue_url : rabbit MQ URI
-  Options passed as named args include:
+    """
+    Get an instance of Pika pool. This is a pool of Pika connections which can be used to write messages to RabbitMQ.
+    Arguments:
+      queue_url : rabbit MQ URI
+    Options passed as named args include:
         socket_timeout
         connection_attempts
         max_size
@@ -149,7 +149,7 @@ def get_pool(queue_url, **kwargs):
         timeout
         recycle
         stale
-  """
+    """
     
     options = {
         'socket_timeout' : 10,
