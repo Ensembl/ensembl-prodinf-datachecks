@@ -218,7 +218,7 @@ class ResourceLocker:
           LockException if resource cannot be locked
           ValueException if lock type not read or write
         """
-        logging.info("Locking {} for {} for {}", client_name, resource_uri, lock_type)
+        logging.info("Locking {} for {} for {}".format(client_name, resource_uri, lock_type))
         session = Session()
         client = self.get_client(client_name, session)
         resource = self.get_resource(resource_uri, session)
