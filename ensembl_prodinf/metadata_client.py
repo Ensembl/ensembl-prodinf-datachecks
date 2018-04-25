@@ -15,12 +15,10 @@ class MetadataClient(RestClient):
             with output_file as f:
                 f.write(r.text)  
         
-    def submit_job(self, metadata_uri, database_uri, e_release, eg_release, release_date, current_release, email, update_type, comment, source):
-        assert_mysql_db_uri(metadata_uri)
+    def submit_job(self, database_uri, e_release, eg_release, release_date, current_release, email, update_type, comment, source):
         assert_mysql_db_uri(database_uri)
 
         payload = {
-            'metadata_uri':metadata_uri,
             'database_uri':database_uri,
             'e_release':e_release,
             'eg_release':eg_release,
@@ -51,7 +49,6 @@ class MetadataClient(RestClient):
             logging.info("Job failed with error: "+ str(failure_msg['msg']))
 
     def print_inputs(self,i):
-        logging.info("Metadata URI: " + i['metadata_uri'])
         logging.info("database URI: " + i['database_uri'])
         logging.info("Ensembl release number: " + i['e_release'])
         logging.info("Release date: " + i['release_date'])
@@ -73,7 +70,6 @@ if __name__ == '__main__':
     parser.add_argument('-v', '--verbose', help='Verbose output', action='store_true')
     parser.add_argument('-o', '--output_file', help='File to write output as JSON', type=argparse.FileType('w'))
     parser.add_argument('-f', '--input_file', help='File containing list of metadata and database URIs', type=argparse.FileType('r'))
-    parser.add_argument('-m', '--metadata_uri', help='URI of metadata database')
     parser.add_argument('-d', '--database_uri', help='URI of database to load')
     parser.add_argument('-s', '--e_release', help='Ensembl release number')
     parser.add_argument('-r', '--release_date', help='Release date')
@@ -101,14 +97,14 @@ if __name__ == '__main__':
     if args.action == 'submit':
 
         if args.input_file == None:
-            logging.info("Submitting " + args.database_uri + "->" + args.metadata_uri)
-            job_id = client.submit_job(args.metadata_uri, args.database_uri, args.e_release, args.eg_release, args.release_date, args.current_release, args.email, args.update_type, args.comment, args.source)
+            logging.info("Submitting " + args.database_uri + "for metadata load")
+            job_id = client.submit_job( args.database_uri, args.e_release, args.eg_release, args.release_date, args.current_release, args.email, args.update_type, args.comment, args.source)
             logging.info('Job submitted with ID '+str(job_id))
         else:
             for line in args.input_file:
                 uris = line.split()
-                logging.info("Submitting " + uris[0] + "->" + uris[1])
-                job_id = client.submit_job(uris[0], uris[1], args.e_release, args.eg_release, args.release_date, args.current_release, args.email, args.update_type, args.comment, args.source)
+                logging.info("Submitting " + uris[0] + "for metadata load")
+                job_id = client.submit_job(uris[0], args.e_release, args.eg_release, args.release_date, args.current_release, args.email, args.update_type, args.comment, args.source)
                 logging.info('Job submitted with ID '+str(job_id))
     
     elif args.action == 'retrieve':
