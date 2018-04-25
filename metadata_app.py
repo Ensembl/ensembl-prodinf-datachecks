@@ -118,6 +118,7 @@ def submit_job():
           {metadata_uri : "mysql://user:pass@mysql-ens-general-dev-1:4484/ensembl_metadata_new_test", database_uri : "mysql://ensro@mysql-ensembl-mirror:4240/octodon_degus_otherfeatures_91_1", e_release : 91, release_date : "2017-12-06", current_release : 1, email : "undefined"}
     """
     if json_pattern.match(request.headers['Content-Type']):
+        request.json["metadata_uri"]=app.config["METADATA_URI"]
         logging.debug("Submitting metadata job " + str(request.json))
         job = get_hive().create_job(app.analysis, request.json)
         results = {"job_id":job.job_id};
@@ -208,7 +209,7 @@ def job_result(job_id):
         email = request.args.get('email')
         return job_email(email, job_id)
     elif fmt == 'failures':
-        return job_failures(job_id)
+        return failure(job_id)
     elif fmt == None:
         try:    
             logging.info("Retrieving job with ID " + str(job_id))
@@ -298,14 +299,6 @@ def failure(job_id):
         logging.info("Retrieving failure for job with ID " + str(job_id))
         failure = get_hive().get_job_failure_msg_by_id(job_id, child=True)
         return jsonify({"msg":failure.msg})
-    except ValueError:
-        return "Job " + str(job_id) + " not found", 404
-
-def job_failures(job_id):
-    try:
-        logging.info("Retrieving failure for job with ID " + str(job_id))
-        failures=get_hive().get_jobs_failure_msg(job_id)
-        return jsonify(failures)
     except ValueError:
         return "Job " + str(job_id) + " not found", 404
 
