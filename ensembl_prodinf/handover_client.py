@@ -6,13 +6,21 @@ from server_utils import assert_http_uri, assert_mysql_db_uri, assert_email
 
 class HandoverClient(object):
     
+    """
+    Client for submitting databases for handover
+    """
+    
     submit = '{}submit'
     
     def __init__(self, uri):
         assert_http_uri(uri)
         self.uri = uri
     
-    def submit_job(self, spec):        
+    def submit_job(self, spec):      
+        """
+        Arguments:
+          spec : dict containing keys `src_uri`, `type`, `comment` and `contact`
+        """
         assert_mysql_db_uri(spec['src_uri'])
         assert_email(spec['contact'])
         logging.info("Submitting {} for handover".format(spec['src_uri']))
