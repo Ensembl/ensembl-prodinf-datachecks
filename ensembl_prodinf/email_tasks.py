@@ -11,6 +11,9 @@ retry_wait = app.conf['retry_wait']
 def email_when_complete(self, url, address):
     """ Task to check a URL and send an email once the result has a non-incomplete status 
     Used for periodically checking whether a hive job has finished.
+    Arguments:
+      url - URL to check for job completion. Must return JSON containing status, subject and body fields
+      address - address to send email
     """
     # allow infinite retries 
     self.max_retries = None
@@ -23,6 +26,13 @@ def email_when_complete(self, url, address):
 
 @app.task(bind=True)
 def email(self, address, subject, body):
+    """ Simple task to send an email as specified
+    Arguments:
+      smtp_server
+      from_email_address
+      subject
+      body
+    """
     send_email(smtp_server, from_email_address, address, subject, body)
     return
 
