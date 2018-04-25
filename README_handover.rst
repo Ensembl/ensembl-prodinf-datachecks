@@ -30,7 +30,7 @@ The Celery task manager is currently used for scheduling checks on completed job
 To start a celery worker to handle email:
 ```
 pyenv activate ensprod_inf
-celery -A ensembl_prodinf.handover_tasks worker -l info
+celery -A ensembl_prodinf.handover_tasks worker -l info -Q handover -n handover@%h
 ```
 
 

@@ -58,6 +58,10 @@ The following environment variables are supported:
 * CELERY_BROKER_URL - URL of Celery broker
 * CELERY_RESULT_BACKEND - URL of Celery backend
 
+Running Celery
+==============
+See README_hc.rst, only one celery worker should be running for hc, db and metadata endpoints
+
 Running
 =======
 Important: for the status endpoint to work, you must run the app as a user who can ssh onto any servers you want to find the status for.

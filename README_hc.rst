@@ -52,7 +52,7 @@ The Celery task manager is currently used for scheduling checks on completed job
 
 To start a celery worker to handle email:
 ```
-celery -A ensembl_prodinf.email_tasks worker -l info
+celery -A ensembl_prodinf.email_tasks worker -l info -Q email -n email@%h
 ```
 
 

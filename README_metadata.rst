@@ -76,6 +76,10 @@ gunicorn -w 4 -b 0.0.0.0:5003 metadata_app:app
 
 Note that for production, a different deployment option should be used as the standalone flask app can only serve one request at a time.
 
+Running Celery
+==============
+See README_hc.rst, only one celery worker should be running for hc, db and metadata endpoints
+
 Using Docker
 ============
 
