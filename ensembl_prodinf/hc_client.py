@@ -9,7 +9,23 @@ from server_utils import assert_mysql_uri, assert_mysql_db_uri
 
 class HcClient(RestClient):
     
+    """Client for checking databases using the HC service"""
+    
     def submit_job(self, db_uri, production_uri, compara_uri, staging_uri, live_uri, hc_names, hc_groups, data_files_path, email, tag):
+        """
+        Submit a database for checkiing
+        Arguments:
+          db_uri - database to check
+          production_uri - production database
+          compara_uri - compara master database
+          staging_uri - location of current staging databases (used to check different database types for same genome)
+          live_uri - location of current release databases (used for checks comparing current and new databases)
+          hc_names - list of healthchecks to run
+          hc_groups - list of healthcheck groups to run
+          data_files_path - location of non-relational datafiles
+          email - optional address for an email on job completion
+          tag - optional tag to allow jobs to be grouped for reporting
+        """
         assert_mysql_db_uri(db_uri)
         assert_mysql_db_uri(production_uri)
         assert_mysql_db_uri(compara_uri)
@@ -32,6 +48,13 @@ class HcClient(RestClient):
     
     
     def list_jobs(self, output_file, pattern='.*', failure_only=False):
+        """
+        Find jobs and print results
+        Arguments:
+          output_file - optional file to write report 
+          pattern - optional pattern to filter jobs by
+          failure_only - only report failed jobs
+        """
         logging.info("Finding jobs matching {}".format(pattern))
         r = super(HcClient, self).list_jobs()
         re_pattern = re.compile(pattern)
@@ -47,6 +70,12 @@ class HcClient(RestClient):
             output_file.write(json.dumps(output))
 
     def collate_jobs(self, output_file, pattern='.*'):
+        """
+        Find jobs and collate results by healthcheck to identify common failures
+        Arguments:
+          output_file - optional file to write report 
+          pattern - optional pattern to filter jobs tags by
+        """
         logging.info("Collating jobs using tag " + str(pattern))
         r = super(HcClient, self).list_jobs()  
         re_pattern = re.compile(pattern)
@@ -64,6 +93,13 @@ class HcClient(RestClient):
             output_file.write(json.dumps(output))
     
     def print_job(self, job, print_results=False, print_input=False):
+        """
+        Render a job to logging
+        Arguments:
+          job :  job to print
+          print_results : set to True to print detailed results
+          print_input : set to True to print input for job
+        """
         logging.info("Job %s (%s) - %s" % (job['id'], job['input']['db_uri'], job['status']))
         if print_input == True:
             self.print_inputs(job['input'])
@@ -86,6 +122,7 @@ class HcClient(RestClient):
             raise ValueError("Unknown status {}".format(job['status']))
 
     def print_inputs(self,i):
+        """Utility to render a job input dict to logging"""
         logging.info("DB URI: " + i['db_uri'])
         logging.info("Staging URI: " + i['staging_uri'])
         logging.info("Live URI: " + i['live_uri'])
