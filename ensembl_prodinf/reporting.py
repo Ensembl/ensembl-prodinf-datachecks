@@ -7,6 +7,17 @@ from time import gmtime, strftime
 import pika
 import pika_pool
 
+"""
+Module which generates Python logger instances which send messages to RabbitMQ for further processing.
+The main entry point should be get_logger().
+RabbitMQ communication uses pooled Pika connections (pool obtained from get_pool())
+Loggers contain additional context which is added to messages, namely:
+      host : current host name
+      process : name of process to tag messages with
+      resource : name of active resource to tag messages with
+      params : additional tags as a dict to tag messages with
+"""
+
 """Binding from log level to a routing key for the queue exchange"""
 binding_keys = {
                     'CRITICAL':'report.fatal',
@@ -21,7 +32,7 @@ thread_instance.logger = None
 
 
 class ContextFilter(logging.Filter):
-    """Filter that adds local context to a report"""
+    """Filter for use by logging package that adds context to a report"""
 
     def __init__(self, context):
         self.context = context
@@ -40,7 +51,7 @@ class ContextFilter(logging.Filter):
 
 
 class JsonFormatter(logging.Formatter):
-    """Class that transforms a dict into JSON for sending to a queue"""        
+    """Class for use by logging package that transforms a dict into JSON for sending to a queue"""        
 
     def format(self, record):
         obj = {
@@ -56,7 +67,8 @@ class JsonFormatter(logging.Formatter):
 
 
 class QueueAppenderHandler(Handler):
-    """Class that appends messages to queues"""
+    """Class for use by logging package that appends messages to queues
+    """
 
     def __init__(self, pool, exchange):
         Handler.__init__(self)
@@ -80,7 +92,15 @@ class QueueAppenderHandler(Handler):
 
 
 def get_logger(pool, exchange, process, resource, params):
-    
+    """
+    Main method to obtain a logger which writes to the 
+    Arguments:
+      pool : Pika pool (use get_pool())
+      exchange : rabbitMQ exchange
+      process : name of process to tag messages with
+      resource : name of active resource to tag messages with
+      params : additional tags as a dict to tag messages with
+    """
     if(thread_instance.logger==None):
         """Construct a new logger capable of talking to a queue"""
         thread_instance.logger = logging.getLogger(process)
@@ -92,6 +112,7 @@ def get_logger(pool, exchange, process, resource, params):
     return thread_instance.logger
 
 def _get_appender(pool, exchange, process):
+  """Internal method to create a queue appender for the logger"""
     appender = QueueAppenderHandler(pool, exchange)
     appender.context = {    
         'host':socket.gethostname(),
@@ -103,13 +124,32 @@ def _get_appender(pool, exchange, process):
 
 
 def set_logger_context(logger, resource, params):
-    """Update logger with new resource and param details"""
+    """Update logger with new resource and param details
+    Arguments:
+      logger : active logger
+      resource : name of active resource to tag messages with
+      params : additional tags as a dict to tag messages with
+    """
     logger.context['resource'] = resource
     logger.context['params'] = params
     return
 
 
 def get_pool(queue_url, **kwargs):
+  
+  """
+  Get an instance of Pika pool. This is a pool of Pika connections which can be used to write messages to RabbitMQ.
+  Arguments:
+    queue_url : rabbit MQ URI
+  Options passed as named args include:
+        socket_timeout
+        connection_attempts
+        max_size
+        max_overflow
+        timeout
+        recycle
+        stale
+  """
     
     options = {
         'socket_timeout' : 10,
