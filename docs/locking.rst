@@ -15,7 +15,8 @@ Whilst there are implementation-specific locking technologies on the database le
 Design
 ******
 Lock state is stored persistently in a simple relational schema, shown below:
-.. image resource_lock_schema.png
+
+.. image:: ./resource_lock_schema.png
 
 A lock is created as a row in `resource_lock` for a given combination of client, resource and lock type. A `client` is uniquely identified by a name (this is intended to be an identifier for the process or person) and a `resource` is uniquely identified by a URI e.g. a database URI.
 
@@ -30,22 +31,24 @@ To allow concurrent processes to request and obtain locks safely, locking and un
 Implementation
 **************
 The current python implementation from `ensembl_prodinf/resource_lock.py` uses SQLAlchemy as an abstraction over MySQL. The main classes are:
+
 * `Client` - simple class encapsulating a client and corresponding to a row in the `client` table
 * `Resource` - simple class encapsulating a resource and corresponding to a row in the `resource` table
 * `ResourceLock` - class encapsulating an instance of `Client`, an instance of `Resource`, a lock type (`read` or `write`) and a timestamp, corresponding to a row in the `resource_lock` table
 * `ResourceLocker` - methods for creating and retrieving `Client` and `Resource` objects and for locking and unlocking
 
 Full documentation can be found in the classes but basic usage:
+
 .. code-block:: python
-   locker = ResourceLocker('mysql://user:pass@host:3306/resource_lock')
-   # obtain a read lock
-   my_lock = locker.lock('my_client_name', 'uri://my_resource', 'read')
-   # ...do some stuff
-   # release the lock
-   locker.unlock(lock)
-   # retrieve all active locks
-   for lock in locker.get_locks():
-     print lock
+locker = ResourceLocker('mysql://user:pass@host:3306/resource_lock')
+# obtain a read lock
+my_lock = locker.lock('my_client_name', 'uri://my_resource', 'read')
+# ...do some stuff
+# release the lock
+locker.unlock(lock)
+# retrieve all active locks
+for lock in locker.get_locks():
+  print lock
     
 Note that the database `resource_lock` must exist, but will be automatically populated if empty.
 
