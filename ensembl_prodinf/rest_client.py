@@ -5,6 +5,11 @@ import argparse
 from server_utils import assert_http_uri
          
 class RestClient(object):
+                  
+    """
+    Base client for interacting with a standard production REST service where the URIs meet a common standard.    
+    Most methods are stubs for overriding or decoration by classes that extend this for specific services
+    """
     
     jobs = '{}jobs'
     jobs_id = '{}jobs/{}'
@@ -14,6 +19,11 @@ class RestClient(object):
         self.uri = uri
     
     def submit_job(self, payload):
+        """
+        Submit a job using the supplied dict as payload. No checking is carried out on the payload
+        Arguments:
+          payload : job input as dict
+        """
         logging.info("Submitting job")        
         logging.debug(payload)
         r = requests.post(self.jobs.format(self.uri), json=payload)
@@ -21,7 +31,13 @@ class RestClient(object):
         return r.json()['job_id']
     
     def delete_job(self, job_id, kill=False):
-        delete_uri = self.jobs_id.format(self.uri, str(job_id))
+        """
+        Delete job
+        Arguments:
+          job_id - ID of job to kill
+          kill - if True, job process should be killed
+        """
+         delete_uri = self.jobs_id.format(self.uri, str(job_id))
         if kill:
             delete_uri += '?kill=1'
         r = requests.delete(delete_uri)
@@ -29,12 +45,21 @@ class RestClient(object):
         return True
     
     def list_jobs(self):
+        """
+        Find all current jobs
+        """ 
         logging.info("Listing")
         r = requests.get(self.jobs.format(self.uri))
         r.raise_for_status()    
         return r.json()
 
     def retrieve_job_failure(self, job_id):
+        """
+        Retrieve information on a job using the special format "failure" which renders failures from the supplied job. 
+        The service will respond if it supports this format.
+        Arguments:
+          job_id - ID of job to retrieve        
+        """ 
         logging.info("Retrieving job failure for job " + str(job_id))
         r = requests.get(self.jobs_id.format(self.uri, str(job_id)) + '?format=failures')
         r.raise_for_status()
@@ -42,12 +67,24 @@ class RestClient(object):
         return failure_msg
 
     def retrieve_job_email(self, job_id):
+        """
+        Retrieve information on a job using the special format "email" which renders the supplied job in a format suitable
+        for sending by email. 
+        The service will respond if it supports this format.
+        Arguments:
+          job_id - ID of job to retrieve        
+        """ 
         logging.info("Retrieving job as email for job " + str(job_id))
         r = requests.get(self.jobs_id.format(self.uri, str(job_id)) + '?format=email')
         r.raise_for_status()
         return r.json()
 
     def retrieve_job(self, job_id):
+        """
+        Retrieve information on a job.
+        Arguments:
+          job_id - ID of job to retrieve        
+        """
         logging.info("Retrieving results for job " + str(job_id))
         r = requests.get(self.jobs_id.format(self.uri, str(job_id)))
         r.raise_for_status()
@@ -55,9 +92,22 @@ class RestClient(object):
         return job
     
     def print_job(self, job, print_results=False, print_input=False):
+        """
+        Stub utility to print job to logging 
+        Arguments:
+          job - job object
+          print_results - ignored
+          print_input - ignored
+        """
         logging.info(job)
         
     def write_output(self, r, output_file):
+        """
+        Utility to write response. 
+        Arguments:
+          job - response object
+          output_file - output file handle
+        """                  
         if(output_file != None):
             with output_file as f:
                 f.write(r.text)  
