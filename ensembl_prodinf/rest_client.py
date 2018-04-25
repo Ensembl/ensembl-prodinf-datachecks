@@ -37,7 +37,7 @@ class RestClient(object):
           job_id - ID of job to kill
           kill - if True, job process should be killed
         """
-         delete_uri = self.jobs_id.format(self.uri, str(job_id))
+        delete_uri = self.jobs_id.format(self.uri, str(job_id))
         if kill:
             delete_uri += '?kill=1'
         r = requests.delete(delete_uri)
