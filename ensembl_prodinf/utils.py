@@ -6,6 +6,7 @@ import logging
 
 default_user = None
 def get_default_user():
+    """Method to obtain the current user. This can be complicated when running Docker containers"""
     if default_user == None:
         import os
         for name in ('LOGNAME', 'USER', 'LNAME', 'USERNAME'):
@@ -81,5 +82,6 @@ def escape_perl_string(v):
     return str(v).replace("$","\\$").replace("\"","\\\"").replace("@","\\@")
 
 def perl_string_to_python(s):
+    """Parse a Perl hash string into a Python dict"""
     s = s.replace("=>",":").replace("\\$","$").replace("\\@","@")
     return json.loads(s)
