@@ -13,23 +13,25 @@ ruri = 'proto://myres/test'
 rlock = 'read'
 wlock = 'write'
 
+def get_db():
+    (handle, dbfile) = mkstemp(suffix='.db')
+    os.close(handle)
+    return dbfile
+
+def run_tst(test_function):
+    dbfile = get_db()
+    try:
+        locker = ResourceLocker('sqlite:///'+str(dbfile))
+        test_function(locker)
+        return
+    finally:
+        os.remove(dbfile)
+
 class UtilsTest(unittest.TestCase):
     
-    def get_db(self):
-        (handle, dbfile) = mkstemp(suffix='.db')
-        os.close(handle)
-        return dbfile
-        
-    def run_test(self, test):
-        dbfile = self.get_db()
-        try:
-            locker = ResourceLocker('sqlite:///'+str(dbfile))
-            test(locker)
-            return
-        finally:
-            os.remove(dbfile)
     
     def test_client(self):
+
         def ctest(locker):
             client = locker.get_client(cname)
             self.assertEqual(cname, client.name, "Client name correct")
@@ -41,7 +43,7 @@ class UtilsTest(unittest.TestCase):
             locker.delete_client(cname)
             self.assertEqual(0, len(locker.get_clients()))
                         
-        self.run_test(ctest)
+        run_tst(ctest)
         return
 
     def test_resource(self):
@@ -56,7 +58,7 @@ class UtilsTest(unittest.TestCase):
             locker.delete_resource(ruri)
             self.assertEqual(0, len(locker.get_resources()))
             
-        self.run_test(rtest)
+        run_tst(rtest)
         return
 
     def test_read_lock(self):
@@ -94,7 +96,7 @@ class UtilsTest(unittest.TestCase):
             self.assertEqual(None, lock3, "Lock not found")           
             return
              
-        self.run_test(rltest)
+        run_tst(rltest)
         return
 
     def test_write_lock(self):
@@ -125,7 +127,7 @@ class UtilsTest(unittest.TestCase):
             self.assertEqual(0, len(locks), "Lock does not exist")       
             return
              
-        self.run_test(wltest)
+        run_tst(wltest)
         return
     
     def test_readread_lock(self):
@@ -143,7 +145,7 @@ class UtilsTest(unittest.TestCase):
             self.assertEqual(ruri, lock2.resource.uri, "Resource correct")    
             return
              
-        self.run_test(rltest)
+        run_tst(rltest)
         return
 
     def test_writeread_lock(self):
@@ -160,7 +162,7 @@ class UtilsTest(unittest.TestCase):
             locker.lock(cname, ruri, rlock)
             return
              
-        self.run_test(wrtest)
+        run_tst(wrtest)
         return
     
     def test_readwrite_lock(self):
@@ -177,5 +179,5 @@ class UtilsTest(unittest.TestCase):
             locker.lock(cname, ruri, wlock)                              
             return
              
-        self.run_test(rwtest)
+        run_tst(rwtest)
         return
