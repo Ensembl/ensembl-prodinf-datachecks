@@ -41,15 +41,15 @@ The current python implementation from `ensembl_prodinf/resource_lock.py` uses S
 Full documentation can be found in the classes but basic usage:
 
 .. code-block:: python
-locker = ResourceLocker('mysql://user:pass@host:3306/resource_lock')
-# obtain a read lock
-my_lock = locker.lock('my_client_name', 'uri://my_resource', 'read')
-# ...do some stuff
-# release the lock
-locker.unlock(lock)
-# retrieve all active locks
-for lock in locker.get_locks():
-  print lock
+  locker = ResourceLocker('mysql://user:pass@host:3306/resource_lock')
+  # obtain a read lock
+  my_lock = locker.lock('my_client_name', 'uri://my_resource', 'read')
+  # ...do some stuff
+  # release the lock
+  locker.unlock(lock)
+  # retrieve all active locks
+  for lock in locker.get_locks():
+    print lock
     
 Note that the database ``resource_lock`` must exist, but will be automatically populated if empty.
 
