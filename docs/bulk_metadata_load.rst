@@ -1,18 +1,20 @@
-************************
-Bulk Database Copy
-************************
+******************
+Bulk Metadata Load
+******************
 
 Overview
 ########
 
-The Production infrastructure interface allows the load of database into the metadata database using the FLASK endpoint in the background. The following documentation explain how to load a database using the Flask REST database metadata endpoint.
-This method is really useful for copying a large number of databases.
+The Production infrastructure interface allows the update if the metadata database using the `metadata endpoint <https://github.com/Ensembl/ensembl-prodinf-srv/README_metadata.rst>`_.
+This document describes how to use the `MetadataClient <../ensembl_prodinf/metadata_client.py>`_ class to interact with the endpoint and bulk update the database.
 
 List of databases to load
-############
+#########################
 
 Create file with list of databases to load, e.g: metadata_load.txt
-::
+
+.. code-block:: bash
+
   cavia_porcellus_funcgen_91_4
   homo_sapiens_funcgen_91_38
   mus_musculus_funcgen_91_38
@@ -20,29 +22,40 @@ Create file with list of databases to load, e.g: metadata_load.txt
 
 Or for all the database of a given division:
 
-1. EG:
-::
+EG:
+===
+
+.. code-block:: bash
+
   EG_VERSION=38
   SERVER=mysql-eg-staging-2
   mysql --batch --raw --skip-column-names $($SERVER details mysql) information_schema -e "select schema_name from SCHEMATA where (schema_name like '%core%' or schema_name like '%otherfeatures%' or schema_name like '%rnaseq%' or schema_name like '%cdna%' or schema_name like '%funcgen%%' or schema_name like '%variation%' or schema_name like '%compara%' or schema_name like '%mart%') and ( schema_name like '%${EG_VERSION}_{ENS_VERSION}_%' or  schema_name like '%${EG_VERSION}' ) and schema_name not like 'master_schema%'" > eg_metadata_load.txt
 
-2. Ensembl:
-::
+Ensembl:
+========
+
+.. code-block:: bash
+
   ENS_VERSION=91
   SERVER=mysql-ensembl-mirror
   mysql --batch --raw --skip-column-names $($SERVER details mysql) information_schema -e "select schema_name from SCHEMATA where (schema_name like '%core%' or schema_name like '%otherfeatures%' or schema_name like '%rnaseq%' or schema_name like '%cdna%' or schema_name like '%funcgen%%' or schema_name like '%variation%' or schema_name like '%compara%' or schema_name like '%ontology%' or schema_name like '%mart%') and ( schema_name like '%_${ENS_VERSION}_%'  or  schema_name like '%${ENS_VERSION}' ) and schema_name not like 'master_schema%'" > metadata_load.txt
+
 Submit the jobs using Python REST db copy endpoint:
-#####
+###################################################
 
 Clone the ensembl-prodinf-core repo:
-::
+
+.. code-block:: bash
+
   git clone https://github.com/Ensembl/ensembl-prodinf-core
   cd ensembl-prodinf-core
 
 To Submit the job via the REST enpoint
 
 For Ensembl:
-::
+
+.. code-block:: bash
+
   METADATA_SERVER=$(mysql-ens-meta-prod-1-ensprod details url) #e.g: mysql://ensprod:pass@mysql-ens-meta-prod-1:4483/
   DATABASE_SERVER=$(mysql-ens-general-prod-1 details url)
   ENDPOINT=http://ens-prod-1.ebi.ac.uk:8000/dbcopy/ #or http://eg-prod-01.ebi.ac.uk:7000/dbcopy/ for EG
@@ -61,7 +74,9 @@ For Ensembl:
   done
 
 For EG:
-::
+
+.. code-block:: bash
+
   METADATA_SERVER=$(mysql-ens-meta-prod-1-ensprod details url) #e.g: mysql://ensprod:pass@mysql-ens-meta-prod-1:4483/
   DATABASE_SERVER=$(mysql-eg-staging-2 details url)
   ENDPOINT=http://ens-prod-1.ebi.ac.uk:8000/dbcopy/ #or http://eg-prod-01.ebi.ac.uk:7000/dbcopy/ for EG
@@ -82,11 +97,13 @@ For EG:
 
 
 Script usage:
-#####
+#############
 
 The script accept the following arguments:
+
 ::
-usage: metadata_client.py [-h] -u URI -a
+
+  usage: metadata_client.py [-h] -u URI -a
                           {submit,retrieve,list,delete,email,kill_job}
                           [-i JOB_ID] [-v] [-o OUTPUT_FILE] [-f INPUT_FILE]
                           [-m METADATA_URI] [-d DATABASE_URI] [-s E_RELEASE]
@@ -94,9 +111,9 @@ usage: metadata_client.py [-h] -u URI -a
                           [-g EG_RELEASE] [-e EMAIL] [-t UPDATE_TYPE]
                           [-n COMMENT] [-b SOURCE]
 
-Metadata load via a REST service
+  Metadata load via a REST service
 
-optional arguments:
+  optional arguments:
   -h, --help            show this help message and exit
   -u URI, --uri URI     Metadata database REST service URI
   -a {submit,retrieve,list,delete,email,kill_job}, --action {submit,retrieve,list,delete,email,kill_job}
@@ -130,16 +147,15 @@ optional arguments:
                         Source of the database, eg: Handover, Release load
 
 Check job status
-#####
+################
 
 You can check job status either on the production interface: `http://ens-prod-1.ebi.ac.uk:8000/#!/metadata_list` or `http://eg-prod-01.ebi.ac.uk:7000/#!/metadata_list` for EG
 
-or using the Python REST API:
+or using the Python client:
+
+.. code-block:: bash
 
   ensembl_prodinf/metadata_client.py --action list --uri http://ens-prod-1.ebi.ac.uk:8002
-  
-  or for EG:
-  
   ensembl_prodinf/metadata_client.py --action list --uri http://eg-prod-01.ebi.ac.uk:7002
   
   

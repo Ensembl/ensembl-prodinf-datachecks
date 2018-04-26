@@ -1,18 +1,18 @@
-************************
+***************************
 Bulk Healthcheck submission
-************************
+***************************
 
 Overview
 ########
 
-The Production infrastructure interface allows to run healthecks on databases using the FLASK endpoint in the background. The following documentation explain how to run healthchecks using the Flask REST hc endpoint.
-This method is really useful for running healthchecks on a large number of databases.
+The Production infrastructure interface allows to run healthchecks on databases using the `HC endpoint <https://github.com/Ensembl/ensembl-prodinf-srv/README_hc.rst>`_. This document describes how to use the `<HcClient ../ensembl_prodinf/hc_client.py>`_ class to interact with the endpoint and bulk check databases.
 
 Create file with list of databases to healthcheck
-############
+#################################################
 
-Create file with list of databases to healthcheck, e.g: db_hc.txt
+Create file with list of databases to healthcheck, e.g: ``db_hc.txt``
 ::
+
   cavia_porcellus_funcgen_91_4
   homo_sapiens_funcgen_91_38
   mus_musculus_funcgen_91_38
@@ -20,35 +20,46 @@ Create file with list of databases to healthcheck, e.g: db_hc.txt
 
 Or for all the database of a given division:
 
-1. EG:
+EG:
+===
 Please find below the list of EG divisions short names:
-::
-  Bacteria	EB
-  Protists	EPr
-  Fungi	    EF
-  Metazoa	  EM
-  Plants	  EPl
-  Pan	      EG
+
+* Bacteria - EB
+* Protists - EPr
+* Fungi	- EF
+* Metazoa - EM
+* Plants - EPl
+* Pan - EG
+
 To get the list of databases for Fungi:
-::
+
+.. code-block:: bash
+
   RELEASE=38
   ./ensembl-production/scripts/process_division.sh EF mysql-eg-pan-prod ensembl_production $RELEASE > fungi_db_hc.txt
 
-2. Ensembl:
-::
-  RELEASE=91
+
+Ensembl:
+========
+
+.. code-block:: bash
+
+ RELEASE=91
   ./ensembl-production/scripts/process_division.sh ens mysql-ens-sta-1 ensembl_production_${RELEASE} $RELEASE > db_hc.txt
 
-Submit the jobs using Python REST hc endpoint:
-#####
+Submit the jobs using REST endpoint:
+####################################
 
 Clone the ensembl-prodinf-core repo:
-::
+
+.. code-block:: bash
+
   git clone https://github.com/Ensembl/ensembl-prodinf-core
   cd ensembl-prodinf-core
 
 To Submit the job via the REST enpoint for Ensembl
-::
+
+.. code-block:: bash
 
   SERVER=$(mysql-ens-vertannot-staging details url) #e.g: mysql://ensro@mysql-ens-vertannot-staging:4573/
   GROUP=CoreHandover
@@ -71,7 +82,8 @@ To Submit the job via the REST enpoint for Ensembl
   done
   
 To Submit the job via the REST enpoint for EG
-::
+
+.. code-block:: bash
 
   SERVER=$(mysql-eg-staging-1 details url)
   GROUP=EGCoreHandover
@@ -93,21 +105,24 @@ To Submit the job via the REST enpoint for EG
   done
   
 To run multiple hcs and groups
-#####
+##############################
 
 To run multiple hcs, you need to list each healthchecks name with a space between each name, e.g:
 ::
+
   --hc_names CoreForeignKeys AutoIncrement
 
 You can also run individual healthchecks and healthcheck groups at the same time, e.g:
 ::
+
   --hc_groups CoreXrefs --hc_names CoreForeignKeys
 
 Script usage:
-#####
+#############
 
 The script accept the following arguments:
 ::
+
     usage: hc_client.py [-h] -u URI -a {submit,retrieve,list,delete,collate}
                     [-i JOB_ID] [-v] [-o OUTPUT_FILE] [-d DB_URI]
                     [-p PRODUCTION_URI] [-c COMPARA_URI] [-s STAGING_URI]
@@ -152,26 +167,31 @@ The script accept the following arguments:
       -t TAG, --tag TAG     Tag use to collate result and facilitate filtering
 
 Check job status
-#####
+################
 
-You can check job status either on the production interface: `http://ens-prod-1.ebi.ac.uk:8000/#!/hc_list` or `http://eg-prod-01.ebi.ac.uk:7000/#!/hc_list` for EG
+You can check job status either on the production interface: `<http://ens-prod-1.ebi.ac.uk:8000/#!/hc_list>`_ or `<http://eg-prod-01.ebi.ac.uk:7000/#!/hc_list>`_ for EG
 
-or using the Python REST API:
+or using the Python client:
+
+.. code-block:: bash
 
   ensembl_prodinf/db_copy_client.py --action list --uri http://ens-prod-1.ebi.ac.uk:8001
-  
-  or for EG:
-   
   ensembl_prodinf/db_copy_client.py --action list --uri http://eg-prod-01.ebi.ac.uk:7001
 
 Collate results
-#####
+###############
+
 If you have run the healthchecks on a large number of databases, you can collate all the results in one file using the tag:
-::
+
+.. code-block:: bash
+
   python ensembl-prodinf-core/ensembl_prodinf/hc_client.py --uri http://ens-prod-1.ebi.ac.uk:8000/hc/ --action collate --tag "my_hc_run" --output_file results.json
 
 Convert results in readable form
-#####
+################################
+
 Convert Json result file in readable text format:
-::
+
+.. code-block:: bash
+
   cat results.json | json_reformat > results.txt
