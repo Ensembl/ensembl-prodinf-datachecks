@@ -6,6 +6,7 @@ Resource Locking
 Overview
 ********
 A key requirement of any automated data processing pipeline is an effective locking strategy to ensure that:
+
 * multiple processes do not write to the same data resource
 * data resources are not updated whilst being actively consumed
 
@@ -32,10 +33,10 @@ Implementation
 **************
 The current python implementation from `ensembl_prodinf/resource_lock.py` uses SQLAlchemy as an abstraction over MySQL. The main classes are:
 
-* `Client` - simple class encapsulating a client and corresponding to a row in the `client` table
-* `Resource` - simple class encapsulating a resource and corresponding to a row in the `resource` table
-* `ResourceLock` - class encapsulating an instance of `Client`, an instance of `Resource`, a lock type (`read` or `write`) and a timestamp, corresponding to a row in the `resource_lock` table
-* `ResourceLocker` - methods for creating and retrieving `Client` and `Resource` objects and for locking and unlocking
+* ``Client`` - simple class encapsulating a client and corresponding to a row in the ``client`` table
+* ``Resource`` - simple class encapsulating a resource and corresponding to a row in the ``resource`` table
+* ``ResourceLock`` - class encapsulating an instance of ``Client``, an instance of ``Resource``, a lock type (``read`` or ``write``) and a timestamp, corresponding to a row in the ``resource_lock`` table
+* ``ResourceLocker`` - methods for creating and retrieving ``Client`` and ``Resource`` objects and for locking and unlocking
 
 Full documentation can be found in the classes but basic usage:
 
@@ -50,8 +51,8 @@ locker.unlock(lock)
 for lock in locker.get_locks():
   print lock
     
-Note that the database `resource_lock` must exist, but will be automatically populated if empty.
+Note that the database ``resource_lock`` must exist, but will be automatically populated if empty.
 
-If a resource cannot be locked, a `LockException` is raised.
+If a resource cannot be locked, a ``LockException`` is raised.
 
-Unit tests can be found in `tests/test_locking.py`
+Unit tests can be found in ``tests/test_locking.py``
