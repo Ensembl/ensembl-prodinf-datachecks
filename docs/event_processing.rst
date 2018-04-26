@@ -12,7 +12,8 @@ In addition, the event infrastructure may also generate further events for proce
 *****
 Logic
 *****
-The event processing service carries out the following steps
+The event processing service carries out the following steps:
+
 #. Accepts a new event specification from a client. This might include a genome or other resource identifier, an update type and comments/parameters.
 #. Determines which processes correspond to that trigger
 #. Submits a process job for each of the corresponding processes
