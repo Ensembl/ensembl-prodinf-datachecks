@@ -49,11 +49,11 @@ Reporting is carried out using the queue-backed Python and Perl implementations 
 
 Celery tasks
 ============
-Once each process for an event is submitted, a ``process_result`` task from ``ensembl_prodinf.event_tasks`` is submitted. This periodically polls the hive for success, and is intended to update the metadata database and submit new events as required (this is not yet implemented).
+Once each process for an event is submitted, a ``process_result`` `celery <./celery.rst>`_ task from `ensembl_prodinf.event_tasks <../ensembl_prodinf/event_tasks.py>`_ is submitted. This periodically polls the hive for success, and is intended to update the metadata database and submit new events as required (this is not yet implemented).
 
 Client
 ======
-A simple client intended for command line and programmatic use is provided in ``ensembl_prodinf.EventClient``. This provides basic support for event submission and job polling.
+A simple client intended for command line and programmatic use is provided in `ensembl_prodinf.EventClient <../ensembl_prodinf/event_client.py>`_. This provides basic support for event submission and job polling.
 
 Event processing web interface
 ==============================

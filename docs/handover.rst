@@ -51,13 +51,17 @@ The endpoint delegates processing to ``ensembl_prodinf.handover_tasks.handover_d
 
 This method returns a unique endpoint token which is also used by the reporting endpoint so that progress of a handover can be tracked.
 
+Client
+======
+A simple client intended for command line and programmatic use is provided in `ensembl_prodinf.HandoverClient <../ensembl_prodinf/handover_client.py>`_. This provides basic support for handover submission.
+
 Reporting
 =========
 Reporting uses the queue-based mechanism found in `ensembl-prodinf-report <https://github.com/Ensembl/ensembl-prodinf-report>`_ fronted by an instance of Python logging.
  
 Celery tasks
 ============
-A sequence of celery tasks is used to trigger and then wait for each step in the process, and then trigger further tasks as required.
+A sequence of `celery <./celery.rst>`_ tasks is used to trigger and then wait for each step in the process, and then trigger further tasks as required.
 
 The tasks are defined in `ensembl_prodinf.handover_tasks <../ensembl_prodinf/handover_tasks.py>`_ and follow a standard pattern of waiting for completion by checking for completion of a submitted job using the standard ensembl_prodinf hive-based endpoints. This wait is implemented as the task checking for completion and then raising a retry exception, which then allows the celery worker to retry an infinite number of times until the job succeeds or fails.
 
