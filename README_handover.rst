@@ -1,3 +1,15 @@
+Overview
+========
+
+The handover app provides a simple endpoint to submit a new database to be checked and copied to the staging server for further automated processing. For more details, please see `handover.rst <https://github.com/Ensembl/ensembl-prodinf-core/blob/master/docs/handover.rst>`_
+
+Implementation
+==============
+
+The `handover app <./handover_app.py>`_ is a simple Flask app which defines endpoints for handover. After starting the app, full API documentation is available from ``/apidocs``.
+
+The submission of a handover job triggers the submission of a `celery <https://github.com/Ensembl/ensembl-prodinf-core/blob/master/docs/celery.rst>`_ task (`handover_database <https://github.com/Ensembl/ensembl-prodinf-core/blob/master/ensembl_prodinf/handover_tasks.py>`_) which coordinates the necessary processes for checking and importing a database.
+
 Installation
 ============
 
@@ -7,7 +19,7 @@ To install Python requirements using pip:
 
   pip install -r requirements.txt
 
-This will install ``ensembl_prodinf`` from git - alternatively to reference an existing install to PYTHONPATH e.g.
+This will install ``ensembl_prodinf`` from git - alternatively to reference an existing install to ``PYTHONPATH`` e.g.
 
 .. code-block:: bash
 
@@ -17,13 +29,7 @@ This will install ``ensembl_prodinf`` from git - alternatively to reference an e
 Configuration
 =============
 
-There are two configuration files you need to have copies of locally:
-
-.. code-block:: bash
-
-  mkdir instance
-  cp handover_config.py.instance_example instance/handover_config.py
-  cp handover_celery_app_config.py.example handover_celery_app_config.py
+Configuration is minimal and restricted to the contents of `handover_config.py <./handover_config.py>`_ which is restricted solely to basic Flask properties.
 
 Running
 =======
@@ -57,7 +63,7 @@ To use a standalone gunicorn server with 4 worker threads:
 
 Running Celery
 ==============
-The Celery task manager is currently used for coordinating handover jobs. The default backend in ``handover_celery_app_config.py`` is RabbitMQ. This can be installed as per https://www.rabbitmq.com/ rabbitmq_server-3.6.10 has been successfully installed from tarball (assuming erlang is already installed).
+The Celery task manager is currently used for coordinating handover jobs. The default backend in ``handover_celery_app_config.py`` is RabbitMQ. This can be installed as per <https://www.rabbitmq.com/>.
 
 To start a celery worker to handle handover:
 
@@ -65,3 +71,9 @@ To start a celery worker to handle handover:
 
   pyenv activate ensprod_inf
   celery -A ensembl_prodinf.handover_tasks worker -l info -Q handover -n handover@%h
+
+
+Client
+======
+
+A simple Python REST client for this app can be found in `handover_client.py <https://github.com/Ensembl/ensembl-prodinf-core/blob/master/ensembl_prodinf/handover_client.py>`_.

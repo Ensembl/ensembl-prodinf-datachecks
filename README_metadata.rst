@@ -1,3 +1,20 @@
+Overview
+========
+
+The metadata service provides a set of endpoints to allow the `ensembl_metadata <https://github.com/Ensembl/ensembl-metadata>`_  database to be updated with new data. These endpoints should be used programatically by components of the Ensembl Production infrastructure, for instance when new data is imported or when production pipelines write to the database in question.
+
+Implementation
+==============
+
+The endpoints are defined in `metadata_app.py <metadata_app.py>`_ flask app. They use the
+`ensembl-prodinf-core <https://github.com/Ensembl/ensembl-prodinf-core>`_ libraries for scheduling and monitoring Hive jobs. The endpoints use the `HiveInstance <https://github.com/Ensembl/ensembl-prodinf-core/blob/master/ensembl_prodinf/hive.py>`_
+class to submit copy jobs to a hive database generated from `Bio::EnsEMBL::MetaData::Pipeline::MetadataUpdater_conf <https://github.com/Ensembl/ensembl-metadata/blob/master/modules/Bio/EnsEMBL/MetaData/Pipeline/MetadataUpdater_conf.pm>`_
+which should then be handled by a running beekeeper instance. For more information on how hive is used by this service, please see `hive.rst <https://github.com/Ensembl/ensembl-prodinf-core/blob/master/docs/hive.rst>`_.
+
+After the flask app has been started consult ``/apidocs`` for complete endpoint documentation.
+
+Optionally, when jobs are submitted an email address can be supplied for an email to be sent to when the job completes or fails. This is as described in `README_celery_email.rst <./README_celery_email.rst>`_.
+
 Installation
 ============
 
@@ -16,7 +33,7 @@ This will install ``ensembl_prodinf`` from git - alternatively to reference an e
 Hive Setup
 ==========
 
-Before you can use the HC endpoint, you need a beekeeper running the pipeline defined by ``Bio::EnsEMBL::Production::Pipeline::PipeConfig::CopyDatabase_conf``. To build and initiate the pipeline:
+Before you can use the HC endpoint, you need a beekeeper running the pipeline defined by ``Bio::EnsEMBL::MetaData::Pipeline::MetadataUpdater_conf``. To build and initiate the pipeline:
 
 .. code-block:: bash
 
@@ -29,7 +46,8 @@ Next, run the ``beekeeper.pl`` supplied by the output with the arguments ``--kee
 
 Configuration
 =============
-There are two configuration files you need to have copies of locally. 
+There are two configuration files you need to have copies of locally.
+
 .. code-block:: bash
 
   cp celery_email_app_config.py.example celery_email_app_config.py
@@ -95,6 +113,11 @@ Note that for production, a different deployment option should be used as the st
 Running Celery
 ==============
 See `README_celery_email.rst <./README_celery_email.rst>`_ about how to run a Celery worker to monitor jobs.
+
+Client
+======
+
+A simple Python REST client for this app can be found in `metadata_client.py <https://github.com/Ensembl/ensembl-prodinf-core/blob/master/ensembl_prodinf/metadata_client.py>`_.
 
 Using Docker
 ============

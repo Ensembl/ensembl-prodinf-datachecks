@@ -1,3 +1,23 @@
+Overview
+========
+
+The database copy service provides a set of endpoints to allow MySQL databases to be copied between servers. These endpoints can be used "self-service" by members of the team, or programatically by components of the Ensembl Production infrastructure.
+
+Implementation
+==============
+
+The endpoints are defined in `db_app.py <db_app.py>`_ flask app. They use the
+`ensembl-prodinf-core <https://github.com/Ensembl/ensembl-prodinf-core>`_ libraries for scheduling and monitoring Hive
+jobs. The endpoints use the `HiveInstance <https://github.com/Ensembl/ensembl-prodinf-core/blob/master/ensembl_prodinf/hive.py>`_
+class to submit copy jobs to a hive database generated from
+`Bio::EnsEMBL::Production::Pipeline::PipeConfig::CopyDatabase_conf <https://github.com/Ensembl/ensembl-production/blob/master/modules/Bio/EnsEMBL/Production/Pipeline/PipeConfig/CopyDatabase_conf.pm>`_
+which should then be handled by a running beekeeper instance. For more information on how hive is used by this service,
+please see `hive.rst <https://github.com/Ensembl/ensembl-prodinf-core/blob/master/docs/hive.rst>`_.
+
+After the flask app has been started consult ``/apidocs`` for complete endpoint documentation.
+
+Optionally, when jobs are submitted an email address can be supplied for an email to be sent to when the job completes or fails. This is as described in `README_celery_email.rst <./README_celery_email.rst>`_.
+
 Installation
 ============
 
@@ -94,6 +114,13 @@ or to start the main application as a standalone using gunicorn with 4 threads:
   gunicorn -w 4 -b 0.0.0.0:5002 db_app:app
 
 Note that for production, a different deployment option should be used as the standalone flask app can only serve one request at a time.
+
+
+Client
+======
+
+A simple Python REST client for this app can be found in `db_copy_client.py <https://github.com/Ensembl/ensembl-prodinf-core/blob/master/ensembl_prodinf/db_copy_client.py>`_.
+
 
 Using Docker
 ============

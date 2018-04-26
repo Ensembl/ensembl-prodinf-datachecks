@@ -1,3 +1,15 @@
+Overview
+========
+
+The locking service provides a simple interface for processes to request soft read and write locks onto resources during the production process.
+
+Implementation
+==============
+
+The locking libraries used can be found in `ensembl-prodinf-core <https://github.com/Ensembl/ensembl-prodinf-core>`_ - for more information please see `locking.rst <https://github.com/Ensembl/ensembl-prodinf-core/blob/master/docs/locking.rst>`_
+
+The locking app itself is a simple flask app (see `lock_app.py <lock_app.py>`_) providing a set of REST endpoints onto the underlying library. After starting the app, full API documentation is available from ``/apidocs``.
+
 Installation
 ============
 

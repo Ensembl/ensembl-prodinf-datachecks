@@ -2,7 +2,12 @@ Overview
 ========
 The Celery task manager is currently used for scheduling checks on completed jobs and sending emails.
 
-Tasks for this are defined in `ensembl-prodinf-core <https://github.com/Ensembl/ensembl-prodinf-core>`_ - for more information please see `celery.rst <https://github.com/Ensembl/ensembl-prodinf-core/blob/master/docs/celery.rst>`_
+Implementation
+==============
+
+Tasks for this are defined in `ensembl-prodinf-core <https://github.com/Ensembl/ensembl-prodinf-core>`_ . The main task is `ensembl_prodinf.email_tasks.email_when_complete <>`. This accepts a URL and an email address. The URL should return a JSON response with fields for ``status``, ``subject`` and ``body``. When ``status`` is no longer ``running``, ``submitted`` or ``incomplete``, an email with ``subject`` and ``body`` is sent to the supplied address.
+
+Tasks are submitted to Celery by a client (e.g. a flask REST endpoint) invoking ``delay`` on this task. For more information please see `celery.rst <https://github.com/Ensembl/ensembl-prodinf-core/blob/master/docs/celery.rst>`_
 
 Installation
 ============

@@ -1,3 +1,22 @@
+Overview
+========
+
+The healthcheck service provides a set of endpoints to allow `healthchecks <https://github.com/Ensembl/ensj-healthcheck>`_ to be run on specified Ensembl MySQL databases. These endpoints can be used "self-service" by members of the team to check their own code, or programatically by components of the Ensembl Production infrastructure.
+
+Implementation
+==============
+
+The endpoints are defined in `hc_app.py <hc_app.py>`_ flask app. They use the
+`ensembl-prodinf-core <https://github.com/Ensembl/ensembl-prodinf-core>`_ libraries for scheduling and monitoring Hive jobs. The endpoints use the `HiveInstance <https://github.com/Ensembl/ensembl-prodinf-core/blob/master/ensembl_prodinf/hive.py>`_
+class to submit copy jobs to a hive database generated from `Bio::EnsEMBL::Healthcheck::Pipeline::RunStandaloneHealthchecksParallel_conf <https://github.com/Ensembl/ensj-healthcheck/blob/master/perl/Bio/EnsEMBL/Healthcheck/Pipeline/RunStandaloneHealthchecksParallel_conf.pm>`_
+which should then be handled by a running beekeeper instance. For more information on how hive is used by this service, please see `hive.rst <https://github.com/Ensembl/ensembl-prodinf-core/blob/master/docs/hive.rst>`_.
+
+After the flask app has been started consult ``/apidocs`` for complete endpoint documentation.
+
+Optionally, when jobs are submitted an email address can be supplied for an email to be sent to when the job completes or fails. This is as described in `README_celery_email.rst <./README_celery_email.rst>`_.
+
+Note that currently the service runs the Java healthchecks from `<https://github.com/Ensembl/ensj-healthcheck>`_ but in future should use the new Perl datachecks from `<https://github.com/Ensembl/ensembl-datacheck>`_. This implementation would need to change in the Hive pipeline specified.
+
 Installation
 ============
 
@@ -91,6 +110,12 @@ To use a standalone gunicorn server with 4 worker threads:
 .. code-block:: bash
 
   gunicorn -w 4 -b 0.0.0.0:5001 hc_app:app
+
+
+Client
+======
+
+A simple Python REST client for this app can be found in `hc_client.py <https://github.com/Ensembl/ensembl-prodinf-core/blob/master/ensembl_prodinf/hc_client.py>`_.
 
 
 Using Docker
