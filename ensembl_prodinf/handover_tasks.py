@@ -21,6 +21,7 @@ from ensembl_prodinf.handover_celery_app import app
 
 from hc_client import HcClient
 from db_copy_client import DbCopyClient
+from metadata_client import MetadataClient
 from sqlalchemy_utils.functions import database_exists
 from sqlalchemy.engine.url import make_url
 from .utils import send_email
@@ -32,6 +33,7 @@ import reporting
 pool = reporting.get_pool(cfg.report_server)
 hc_client = HcClient(cfg.hc_uri)
 db_copy_client = DbCopyClient(cfg.copy_uri)
+metadata_client = MetadataClient(cfg.meta_uri)
      
 def get_logger():    
     return reporting.get_logger(pool, cfg.report_exchange, 'handover', None, {})
@@ -178,25 +180,44 @@ Please see %s
         return
     else:
         get_logger().info("Copying complete, need to submit metadata")
-        meta_job_id = submit_metadata_update(spec['tgt_uri'])
-        task_id = process_db_metadata.delay(meta_job_id, spec)    
+        metadata_job_id = submit_metadata_update(spec)
+        task_id = process_db_metadata.delay(metadata_job_id, spec)
         get_logger().debug("Submitted DB for meta update as " + str(task_id))
         return task_id
     
 
-def submit_metadata_update(uri):
-    """Submit the source database for copying to the target. Returns a celery job identifier. Currently not implemented"""
-    # TODO submit metadata job once complete
-    return 'metaplaceholder_db_id'
+def submit_metadata_update(spec):
+    """Submit the source database for copying to the target. Returns a celery job identifier."""
+    metadata_job_id = metadata_client.submit_job( spec['tgt_uri'], None, None, None, None, spec['contact'], spec['type'], spec['comment'], 'Handover')
+    spec['metadata_job_id'] = metadata_job_id
+    task_id = process_db_metadata.delay(metadata_job_id, spec)
+    get_logger().debug("Submitted DB for metadata loading " + str(task_id))
+    return task_id
 
 
 @app.task(bind=True)    
-def process_db_metadata(self, meta_job_id, spec):
+def process_db_metadata(self, metadata_job_id, spec):
     """Wait for metadata update to complete and then respond accordingly:
     * if success, submit event to event handler for further processing
     * if failure, flag error using email"""
-    reporting.set_logger_context(get_logger(), spec['src_uri'], spec)    
-    get_logger().info("Assuming completed meta update " + str(meta_job_id))
+    reporting.set_logger_context(get_logger(), spec['tgt_uri'], spec)
+    # allow infinite retries
+    self.max_retries = None
+    get_logger().info("Checking " + str(spec) + " using " + str(metadata_job_id))
+    result = metadata_client.retrieve_job(metadata_job_id)
+    if (result['status'] == 'incomplete') or (result['status'] == 'running') or (result['status'] == 'submitted'):
+        get_logger().info("Job incomplete, retrying")
+        raise self.retry()
+    if (result['status'] == 'failed'):
+        get_logger().info("Metadata load failed")
+        msg = """
+Metadata load of %s failed.
+Please see %s
+""" % (spec['tgt_uri'], cfg.meta_web_uri + str(metadata_job_id))
+        send_email(to_address=spec['contact'], subject='Metadata load failed', body=msg, smtp_server=cfg.smtp_server)
+        return
+    else:
+        get_logger().info("Metadata load complete, retrieving event from metadata database")
     # TODO wait for job to complete
     # TODO retrieve event from metadata job
     # TODO pass event to event handler endpoint to trigger more processing
