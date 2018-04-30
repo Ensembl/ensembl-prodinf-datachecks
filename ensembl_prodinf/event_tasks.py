@@ -1,7 +1,7 @@
 '''
 @author: dstaines
 '''
-from ensembl_prodinf.handover_celery_app import app
+from ensembl_prodinf.event_celery_app import app
 from ensembl_prodinf.event_client import EventClient
 
 import event_config as cfg
