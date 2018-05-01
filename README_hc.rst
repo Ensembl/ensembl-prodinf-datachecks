@@ -41,6 +41,7 @@ Before you can use the HC endpoint, you need a beekeeper running the pipeline de
 
 .. code-block:: bash
 
+  ssh ebi-cli-001
   git clone https://github.com/Ensembl/ensj-healthcheck
   cd ensj-healthcheck
   mvn clean package
@@ -49,6 +50,9 @@ Before you can use the HC endpoint, you need a beekeeper running the pipeline de
   init_pipeline.pl Bio::EnsEMBL::Healthcheck::Pipeline::RunStandaloneHealthchecksParallel_conf $($SRV details hive) -hc_jar $JAR
 
 Next, run the ``beekeeper.pl`` supplied by the output with the arguments ``--keep_alive -sleep 0.5``. This ensures the hive runs continually, picking up new jobs as they are submitted.
+
+Please note that beekeeper need to run from an ebi-cli node to be able to send jobs to the farm.
+Also please make sure the hive run from the ensj-healthcheck directory or org.ensembl.healthcheck.testcase.eg_core.ProteinTranslation will fail as the script won't be found.
 
 Configuration
 =============
