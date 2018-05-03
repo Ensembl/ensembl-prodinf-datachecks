@@ -587,7 +587,7 @@ def jobs(job_id):
     """
     fmt = request.args.get('format')
     if fmt == 'email':
-        return results_email(request.args.get('email'), job_id)
+        return job_email(request.args.get('email'), job_id)
     elif fmt == 'failures':
         return failure(job_id)
     elif fmt == None:
@@ -607,7 +607,7 @@ def failure(job_id):
     except ValueError:
         return "Job " + str(job_id) + " not found", 404
 
-def results_email(email, job_id):
+def job_email(email, job_id):
     logging.info("Retrieving job with ID " + str(job_id) + " for " + str(email))
     job = get_hive().get_job_by_id(job_id)
     if(job == None):
