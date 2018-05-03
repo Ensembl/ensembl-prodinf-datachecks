@@ -213,7 +213,7 @@ def job_result(job_id):
     elif fmt == None:
         try:    
             logging.info("Retrieving job with ID " + str(job_id))
-            return jsonify(get_hive().get_result_for_job_id(job_id))
+            return jsonify(get_hive().get_result_for_job_id(job_id, child=True))
         except ValueError:
             return "Job " + str(job_id) + " not found", 404
     else:
@@ -224,24 +224,18 @@ def job_email(email, job_id):
     job = get_hive().get_job_by_id(job_id)
     if(job == None):
         return "Job " + str(job_id) + " not found", 404
-    results = get_hive().get_result_for_job_id(job_id)
+    results = get_hive().get_result_for_job_id(job_id, child=True)
     if results['status'] == 'complete':
-        results['subject'] = 'Healthchecks for %s - %s' % (results['output']['db_name'], results['output']['status'])
-        results['body'] = "Results for %s:\n" % (results['output']['db_uri'])
-        for (test, result) in results['output']['results'].iteritems():
-            results['body'] += "* %s : %s\n" % (test, result['status'])
-            if result['messages'] != None:
-                for msg in result['messages']:
-                    results['body'] += "** %s\n" % (msg)
+        results['subject'] = 'Metadata load for database %s is successful' % (results['output']['database_uri'])
+        results['body'] = "Metadata load for database %s is successful\n" % (results['output']['database_uri'])
+        results['body'] += "Load took %s" % (results['output']['runtime'])
     elif results['status'] == 'failed':
-        failures=get_hive().get_jobs_failure_msg(job_id)
-        results['subject'] = 'Healthcheck job failed'
-        results['body'] = 'Healthcheck job failed with following message:\n'
-        for (jobid,msg) in failures.iteritems():
-            results['body'] += "* Job ID %s : %s\n" % (jobid, msg)
+        failure = get_hive().get_job_failure_msg_by_id(job_id, child=True)
+        results['subject'] = 'Metadata load for %s failed' % (results['input']['database_uri'])
+        results['body'] = 'Metadata load failed with following message:\n'
+        results['body'] += '%s' % (failure.msg)
     results['output'] = None
     return jsonify(results)
-
 
 @app.route('/failure/<int:job_id>', methods=['GET'])
 def failure(job_id):
