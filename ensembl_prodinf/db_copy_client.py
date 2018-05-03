@@ -158,7 +158,7 @@ if __name__ == '__main__':
         logging.info("Job " + str(args.job_id) + " was successfully deleted")
 
     elif args.action == 'email':
-        client.results_email(args.job_id, args.email)
+        client.job_email(args.job_id, args.email)
 
     elif args.action == 'kill_job':
         client.kill_job(args.job_id)
