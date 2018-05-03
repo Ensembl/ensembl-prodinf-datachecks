@@ -93,7 +93,7 @@ def submit_job():
       url: http://github.com/rochacbruno/flasgger
     """
     if json_pattern.match(request.headers['Content-Type']):
-        event = request.json['event']
+        event = request.json
         results = {"processes":[], "event":event}
         # convert event to processes
         processes = get_processes_for_event(event)
