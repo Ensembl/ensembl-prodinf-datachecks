@@ -84,9 +84,10 @@ def submit_job():
         required: 
           -metadata_uri
           -database_uri
-          -e_release
-          -release_date
-          -current_release
+          -update_type
+          -comment
+          -email
+          -source
         properties:
           metadata_uri:
             type: string
@@ -109,13 +110,22 @@ def submit_job():
           email:
             type: string
             example: 'undefined'
+          update_type:
+            type: string
+            example: 'new_assembly'
+          comment:
+            type: string
+            example: 'handover of new species'
+          source:
+            type: string
+            example: 'joe.bloggs@ebi.ac.uk'
     responses:
       200:
         description: submit of a metadata job
         schema:
           $ref: '#/definitions/submit'
         examples:
-          {metadata_uri : "mysql://user:pass@mysql-ens-general-dev-1:4484/ensembl_metadata_new_test", database_uri : "mysql://ensro@mysql-ensembl-mirror:4240/octodon_degus_otherfeatures_91_1", e_release : 91, release_date : "2017-12-06", current_release : 1, email : "undefined"}
+          {metadata_uri : "mysql://user:pass@mysql-ens-general-dev-1:4484/ensembl_metadata_new_test", database_uri : "mysql://ensro@mysql-ensembl-mirror:4240/octodon_degus_otherfeatures_91_1", update_type : "new_assembly", source : "Handover", comment : "handover new Leopard database", email : "joe.bloggs@ebi.ac.uk"}
     """
     if json_pattern.match(request.headers['Content-Type']):
         request.json["metadata_uri"]=app.config["METADATA_URI"]
