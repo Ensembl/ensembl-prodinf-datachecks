@@ -12,9 +12,8 @@ The data flow is:
 - wait/retry until copy job has completed
 - if success, submit metadata update job and submit celery task process_db_metadata
 4. process_db_metadata (celery task)
-- implementation incomplete
-- plan is to wait for successful metadata update and then process event using a further endpoint
-Step 1 is run in a client (e.g a flask endpoint), all subsequent steps are run in celery workers
+- wait/retry until metadara load job has completed
+- if success, process event using a event handler endpoint celery task
 @author: dstaines
 '''
 from ensembl_prodinf.handover_celery_app import app
@@ -22,6 +21,7 @@ from ensembl_prodinf.handover_celery_app import app
 from hc_client import HcClient
 from db_copy_client import DbCopyClient
 from metadata_client import MetadataClient
+from event_client import EventClient
 from sqlalchemy_utils.functions import database_exists
 from sqlalchemy.engine.url import make_url
 from .utils import send_email
@@ -34,6 +34,7 @@ pool = reporting.get_pool(cfg.report_server)
 hc_client = HcClient(cfg.hc_uri)
 db_copy_client = DbCopyClient(cfg.copy_uri)
 metadata_client = MetadataClient(cfg.meta_uri)
+event_client = EventClient(cfg.event_uri)
      
 def get_logger():    
     return reporting.get_logger(pool, cfg.report_exchange, 'handover', None, {})
@@ -107,7 +108,7 @@ def submit_hc(spec, groups):
     spec['hc_job_id'] = hc_job_id
     task_id = process_checked_db.delay(hc_job_id, spec)
     get_logger().debug("Submitted DB for checking as " + str(task_id))
-    send_email(to_address=spec['contact'], subject='HC submitted', body=str(spec['src_uri']) + ' has been submitted for checking', smtp_server=cfg.smtp_server)
+    send_email(to_address=spec['contact'], subject='HC submitted', body=str(spec['src_uri']) + ' has been submitted for checking. Please see '+cfg.hc_web_uri + str(hc_job_id), smtp_server=cfg.smtp_server)
     return task_id
 
 @app.task(bind=True)
@@ -143,6 +144,7 @@ Please see %s
         send_email(to_address=spec['contact'], subject='HC ran but failed', body=msg, smtp_server=cfg.smtp_server)  
         return
     else:
+        send_email(to_address=spec['contact'], subject='HC fine', body=str(spec['src_uri']) + ' has passed healthchecks ', smtp_server=cfg.smtp_server)
         get_logger().info("HCs fine, starting copy")
         submit_copy(spec)
 
@@ -153,6 +155,7 @@ def submit_copy(spec):
     spec['copy_job_id'] = copy_job_id
     task_id = process_copied_db.delay(copy_job_id, spec)    
     get_logger().debug("Submitted DB for copying as " + str(task_id))
+    send_email(to_address=spec['contact'], subject='Database copy submitted', body=str('Database copy from' + spec['src_uri']) + ' to ' + spec['tgt_uri'] + ' submitted. Please see '+ cfg.copy_web_uri + str(copy_job_id), smtp_server=cfg.smtp_server)
     return task_id
 
 
@@ -168,8 +171,7 @@ def process_copied_db(self, copy_job_id, spec):
     result = db_copy_client.retrieve_job(copy_job_id)
     if (result['status'] == 'incomplete') or (result['status'] == 'running') or (result['status'] == 'submitted'):
         get_logger().info("Job incomplete, retrying")
-        raise self.retry() 
-    
+        raise self.retry()
     if (result['status'] == 'failed'):
         get_logger().info("Copy failed")
         msg = """
@@ -179,11 +181,9 @@ Please see %s
         send_email(to_address=spec['contact'], subject='Database copy failed', body=msg, smtp_server=cfg.smtp_server)          
         return
     else:
-        get_logger().info("Copying complete, need to submit metadata")
-        metadata_job_id = submit_metadata_update(spec)
-        task_id = process_db_metadata.delay(metadata_job_id, spec)
-        get_logger().debug("Submitted DB for meta update as " + str(task_id))
-        return task_id
+        send_email(to_address=spec['contact'], subject='Database copy successful', body=str('Database copy from' + spec['src_uri']) + ' to ' + spec['tgt_uri'] + ' successful', smtp_server=cfg.smtp_server)
+        get_logger().info("Copying complete, submitting metadata job")
+        submit_metadata_update(spec)
     
 
 def submit_metadata_update(spec):
@@ -192,6 +192,7 @@ def submit_metadata_update(spec):
     spec['metadata_job_id'] = metadata_job_id
     task_id = process_db_metadata.delay(metadata_job_id, spec)
     get_logger().debug("Submitted DB for metadata loading " + str(task_id))
+    send_email(to_address=spec['contact'], subject='Metadata load submitted', body=str(spec['tgt_uri']) + ' submitted for metadata load.' + ' Please see ' + cfg.meta_web_uri + str(metadata_job_id), smtp_server=cfg.smtp_server)
     return task_id
 
 
@@ -217,8 +218,15 @@ Please see %s
         send_email(to_address=spec['contact'], subject='Metadata load failed', body=msg, smtp_server=cfg.smtp_server)
         return
     else:
-        get_logger().info("Metadata load complete, retrieving event from metadata database")
-    # TODO wait for job to complete
-    # TODO retrieve event from metadata job
-    # TODO pass event to event handler endpoint to trigger more processing
+        get_logger().info("Metadata load complete, submitting event")
+        send_email(to_address=spec['contact'], subject='Metadata load successful', body=str(spec['tgt_uri']) + ' successfully loaded into metadata database. Handover successful', smtp_server=cfg.smtp_server)
+        submit_event(spec,result)
     return
+
+def submit_event(spec,result):
+    """Submit an event"""
+    print(result['output']['events'])
+    for event in result['output']['events']:
+        print(event)
+        event_client.submit_job({"type":event['type'],"genome":event['genome']})
+        get_logger().debug("Submitted event to event handler endpoint")
