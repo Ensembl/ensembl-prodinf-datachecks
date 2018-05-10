@@ -58,7 +58,7 @@ For Ensembl:
 
   METADATA_SERVER=$(mysql-ens-meta-prod-1-ensprod details url) #e.g: mysql://ensprod:pass@mysql-ens-meta-prod-1:4483/
   DATABASE_SERVER=$(mysql-ens-general-prod-1 details url)
-  ENDPOINT=http://ens-prod-1.ebi.ac.uk:8000/dbcopy/ #or http://eg-prod-01.ebi.ac.uk:7000/dbcopy/ for EG
+  ENDPOINT=http://ens-prod-1.ebi.ac.uk:8000/metadata
   METADATA=ensembl_metadata
   ENS_VERSION=91
   RELEASE_DATE="2017-12-06"
@@ -79,7 +79,7 @@ For EG:
 
   METADATA_SERVER=$(mysql-ens-meta-prod-1-ensprod details url) #e.g: mysql://ensprod:pass@mysql-ens-meta-prod-1:4483/
   DATABASE_SERVER=$(mysql-eg-staging-2 details url)
-  ENDPOINT=http://ens-prod-1.ebi.ac.uk:8000/dbcopy/ #or http://eg-prod-01.ebi.ac.uk:7000/dbcopy/ for EG
+  ENDPOINT=http://ens-prod-1.ebi.ac.uk:7000/metadata
   METADATA=ensembl_metadata
   ENS_VERSION=91
   RELEASE_DATE="2017-12-13"
@@ -155,7 +155,7 @@ or using the Python client:
 
 .. code-block:: bash
 
-  ensembl_prodinf/metadata_client.py --action list --uri http://ens-prod-1.ebi.ac.uk:8002
-  ensembl_prodinf/metadata_client.py --action list --uri http://eg-prod-01.ebi.ac.uk:7002
+  ensembl_prodinf/metadata_client.py --action list --uri http://ens-prod-1.ebi.ac.uk:8000/metadata
+  ensembl_prodinf/metadata_client.py --action list --uri http://eg-prod-01.ebi.ac.uk:7000/metadata
   
   
