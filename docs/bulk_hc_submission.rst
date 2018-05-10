@@ -67,7 +67,7 @@ To Submit the job via the REST enpoint for Ensembl
   LIVE=$(mysql-ensembl-mirror details url)
   STAGING=$(mysql-ens-sta-1 details url)
   PRODUCTION=$(mysql-ens-sta-1 details url)
-  ENDPOINT=http://ens-prod-1.ebi.ac.uk:8000/hc/ #or http://ens-prod-1.ebi.ac.uk:7000/hc/ for EG
+  ENDPOINT=http://ens-prod-1.ebi.ac.uk:8000/hc/
   DATA_FILE_PATH=/nfs/panda/ensembl/production/ensemblftp/data_files/
   RELEASE=91
   TAG=my_hc_run
