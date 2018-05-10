@@ -67,7 +67,7 @@ To Submit the job via the REST enpoint for Ensembl
   LIVE=$(mysql-ensembl-mirror details url)
   STAGING=$(mysql-ens-sta-1 details url)
   PRODUCTION=$(mysql-ens-sta-1 details url)
-  ENDPOINT=http://ens-prod-1.ebi.ac.uk:8000/hc/
+  ENDPOINT=http://ens-prod-1.ebi.ac.uk:8000/hc/ #or http://ens-prod-1.ebi.ac.uk:7000/hc/ for EG
   DATA_FILE_PATH=/nfs/panda/ensembl/production/ensemblftp/data_files/
   RELEASE=91
   TAG=my_hc_run
@@ -175,8 +175,8 @@ or using the Python client:
 
 .. code-block:: bash
 
-  ensembl_prodinf/db_copy_client.py --action list --uri http://ens-prod-1.ebi.ac.uk:8001
-  ensembl_prodinf/db_copy_client.py --action list --uri http://eg-prod-01.ebi.ac.uk:7001
+  ensembl_prodinf/db_copy_client.py --action list --uri http://ens-prod-1.ebi.ac.uk:8000/hc
+  ensembl_prodinf/db_copy_client.py --action list --uri http://eg-prod-01.ebi.ac.uk:7000/hc
 
 Collate results
 ###############
@@ -185,7 +185,7 @@ If you have run the healthchecks on a large number of databases, you can collate
 
 .. code-block:: bash
 
-  python ensembl-prodinf-core/ensembl_prodinf/hc_client.py --uri http://ens-prod-1.ebi.ac.uk:8001 --action collate --tag "my_hc_run" --output_file results.json
+  python ensembl-prodinf-core/ensembl_prodinf/hc_client.py --uri http://ens-prod-1.ebi.ac.uk:8000/hc --action collate --tag "my_hc_run" --output_file results.json
 
 Convert results in readable form
 ################################
