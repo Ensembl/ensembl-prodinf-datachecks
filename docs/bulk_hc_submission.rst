@@ -185,7 +185,7 @@ If you have run the healthchecks on a large number of databases, you can collate
 
 .. code-block:: bash
 
-  python ensembl-prodinf-core/ensembl_prodinf/hc_client.py --uri http://ens-prod-1.ebi.ac.uk:8000/hc/ --action collate --tag "my_hc_run" --output_file results.json
+  python ensembl-prodinf-core/ensembl_prodinf/hc_client.py --uri http://ens-prod-1.ebi.ac.uk:8001 --action collate --tag "my_hc_run" --output_file results.json
 
 Convert results in readable form
 ################################
