@@ -3,6 +3,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 import logging
 import re
+import json
 
 from ensembl_prodinf import HiveInstance
 from ensembl_prodinf.email_tasks import email_when_complete
@@ -28,6 +29,22 @@ def get_hive():
     if hive == None:
         hive = HiveInstance(app.config["HIVE_URI"])
     return hive
+
+app.hc_list = None
+
+def get_hc_list():
+    if app.hc_list == None:
+        with open(app.config["HC_LIST_FILE"], 'r') as f:
+            app.hc_list = json.loads(f.read())
+    return app.hc_list
+
+app.hc_groups = None
+
+def get_hc_groups():
+    if app.hc_groups == None:
+        with open(app.config["HC_GROUPS_FILE"], 'r') as f:
+            app.hc_groups = json.loads(f.read())
+    return app.hc_groups
 
 cors = CORS(app)
 
@@ -409,6 +426,123 @@ def jobs():
     logging.info("Retrieving jobs")
     return jsonify(get_hive().get_all_results(app.analysis))
 
+@app.route('/hclist', methods=['GET'])
+def list_hc_list_endpoint():
+    """
+    Endpoint to return a list of hc matching a user query
+    This is using docstring for specifications
+    ---
+    tags:
+      - hclist
+    parameters:
+      - in: query
+        name: query
+        type: string
+        required: true
+        default: hc_name
+        description: hc name name used to filter down the list
+    operationId: hclist
+    consumes:
+      - application/json
+    produces:
+      - application/json
+    security:
+      hclist_auth:
+        - 'write:hclist'
+        - 'read:hclist'
+    schemes: ['http', 'https']
+    deprecated: false
+    externalDocs:
+      description: Project repository
+      url: http://github.com/rochacbruno/flasgger
+    definitions:
+      query:
+        type: object
+        properties:
+          query:
+            type: string
+            items:
+              $ref: '#/definitions/query'
+      hc_list:
+        type: object
+        properties:
+          hc_list:
+            type: string
+            items:
+              $ref: '#/definitions/hc_list'
+    responses:
+      200:
+        description: list hc tests
+        schema:
+          $ref: '#/definitions/host'
+        examples:
+          ["org.ensembl.healthcheck.testcase.eg_core.MultiDbCompareNames"]
+    """
+    query = request.args.get('query')
+    if query == None:
+        return "Query not specified", 400
+    logging.debug("Finding servers matching " + query)
+    hc_list = filter(lambda x:str(query).lower() in x.lower(), get_hc_list())
+    return jsonify(hc_list)
+
+@app.route('/hcgroups', methods=['GET'])
+def list_hc_groups_endpoint():
+    """
+    Endpoint to return a list of hc groups matching a user query
+    This is using docstring for specifications
+    ---
+    tags:
+      - hcgroups
+    parameters:
+      - in: query
+        name: query
+        type: string
+        required: true
+        default: hc_group
+        description: hc group name name used to filter down the list
+    operationId: hcgroups
+    consumes:
+      - application/json
+    produces:
+      - application/json
+    security:
+      hcgroups_auth:
+        - 'write:hcgroups'
+        - 'read:hcgroups'
+    schemes: ['http', 'https']
+    deprecated: false
+    externalDocs:
+      description: Project repository
+      url: http://github.com/rochacbruno/flasgger
+    definitions:
+      query:
+        type: object
+        properties:
+          query:
+            type: string
+            items:
+              $ref: '#/definitions/query'
+      hc_groups:
+        type: object
+        properties:
+          hc_groups:
+            type: string
+            items:
+              $ref: '#/definitions/hc_groups'
+    responses:
+      200:
+        description: list hc groups
+        schema:
+          $ref: '#/definitions/host'
+        examples:
+          ["org.ensembl.healthcheck.testgroup.PostMerge"]
+    """
+    query = request.args.get('query')
+    if query == None:
+        return "Query not specified", 400
+    logging.debug("Finding servers matching " + query)
+    hc_groups = filter(lambda x:str(query).lower() in x.lower(), get_hc_groups())
+    return jsonify(hc_groups)
 
 
 if __name__ == "__main__":
