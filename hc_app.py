@@ -426,30 +426,30 @@ def jobs():
     logging.info("Retrieving jobs")
     return jsonify(get_hive().get_all_results(app.analysis))
 
-@app.route('/hclist', methods=['GET'])
-def list_hc_list_endpoint():
+@app.route('/healthchecks/tests', methods=['GET'])
+def list_healthchecks_tests_endpoint():
     """
     Endpoint to return a list of hc matching a user query
     This is using docstring for specifications
     ---
     tags:
-      - hclist
+      - healthchecks
     parameters:
       - in: query
         name: query
         type: string
         required: true
-        default: hc_name
-        description: hc name name used to filter down the list
-    operationId: hclist
+        default: test_name
+        description: test name name used to filter down the list
+    operationId: healthchecks_tests
     consumes:
       - application/json
     produces:
       - application/json
     security:
-      hclist_auth:
-        - 'write:hclist'
-        - 'read:hclist'
+      healthchecks_tests_auth:
+        - 'write:healthchecks_tests'
+        - 'read:healthchecks_tests'
     schemes: ['http', 'https']
     deprecated: false
     externalDocs:
@@ -463,16 +463,16 @@ def list_hc_list_endpoint():
             type: string
             items:
               $ref: '#/definitions/query'
-      hc_list:
+      test_name:
         type: object
         properties:
-          hc_list:
+          test_name:
             type: string
             items:
-              $ref: '#/definitions/hc_list'
+              $ref: '#/definitions/test_name'
     responses:
       200:
-        description: list hc tests
+        description: list healthchecks tests
         schema:
           $ref: '#/definitions/host'
         examples:
@@ -480,35 +480,36 @@ def list_hc_list_endpoint():
     """
     query = request.args.get('query')
     if query == None:
-        return "Query not specified", 400
-    logging.debug("Finding servers matching " + query)
+        return jsonify(get_hc_list())
+    logging.debug("Finding healthchecks tests matching " + query)
     hc_list = filter(lambda x:str(query).lower() in x.lower(), get_hc_list())
     return jsonify(hc_list)
 
-@app.route('/hcgroups', methods=['GET'])
-def list_hc_groups_endpoint():
+
+@app.route('/healthchecks/groups', methods=['GET'])
+def list_healthchecks_groups_endpoint():
     """
-    Endpoint to return a list of hc groups matching a user query
+    Endpoint to return a list of hc matching a user query
     This is using docstring for specifications
     ---
     tags:
-      - hcgroups
+      - healthchecks
     parameters:
       - in: query
         name: query
         type: string
         required: true
-        default: hc_group
-        description: hc group name name used to filter down the list
-    operationId: hcgroups
+        default: group_name
+        description: group name used to filter down the list
+    operationId: healthchecks_groups
     consumes:
       - application/json
     produces:
       - application/json
     security:
-      hcgroups_auth:
-        - 'write:hcgroups'
-        - 'read:hcgroups'
+      healthchecks_groups_auth:
+        - 'write:healthchecks_groups'
+        - 'read:healthchecks_groups'
     schemes: ['http', 'https']
     deprecated: false
     externalDocs:
@@ -522,27 +523,31 @@ def list_hc_groups_endpoint():
             type: string
             items:
               $ref: '#/definitions/query'
-      hc_groups:
+      group_name:
         type: object
         properties:
-          hc_groups:
+          group_name:
             type: string
             items:
-              $ref: '#/definitions/hc_groups'
+              $ref: '#/definitions/group_name'
     responses:
       200:
-        description: list hc groups
+        description: list healthcheck groups
         schema:
           $ref: '#/definitions/host'
         examples:
-          ["org.ensembl.healthcheck.testgroup.PostMerge"]
+          ["org.ensembl.healthcheck.testcase.eg_core.MultiDbCompareNames"]
     """
     query = request.args.get('query')
     if query == None:
-        return "Query not specified", 400
-    logging.debug("Finding servers matching " + query)
+        return jsonify(get_hc_groups())
+    logging.debug("Finding healthchecks groups matching " + query)
     hc_groups = filter(lambda x:str(query).lower() in x.lower(), get_hc_groups())
     return jsonify(hc_groups)
+
+@app.route('/healthchecks', methods=['GET'])
+def healthchecks_endpoint():
+    return jsonify({"tests":request.url + "/tests","groups":request.url + "/groups"})
 
 
 if __name__ == "__main__":
