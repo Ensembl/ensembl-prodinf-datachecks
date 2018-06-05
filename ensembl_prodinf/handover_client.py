@@ -10,7 +10,7 @@ class HandoverClient(object):
     Client for submitting databases for handover
     """
     
-    submit = '{}submit'
+    handovers = '{}handovers'
     
     def __init__(self, uri):
         assert_http_uri(uri)
@@ -25,7 +25,7 @@ class HandoverClient(object):
         assert_email(spec['contact'])
         logging.info("Submitting {} for handover".format(spec['src_uri']))
         logging.debug(spec)
-        r = requests.post(self.submit.format(self.uri), json=spec)
+        r = requests.post(self.handovers.format(self.uri), json=spec)
         r.raise_for_status()
         return r.json()
 
