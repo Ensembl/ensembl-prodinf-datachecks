@@ -27,37 +27,37 @@ def info():
 def ping():
     return jsonify({"status":"ok"})
 
-@app.route('/submit', methods=['POST'])
-def handover():
+@app.route('/handovers', methods=['POST'])
+def handovers():
     """
     Endpoint to submit an handover job
     This is using docstring for specifications
     ---
     tags:
-      - submit
+      - handovers
     parameters:
       - in: body
         name: body
         description: healthcheck object
         required: false
         schema:
-          $ref: '#/definitions/submit'
-    operationId: submit
+          $ref: '#/definitions/handovers'
+    operationId: handovers
     consumes:
       - application/json
     produces:
       - application/json
     security:
-      submit_auth:
-        - 'write:submit'
-        - 'read:submit'
+      handovers_auth:
+        - 'write:handovers'
+        - 'read:handovers'
     schemes: ['http', 'https']
     deprecated: false
     externalDocs:
       description: Project repository
       url: http://github.com/rochacbruno/flasgger
     definitions:
-      submit:
+      handovers:
         title: handover job
         description: A job to handover a database, the database will be healthchecked, copied and added to metadata database
         type: object
@@ -81,9 +81,9 @@ def handover():
             example: 'joe.blogg@ebi.ac.uk'
     responses:
       200:
-        description: submit of an healthcheck job
+        description: submit of an handover job
         schema:
-          $ref: '#/definitions/submit'
+          $ref: '#/definitions/handovers'
         examples:
           {src_uri: "mysql://user@server:port/saccharomyces_cerevisiae_core_91_4", contact: "joe.blogg@ebi.ac.uk", type: "other", comment: "handover new Panda OF"}
     """
