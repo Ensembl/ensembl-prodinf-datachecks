@@ -4,8 +4,12 @@ from flask_cors import CORS
 from flasgger import Swagger
 import logging
 import re
-
+import requests
+import json
 from ensembl_prodinf.handover_tasks import handover_database
+from elasticsearch import Elasticsearch
+
+
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
@@ -88,17 +92,117 @@ def handovers():
           {src_uri: "mysql://user@server:port/saccharomyces_cerevisiae_core_91_4", contact: "joe.blogg@ebi.ac.uk", type: "other", comment: "handover new Panda OF"}
     """
     if json_pattern.match(request.headers['Content-Type']):
-
         logging.debug("Submitting handover request " + str(request.json))
         spec = request.json
-
         if 'src_uri' not in spec or 'contact' not in spec or 'type' not in spec or 'comment' not in spec:
             return "Handover specification incomplete - please specify src_uri, contact, type and comment", 415
-
         ticket = handover_database(spec)
         logging.info(ticket)
         return jsonify(ticket);
-    
     else:
         return "Could not handle input of type " + request.headers['Content-Type'], 415
 
+@app.route('/handovers/<string:handover_token>', methods=['GET'])
+def handover_result(handover_token):
+    """
+    Endpoint to get an handover job detail
+    This is using docstring for specifications
+    ---
+    tags:
+      - handovers
+    parameters:
+      - name: handover_token
+        in: path
+        type: string
+        required: true
+        default: 15ce20fd-68cd-11e8-8117-005056ab00f0
+        description: handover token for the database handed over
+    operationId: handovers
+    consumes:
+      - application/json
+    produces:
+      - application/json
+    security:
+      handovers_auth:
+        - 'write:handovers'
+        - 'read:handovers'
+    schemes: ['http', 'https']
+    deprecated: false
+    externalDocs:
+      description: Project repository
+      url: http://github.com/rochacbruno/flasgger
+    definitions:
+      handovers:
+        title: Get a handover job details
+        description: This will retrieve a handover job details
+        type: object
+        required: 
+          -handover_token
+        properties:
+          handover_token:
+            type: string
+            example: '15ce20fd-68cd-11e8-8117-005056ab00f0'
+    responses:
+      200:
+        description: Retrieve an handover job ticket
+        schema:
+          $ref: '#/definitions/handovers'
+        examples:
+          {"_shards": {"failed": 0, "skipped": 0, "successful": 5, "total": 5 }, "hits": {"hits": [{"_id": "Cqhm0GMBN9oobWXo3Uhj", "_index": "reports", "_score": null, "_source": {"host": "ens-prod-1.ebi.ac.uk", "message": "Checking {u'comment': u'handover new Leopard database', u'handover_token': u'15ce20fd-68cd-11e8-8117-005056ab00f0', u'copy_job_id': 94, u'hc_job_id': 2700, u'metadata_job_id': 17521, u'contact': u'maurel@ebi.ac.uk', u'src_uri': u'mysql://ensadmin:ensembl@mysql-ens-general-prod-1:4525/panthera_pardus_core_93_1', u'tgt_uri': u'mysql://ensadmin:ensembl@mysql-ens-general-dev-1:4484/panthera_pardus_core_93_1', u'type': u'new_assembly'} using 17521", "params": {"comment": "handover new Leopard database", "contact": "maurel@ebi.ac.uk", "copy_job_id": 94, "handover_token": "15ce20fd-68cd-11e8-8117-005056ab00f0", "hc_job_id": 2700, "metadata_job_id": 17521, "src_uri": "mysql://ensadmin:ensembl@mysql-ens-general-prod-1:4525/panthera_pardus_core_93_1", "tgt_uri": "mysql://ensadmin:ensembl@mysql-ens-general-dev-1:4484/panthera_pardus_core_93_1", "type": "new_assembly"}, "process": "handover", "report_time": "2018-06-05T14:43:12", "report_type": "INFO", "resource": "mysql://ensadmin:ensembl@mysql-ens-general-dev-1:4484/panthera_pardus_core_93_1"}, "_type": "report", "sort": [1528209792000 ] } ], "max_score": null, "total": 19 }, "timed_out": false, "took": 5 }
+    """
+    try:
+        res = requests.get('http://localhost:9200')
+    except ValueError:
+      return "Can't connect to Elasticsearch"
+    try:    
+        logging.info("Retrieving handover data with token " + str(handover_token))
+        es = Elasticsearch([{'host': 'localhost', 'port': 9200}])
+        return jsonify(es.search(index="reports",body={"query":{"bool":{"must":[{"term":{"params.handover_token.keyword":str(handover_token)}}],"must_not":[],"should":[]}},"from":0,"size":1,"sort":[{"report_time":{"order": "desc"}}],"aggs":{}}))
+    except ValueError:
+        return "Handover token " + str(handover_token) + " not found", 404
+
+@app.route('/handovers/', methods=['GET'])
+def handover_results():
+    """
+    Endpoint to get an handover job detail
+    This is using docstring for specifications
+    ---
+    tags:
+      - handovers
+    operationId: handovers
+    consumes:
+      - application/json
+    produces:
+      - application/json
+    security:
+      handovers_auth:
+        - 'write:handovers'
+        - 'read:handovers'
+    schemes: ['http', 'https']
+    deprecated: false
+    externalDocs:
+      description: Project repository
+      url: http://github.com/rochacbruno/flasgger
+    definitions:
+      handovers:
+        title: Retrieve a all the handover jobs
+        description: This will retrieve all the handover job details
+        type: object
+    responses:
+      200:
+        description: Retrieve all the handover job details
+        schema:
+          $ref: '#/definitions/handovers'
+        examples:
+          {"_shards":{"failed": 0, "skipped": 0,  "successful": 5,  "total": 5}, "hits": {"hits": [{"_id": "FqiC2mMBN9oobWXoKUhg", "_index": "reports", "_score": null, "_source": {"host": "ens-prod-1.ebi.ac.uk", "message": "Handling {u'comment': u'handover new Leopard database', u'contact': u'maurel@ebi.ac.uk', u'type': u'new_assembly', u'src_uri': u'mysql://ensadmin:ensembl@mysql-ens-general-prod-1:4525/panthera_pardus_core_93_1'}", "params": {"comment": "handover new Leopard database", "contact": "maurel@ebi.ac.uk", "src_uri":"mysql://ensadmin:ensembl@mysql-ens-general-prod-1:4525/panthera_pardus_core_93_1", "type": "new_assembly"},"process": "handover", "report_time": "2018-06-07T13:49:13", "report_type": "INFO","resource": "mysql://ensadmin:ensembl@mysql-ens-general-prod-1:4525/panthera_pardus_core_93_1"}, "_type": "report", "sort": [1528379353000]}, ],"max_score": null, "total": 10}, "timed_out": false, "took": 15}
+    """
+    try:
+        res = requests.get('http://localhost:9200')
+    except ValueError:
+      return "Can't connect to Elasticsearch"
+    try:    
+        logging.info("Retrieving all handover report")
+        es = Elasticsearch([{'host': 'localhost', 'port': 9200}])
+        return jsonify(es.search(index="reports",body={"query":{"bool":{"must":[{"wildcard":{"message.keyword":"Handling*"}}],"must_not":[],"should":[]}},"from":0,"size":1000,"sort":[{"report_time":{"order": "desc"}}],"aggs":{}}))
+    except ValueError:
+        return "Handover token data not found", 404
