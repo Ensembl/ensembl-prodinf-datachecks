@@ -218,9 +218,10 @@ Please see %s
         send_email(to_address=spec['contact'], subject='Metadata load failed', body=msg, smtp_server=cfg.smtp_server)
         return
     else:
-        get_logger().info("Metadata load complete, submitting event")
+        #get_logger().info("Metadata load complete, submitting event")
+        get_logger().info("Metadata load complete, Handover successful")
         send_email(to_address=spec['contact'], subject='Metadata load successful', body=str(spec['tgt_uri']) + ' successfully loaded into metadata database. Handover successful', smtp_server=cfg.smtp_server)
-        submit_event(spec,result)
+        #submit_event(spec,result)
     return
 
 def submit_event(spec,result):
