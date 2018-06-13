@@ -3,7 +3,8 @@ from logging import Handler
 import logging
 import threading
 import socket
-from time import gmtime, strftime
+from time import strftime
+from datetime import datetime
 import pika
 import pika_pool
 
@@ -41,7 +42,7 @@ class ContextFilter(logging.Filter):
         record.host = self.context['host']
         record.process = self.context['process']
         record.resource = self.context['resource']
-        record.report_time = strftime("%Y-%m-%dT%H:%M:%S", gmtime())
+        record.report_time = datetime.now().strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3]
         record.report_type = binding_keys[record.levelname]
         if 'params' in self.context.keys():
             record.params = self.context['params']
