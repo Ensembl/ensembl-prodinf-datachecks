@@ -157,7 +157,9 @@ def handover_result(handover_token):
     try:    
         logging.info("Retrieving handover data with token " + str(handover_token))
         es = Elasticsearch([{'host': 'localhost', 'port': 9200}])
-        return jsonify(es.search(index="reports",body={"query":{"bool":{"must":[{"term":{"params.handover_token.keyword":str(handover_token)}}],"must_not":[],"should":[]}},"from":0,"size":1,"sort":[{"report_time":{"order": "desc"}}],"aggs":{}}))
+        return jsonify(es.search(index="reports",body={"query":{"bool":{"must":[{"term":{"params.handover_token.keyword":str(handover_token)}},{"term":{"report_type.keyword":"INFO"}}],"must_not":[],"should":[]}},"from":0,"size":1,"sort":[{"report_time":{"order": "desc"}}],"aggs":{}}
+
+))
     except ValueError:
         return "Handover token " + str(handover_token) + " not found", 404
 
@@ -203,6 +205,6 @@ def handover_results():
     try:    
         logging.info("Retrieving all handover report")
         es = Elasticsearch([{'host': 'localhost', 'port': 9200}])
-        return jsonify(es.search(index="reports",body={"query":{"bool":{"must":[{"wildcard":{"message.keyword":"Handling*"}}],"must_not":[],"should":[]}},"from":0,"size":1000,"sort":[{"report_time":{"order": "desc"}}],"aggs":{}}))
+        return jsonify(es.search(index="reports",body={"query": {"bool": {"must": [{"query_string" : {"fields": ["message"],"query" : "Handling*","analyze_wildcard": "true"}}]}},"size":1000,"sort":[{"report_time":{"order": "desc"}}]}))
     except ValueError:
         return "Handover token data not found", 404
