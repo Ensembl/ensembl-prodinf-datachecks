@@ -54,19 +54,14 @@ def handover_database(spec):
     """
     # TODO verify dict    
     reporting.set_logger_context(get_logger(), spec['src_uri'], spec)    
-    get_logger().info("Handling " + str(spec))
+    # create unique identifier
+    spec['handover_token'] = str(uuid.uuid1())
     if 'tgt_uri' not in spec:
         spec['tgt_uri'] = get_tgt_uri(spec['src_uri'])
-    # create unique identifier
-    spec['handover_token'] = str(uuid.uuid1())                    
+    get_logger().info("Handling " + str(spec))
     check_db(spec['src_uri'])
     groups = groups_for_uri(spec['src_uri'])
-    if(groups==None):
-        get_logger().info("No HCs needed, starting copy")
-        submit_copy(spec)
-    else: 
-        get_logger().info("Starting HCs")
-        submit_hc(spec, groups)
+    submit_hc(spec, groups)
     return spec['handover_token']
 
 def get_tgt_uri(src_uri):
@@ -81,7 +76,6 @@ def check_db(uri):
         get_logger().error(uri + " does not exist")
         raise ValueError(uri + " does not exist")
     else:
-        get_logger().info(uri + " looks good to me")
         return
 
 core_pattern = re.compile(".*[a-z]_(core|rnaseq|cdna|otherfeatures)_[0-9].*")   
@@ -120,10 +114,10 @@ def process_checked_db(self, hc_job_id, spec):
     reporting.set_logger_context(get_logger(), spec['src_uri'], spec)    
     # allow infinite retries 
     self.max_retries = None
-    get_logger().info("Checking HCs for " + spec['src_uri'] + " from job " + str(hc_job_id))
+    get_logger().info("HCs in progress for " + spec['src_uri'] + " from job " + str(hc_job_id))
     result = hc_client.retrieve_job(hc_job_id)
     if (result['status'] == 'incomplete') or (result['status'] == 'running') or (result['status'] == 'submitted'):
-        get_logger().info("Job incomplete, retrying")
+        get_logger().debug("HC Job incomplete, checking again later")
         raise self.retry()
     
     # check results
@@ -167,10 +161,10 @@ def process_copied_db(self, copy_job_id, spec):
     reporting.set_logger_context(get_logger(), spec['src_uri'], spec)    
     # allow infinite retries     
     self.max_retries = None
-    get_logger().info("Checking " + str(spec) + " using " + str(copy_job_id))
+    get_logger().info("Copying in progress " + str(spec) + " using " + str(copy_job_id))
     result = db_copy_client.retrieve_job(copy_job_id)
     if (result['status'] == 'incomplete') or (result['status'] == 'running') or (result['status'] == 'submitted'):
-        get_logger().info("Job incomplete, retrying")
+        get_logger().debug("Database copy job incomplete, checking again later")
         raise self.retry()
     if (result['status'] == 'failed'):
         get_logger().info("Copy failed")
@@ -204,10 +198,10 @@ def process_db_metadata(self, metadata_job_id, spec):
     reporting.set_logger_context(get_logger(), spec['tgt_uri'], spec)
     # allow infinite retries
     self.max_retries = None
-    get_logger().info("Checking " + str(spec) + " using " + str(metadata_job_id))
+    get_logger().info("Loading into metadata database " + str(spec) + " using " + str(metadata_job_id))
     result = metadata_client.retrieve_job(metadata_job_id)
     if (result['status'] == 'incomplete') or (result['status'] == 'running') or (result['status'] == 'submitted'):
-        get_logger().info("Job incomplete, retrying")
+        get_logger().debug("Metadata load Job incomplete, checking again later")
         raise self.retry()
     if (result['status'] == 'failed'):
         get_logger().info("Metadata load failed")
