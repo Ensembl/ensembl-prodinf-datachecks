@@ -187,7 +187,7 @@ def handover_results():
       url: http://github.com/rochacbruno/flasgger
     definitions:
       handovers:
-        title: Retrieve a all the handover jobs
+        title: Retrieve a list of handover databases
         description: This will retrieve all the handover job details
         type: object
     responses:
@@ -208,3 +208,67 @@ def handover_results():
         return jsonify(es.search(index="reports",body={"query": {"bool": {"must": [{"query_string" : {"fields": ["message"],"query" : "Handling*","analyze_wildcard": "true"}}]}},"size":1000,"sort":[{"report_time":{"order": "desc"}}]}))
     except ValueError:
         return "Handover token data not found", 404
+
+@app.route('/handovers/<string:handover_token>', methods=['DELETE'])
+def delete_handover(handover_token):
+    """
+    Endpoint to delete all the reports linked to a handover_token
+    This is using docstring for specifications
+    ---
+    tags:
+      - handovers
+    parameters:
+      - name: handover_token
+        in: path
+        type: string
+        required: true
+        default: 15ce20fd-68cd-11e8-8117-005056ab00f0
+        description: handover token for the database handed over
+    operationId: handovers
+    consumes:
+      - application/json
+    produces:
+      - application/json
+    security:
+      delete_auth:
+        - 'write:delete'
+        - 'read:delete'
+    schemes: ['http', 'https']
+    deprecated: false
+    externalDocs:
+      description: Project repository
+      url: http://github.com/rochacbruno/flasgger
+    definitions:
+      handover_token:
+        type: object
+        properties:
+          handover_token:
+            type: integer
+            items:
+              $ref: '#/definitions/handover_token'
+      id:
+        type: integer
+        properties:
+          id:
+            type: integer
+            items:
+              $ref: '#/definitions/id'
+    responses:
+      200:
+        description: handover_token of the reports that need deleting
+        schema:
+          $ref: '#/definitions/handover_token'
+        examples:
+          id: 15ce20fd-68cd-11e8-8117-005056ab00f0
+    """
+    try:
+        res = requests.get('http://localhost:9200')
+    except ValueError:
+      return "Can't connect to Elasticsearch"
+    try:
+        logging.info("Retrieving handover data with token " + str(handover_token))
+        es = Elasticsearch([{'host': 'localhost', 'port': 9200}])
+        es.delete_by_query(index='reports', doc_type='report', body={"query":{"bool":{"must":[{"term":{"params.handover_token.keyword":str(handover_token)}}]}}})
+        return jsonify(str(handover_token))
+    except ValueError:
+        return "Handover token " + str(handover_token) + " not found", 404
