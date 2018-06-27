@@ -51,6 +51,9 @@ def handover_database(spec):
     * handover_token - unique identifier for this particular handover invocation
     * hc_job_id - job ID for healthcheck process
     * db_job_id - job ID for database copy process
+    * metadata_job_id - job ID for the metadata loading process
+    * progress_total - Total number of task to do
+    * progress_complete - Total number of task completed
     """
     # TODO verify dict    
     reporting.set_logger_context(get_logger(), spec['src_uri'], spec)    
@@ -61,6 +64,8 @@ def handover_database(spec):
     get_logger().info("Handling " + str(spec))
     check_db(spec['src_uri'])
     groups = groups_for_uri(spec['src_uri'])
+    spec['progress_total']=3
+    spec['progress_complete']=1
     submit_hc(spec, groups)
     return spec['handover_token']
 
@@ -140,6 +145,7 @@ Please see %s
     else:
         send_email(to_address=spec['contact'], subject='HC fine', body=str(spec['src_uri']) + ' has passed healthchecks ', smtp_server=cfg.smtp_server)
         get_logger().info("HCs fine, starting copy")
+        spec['progress_complete']=2
         submit_copy(spec)
 
 
@@ -177,6 +183,7 @@ Please see %s
     else:
         send_email(to_address=spec['contact'], subject='Database copy successful', body=str('Database copy from' + spec['src_uri']) + ' to ' + spec['tgt_uri'] + ' successful', smtp_server=cfg.smtp_server)
         get_logger().info("Copying complete, submitting metadata job")
+        spec['progress_complete']=3
         submit_metadata_update(spec)
     
 
