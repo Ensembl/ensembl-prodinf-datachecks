@@ -148,7 +148,7 @@ def handover_result(handover_token):
         schema:
           $ref: '#/definitions/handovers'
         examples:
-          {"_shards": {"failed": 0, "skipped": 0, "successful": 5, "total": 5 }, "hits": {"hits": [{"_id": "Cqhm0GMBN9oobWXo3Uhj", "_index": "reports", "_score": null, "_source": {"host": "ens-prod-1.ebi.ac.uk", "message": "Checking {u'comment': u'handover new Leopard database', u'handover_token': u'15ce20fd-68cd-11e8-8117-005056ab00f0', u'copy_job_id': 94, u'hc_job_id': 2700, u'metadata_job_id': 17521, u'contact': u'maurel@ebi.ac.uk', u'src_uri': u'mysql://ensadmin:ensembl@mysql-ens-general-prod-1:4525/panthera_pardus_core_93_1', u'tgt_uri': u'mysql://ensadmin:ensembl@mysql-ens-general-dev-1:4484/panthera_pardus_core_93_1', u'type': u'new_assembly'} using 17521", "params": {"comment": "handover new Leopard database", "contact": "maurel@ebi.ac.uk", "copy_job_id": 94, "handover_token": "15ce20fd-68cd-11e8-8117-005056ab00f0", "hc_job_id": 2700, "metadata_job_id": 17521, "src_uri": "mysql://ensadmin:ensembl@mysql-ens-general-prod-1:4525/panthera_pardus_core_93_1", "tgt_uri": "mysql://ensadmin:ensembl@mysql-ens-general-dev-1:4484/panthera_pardus_core_93_1", "type": "new_assembly"}, "process": "handover", "report_time": "2018-06-05T14:43:12", "report_type": "INFO", "resource": "mysql://ensadmin:ensembl@mysql-ens-general-dev-1:4484/panthera_pardus_core_93_1"}, "_type": "report", "sort": [1528209792000 ] } ], "max_score": null, "total": 19 }, "timed_out": false, "took": 5 }
+          [{"comment": "handover new Tiger database", "contact": "maurel@ebi.ac.uk", "handover_token": "605f1191-7a13-11e8-aa7e-005056ab00f0", "id": "X1qcQWQBiZ0vMed2vaAt", "message": "Metadata load complete, Handover successful", "progress_total": 3, "report_time": "2018-06-27T15:19:08.459", "src_uri": "mysql://ensadmin:ensembl@mysql-ens-general-prod-1:4525/panthera_tigris_altaica_core_93_1", "tgt_uri": "mysql://ensadmin:ensembl@mysql-ens-general-dev-1:4484/panthera_tigris_altaica_core_93_1", "type": "new_assembly"} ]
     """
     try:
         res = requests.get('http://localhost:9200')
@@ -196,7 +196,7 @@ def handover_results():
         schema:
           $ref: '#/definitions/handovers'
         examples:
-          {"_shards":{"failed": 0, "skipped": 0,  "successful": 5,  "total": 5}, "hits": {"hits": [{"_id": "FqiC2mMBN9oobWXoKUhg", "_index": "reports", "_score": null, "_source": {"host": "ens-prod-1.ebi.ac.uk", "message": "Handling {u'comment': u'handover new Leopard database', u'contact': u'maurel@ebi.ac.uk', u'type': u'new_assembly', u'src_uri': u'mysql://ensadmin:ensembl@mysql-ens-general-prod-1:4525/panthera_pardus_core_93_1'}", "params": {"comment": "handover new Leopard database", "contact": "maurel@ebi.ac.uk", "src_uri":"mysql://ensadmin:ensembl@mysql-ens-general-prod-1:4525/panthera_pardus_core_93_1", "type": "new_assembly"},"process": "handover", "report_time": "2018-06-07T13:49:13", "report_type": "INFO","resource": "mysql://ensadmin:ensembl@mysql-ens-general-prod-1:4525/panthera_pardus_core_93_1"}, "_type": "report", "sort": [1528379353000]}, ],"max_score": null, "total": 10}, "timed_out": false, "took": 15}
+          [{"comment": "handover new Tiger database", "contact": "maurel@ebi.ac.uk", "handover_token": "605f1191-7a13-11e8-aa7e-005056ab00f0", "id": "QFqRQWQBiZ0vMed2vKDI", "message": "Handling {u'comment': u'handover new Tiger database', 'handover_token': '605f1191-7a13-11e8-aa7e-005056ab00f0', u'contact': u'maurel@ebi.ac.uk', u'src_uri': u'mysql://ensadmin:ensembl@mysql-ens-general-prod-1:4525/panthera_tigris_altaica_core_93_1', 'tgt_uri': 'mysql://ensadmin:ensembl@mysql-ens-general-dev-1:4484/panthera_tigris_altaica_core_93_1', u'type': u'new_assembly'}", "report_time": "2018-06-27T15:07:07.462", "src_uri": "mysql://ensadmin:ensembl@mysql-ens-general-prod-1:4525/panthera_tigris_altaica_core_93_1", "tgt_uri": "mysql://ensadmin:ensembl@mysql-ens-general-dev-1:4484/panthera_tigris_altaica_core_93_1", "type": "new_assembly"}, {"comment": "handover new Leopard database", "contact": "maurel@ebi.ac.uk", "handover_token": "5dcb1aca-7a13-11e8-b24e-005056ab00f0", "id": "P1qRQWQBiZ0vMed2rqBh", "message": "Handling {u'comment': u'handover new Leopard database', 'handover_token': '5dcb1aca-7a13-11e8-b24e-005056ab00f0', u'contact': u'maurel@ebi.ac.uk', u'src_uri': u'mysql://ensadmin:ensembl@mysql-ens-general-prod-1:4525/panthera_pardus_core_93_1', 'tgt_uri': 'mysql://ensadmin:ensembl@mysql-ens-general-dev-1:4484/panthera_pardus_core_93_1', u'type': u'new_assembly'}", "report_time": "2018-06-27T15:07:03.145", "src_uri": "mysql://ensadmin:ensembl@mysql-ens-general-prod-1:4525/panthera_pardus_core_93_1", "tgt_uri": "mysql://ensadmin:ensembl@mysql-ens-general-dev-1:4484/panthera_pardus_core_93_1", "type": "new_assembly"} ]
     """
     try:
         res = requests.get('http://localhost:9200')
@@ -285,6 +285,15 @@ def make_list_results(res):
         result['contact']=doc['_source']['params']['contact']
         result['src_uri']=doc['_source']['params']['src_uri']
         result['tgt_uri']=doc['_source']['params']['tgt_uri']
+        try:
+            result['progress_complete']=doc['_source']['params']['progress_complete']
+        except:
+            pass
+        try:
+            result['progress_total']=doc['_source']['params']['progress_total']
+        except:
+            pass
+        result['report_time']=doc['_source']['report_time']
         result['type']=doc['_source']['params']['type']
         list_results.append(result)
     return list_results
