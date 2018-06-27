@@ -158,7 +158,7 @@ def handover_result(handover_token):
         logging.info("Retrieving handover data with token " + str(handover_token))
         es = Elasticsearch([{'host': 'localhost', 'port': 9200}])
         res=es.search(index="reports",body={"query":{"bool":{"must":[{"term":{"params.handover_token.keyword":str(handover_token)}},{"term":{"report_type.keyword":"INFO"}}],"must_not":[],"should":[]}},"from":0,"size":1,"sort":[{"report_time":{"order": "desc"}}],"aggs":{}})
-        handover_detail=make_list_results(res)
+        handover_detail=make_list_results(res,progress=True)
         return jsonify(handover_detail)
     except ValueError:
         return "Handover token " + str(handover_token) + " not found", 404
@@ -206,7 +206,7 @@ def handover_results():
         logging.info("Retrieving all handover report")
         es = Elasticsearch([{'host': 'localhost', 'port': 9200}])
         res = es.search(index="reports",body={"query": {"bool": {"must": [{"query_string" : {"fields": ["message"],"query" : "Handling*","analyze_wildcard": "true"}}]}},"size":1000,"sort":[{"report_time":{"order": "desc"}}]})
-        list_handovers=make_list_results(res)
+        list_handovers=make_list_results(res,progress=False)
         return jsonify(list_handovers)
     except ValueError:
         return "Handover token data not found", 404
@@ -275,7 +275,7 @@ def delete_handover(handover_token):
     except ValueError:
         return "Handover token " + str(handover_token) + " not found", 404
 
-def make_list_results(res):
+def make_list_results(res,progress):
     list_results=[]
     for doc in res['hits']['hits']:
         result={"id":doc['_id']}
@@ -285,14 +285,9 @@ def make_list_results(res):
         result['contact']=doc['_source']['params']['contact']
         result['src_uri']=doc['_source']['params']['src_uri']
         result['tgt_uri']=doc['_source']['params']['tgt_uri']
-        try:
+        if progress:
             result['progress_complete']=doc['_source']['params']['progress_complete']
-        except:
-            pass
-        try:
             result['progress_total']=doc['_source']['params']['progress_total']
-        except:
-            pass
         result['report_time']=doc['_source']['report_time']
         result['type']=doc['_source']['params']['type']
         list_results.append(result)
