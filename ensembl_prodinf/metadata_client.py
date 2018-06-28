@@ -15,7 +15,7 @@ class MetadataClient(RestClient):
             with output_file as f:
                 f.write(r.text)  
         
-    def submit_job(self, database_uri, e_release, eg_release, release_date, current_release, email, update_type, comment, source):
+    def submit_job(self, database_uri, e_release, eg_release, release_date, current_release, email, update_type, comment, source, email_notification):
         assert_mysql_db_uri(database_uri)
 
         payload = {
@@ -29,6 +29,8 @@ class MetadataClient(RestClient):
             'comment':comment,
             'source':source
             }
+        if email_notification != None:
+            payload['email_notification'] = email_notification
         return super(MetadataClient, self).submit_job(payload)
         
     def print_job(self, job, print_results=False, print_input=False):
@@ -79,6 +81,8 @@ if __name__ == '__main__':
     parser.add_argument('-t', '--update_type', help='Update type, e.g: New assembly')
     parser.add_argument('-n', '--comment', help='Comment')
     parser.add_argument('-b', '--source', help='Source of the database, eg: Handover, Release load')
+    parser.add_argument('-m', '--email_notification', help='Get email notification of handover progress')
+
 
 
 
@@ -96,9 +100,13 @@ if __name__ == '__main__':
             
     if args.action == 'submit':
 
-        if args.input_file == None:
+        if args.input_file == None and args.email_notification == None:
             logging.info("Submitting " + args.database_uri + "for metadata load")
             job_id = client.submit_job( args.database_uri, args.e_release, args.eg_release, args.release_date, args.current_release, args.email, args.update_type, args.comment, args.source)
+            logging.info('Job submitted with ID '+str(job_id))
+        elif args.input_file == None:
+            logging.info("Submitting " + args.database_uri + "for metadata load")
+            job_id = client.submit_job( args.database_uri, args.e_release, args.eg_release, args.release_date, args.current_release, args.email, args.update_type, args.comment, args.source, args.email_notification)
             logging.info('Job submitted with ID '+str(job_id))
         else:
             for line in args.input_file:
