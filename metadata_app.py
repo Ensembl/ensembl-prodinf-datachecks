@@ -133,7 +133,8 @@ def submit_job():
         job = get_hive().create_job(app.analysis, request.json)
         results = {"job_id":job.job_id};
         email = request.json.get('email')
-        if email != None and email != '':
+        email_notification = request.json.get('email_notification')
+        if email != None and email != '' and email_notification != None:
             logging.debug("Submitting email request for  " + email)
             email_results = email_when_complete.delay(request.url_root + "jobs/" + str(job.job_id) + "?format=email", email)
             results['email_task'] = email_results.id
