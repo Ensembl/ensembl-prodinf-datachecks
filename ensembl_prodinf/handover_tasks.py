@@ -120,7 +120,7 @@ def process_checked_db(self, hc_job_id, spec):
     reporting.set_logger_context(get_logger(), spec['src_uri'], spec)    
     # allow infinite retries 
     self.max_retries = None
-    get_logger().info("HCs in progress for " + spec['src_uri'] + " from job " + str(hc_job_id))
+    get_logger().info("HCs in progress, please see: " +cfg.hc_web_uri + str(hc_job_id))
     result = hc_client.retrieve_job(hc_job_id)
     if (result['status'] == 'incomplete') or (result['status'] == 'running') or (result['status'] == 'submitted'):
         get_logger().debug("HC Job incomplete, checking again later")
@@ -137,7 +137,7 @@ Please see %s
              send_email(to_address=spec['contact'], subject='HC failed to run', body=msg, smtp_server=cfg.smtp_server)
         return 
     elif (result['output']['status'] == 'failed'):
-        get_logger().info("HCs found problems")
+        get_logger().info("HCs found problems, please see: "+cfg.hc_web_uri + str(hc_job_id))
         msg = """
 Running healthchecks vs %s completed but found failures.
 Please see %s
@@ -172,13 +172,13 @@ def process_copied_db(self, copy_job_id, spec):
     reporting.set_logger_context(get_logger(), spec['src_uri'], spec)    
     # allow infinite retries     
     self.max_retries = None
-    get_logger().info("Copying in progress for " + spec['src_uri'] + " from job " + str(copy_job_id))
+    get_logger().info("Copying in progress, please see: " +cfg.copy_web_uri + str(copy_job_id))
     result = db_copy_client.retrieve_job(copy_job_id)
     if (result['status'] == 'incomplete') or (result['status'] == 'running') or (result['status'] == 'submitted'):
         get_logger().debug("Database copy job incomplete, checking again later")
         raise self.retry()
     if (result['status'] == 'failed'):
-        get_logger().info("Copy failed")
+        get_logger().info("Copy failed, please see: "+cfg.copy_web_uri + str(copy_job_id))
         msg = """
 Copying %s to %s failed.
 Please see %s
@@ -213,19 +213,19 @@ def process_db_metadata(self, metadata_job_id, spec):
     reporting.set_logger_context(get_logger(), spec['tgt_uri'], spec)
     # allow infinite retries
     self.max_retries = None
-    get_logger().info("Loading into metadata database for " + spec['tgt_uri'] + " from job " + str(metadata_job_id))
+    get_logger().info("Loading into metadata database, please see: "+cfg.meta_uri + "jobs/"+ str(metadata_job_id))
     result = metadata_client.retrieve_job(metadata_job_id)
     if (result['status'] == 'incomplete') or (result['status'] == 'running') or (result['status'] == 'submitted'):
         get_logger().debug("Metadata load Job incomplete, checking again later")
         raise self.retry()
     if (result['status'] == 'failed'):
-        get_logger().info("Metadata load failed")
+        get_logger().info("Metadata load failed, please see "+cfg.meta_uri+ 'jobs/' + str(metadata_job_id) + '?format=failures')
         msg = """
 Metadata load of %s failed.
 Please see %s
-""" % (spec['tgt_uri'], cfg.meta_web_uri + str(metadata_job_id))
+""" % (spec['tgt_uri'], cfg.meta_uri + str(metadata_job_id))
         if 'email_notification' in spec:
-            send_email(to_address=spec['contact'], subject='Metadata load failed', body=msg, smtp_server=cfg.smtp_server)
+            send_email(to_address=spec['contact'], subject='Metadata load failed, please see: '+cfg.meta_uri+ 'jobs/' + str(metadata_job_id) + '?format=failures', body=msg, smtp_server=cfg.smtp_server)
         return
     else:
         #get_logger().info("Metadata load complete, submitting event")
