@@ -173,7 +173,7 @@ def job_result(job_id):
         in: query
         type: string
         required: false
-        description: optional parameter (email, failure)
+        description: optional parameter (email, failures)
       - name: email
         in: query
         type: string

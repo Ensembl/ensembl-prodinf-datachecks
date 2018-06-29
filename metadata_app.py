@@ -162,7 +162,7 @@ def job_result(job_id):
         in: query
         type: string
         required: false
-        description: optional parameter (email, failure)
+        description: optional parameter (email, failures)
       - name: email
         in: query
         type: string
@@ -248,7 +248,6 @@ def job_email(email, job_id):
     results['output'] = None
     return jsonify(results)
 
-@app.route('/failure/<int:job_id>', methods=['GET'])
 def failure(job_id):
     """
     Endpoint to retrieve a given job failure using job_id
