@@ -19,7 +19,7 @@ class HandoverClient(object):
     def submit_job(self, spec):      
         """
         Arguments:
-          spec : dict containing keys `src_uri`, `type`, `comment`, `email_notification` and `contact`
+          spec : dict containing keys `src_uri`, `type`, `comment` and `contact`
         """
         assert_mysql_db_uri(spec['src_uri'])
         assert_email(spec['contact'])
@@ -40,7 +40,6 @@ if __name__ == '__main__':
     parser.add_argument('-e', '--email', help='Email address', required=True)
     parser.add_argument('-t', '--type', help='Update type', required=True, choices=['new_genome','new_genebuild','new_assembly','other'])
     parser.add_argument('-c', '--comment', help='Comment', required=True)
-    parser.add_argument('-n', '--email_notification', help='Get email notification of handover progress')
 
     args = parser.parse_args()
     
@@ -62,8 +61,6 @@ if __name__ == '__main__':
             "type" : args.type,
             "comment" : args.comment
             }
-        if args.email_notification != None:
-            spec["email_notification"] = args.email_notification
         logging.debug(spec)
         job_id = client.submit_job(spec)
         logging.info('Job submitted with transaction ID '+str(job_id))

@@ -107,8 +107,6 @@ def submit_hc(spec, groups):
     spec['hc_job_id'] = hc_job_id
     task_id = process_checked_db.delay(hc_job_id, spec)
     get_logger().debug("Submitted DB for checking as " + str(task_id))
-    if 'email_notification' in spec:
-        send_email(to_address=spec['contact'], subject='HC submitted', body=str(spec['src_uri']) + ' has been submitted for checking. Please see '+cfg.hc_web_uri + str(hc_job_id), smtp_server=cfg.smtp_server)
     return task_id
 
 @app.task(bind=True)
@@ -133,8 +131,7 @@ def process_checked_db(self, hc_job_id, spec):
 Running healthchecks vs %s failed to execute.
 Please see %s
 """ % (spec['src_uri'], cfg.hc_web_uri + str(hc_job_id))
-        if 'email_notification' in spec:
-             send_email(to_address=spec['contact'], subject='HC failed to run', body=msg, smtp_server=cfg.smtp_server)
+        send_email(to_address=spec['contact'], subject='HC failed to run', body=msg, smtp_server=cfg.smtp_server)
         return 
     elif (result['output']['status'] == 'failed'):
         get_logger().info("HCs found problems, please see: "+cfg.hc_web_uri + str(hc_job_id))
@@ -142,12 +139,9 @@ Please see %s
 Running healthchecks vs %s completed but found failures.
 Please see %s
 """ % (spec['src_uri'], cfg.hc_web_uri + str(hc_job_id))
-        if 'email_notification' in spec:
-            send_email(to_address=spec['contact'], subject='HC ran but failed', body=msg, smtp_server=cfg.smtp_server)
+        send_email(to_address=spec['contact'], subject='HC ran but failed', body=msg, smtp_server=cfg.smtp_server)
         return
     else:
-        if 'email_notification' in spec:
-            send_email(to_address=spec['contact'], subject='HC fine', body=str(spec['src_uri']) + ' has passed healthchecks ', smtp_server=cfg.smtp_server)
         get_logger().info("HCs fine, starting copy")
         spec['progress_complete']=2
         submit_copy(spec)
@@ -159,8 +153,6 @@ def submit_copy(spec):
     spec['copy_job_id'] = copy_job_id
     task_id = process_copied_db.delay(copy_job_id, spec)    
     get_logger().debug("Submitted DB for copying as " + str(task_id))
-    if 'email_notification' in spec:
-        send_email(to_address=spec['contact'], subject='Database copy submitted', body=str('Database copy from ' + spec['src_uri']) + ' to ' + spec['tgt_uri'] + ' submitted. Please see '+ cfg.copy_web_uri + str(copy_job_id), smtp_server=cfg.smtp_server)
     return task_id
 
 
@@ -183,12 +175,9 @@ def process_copied_db(self, copy_job_id, spec):
 Copying %s to %s failed.
 Please see %s
 """ % (spec['src_uri'], spec['tgt_uri'], cfg.copy_web_uri + str(copy_job_id))
-        if 'email_notification' in spec:
-            send_email(to_address=spec['contact'], subject='Database copy failed', body=msg, smtp_server=cfg.smtp_server)
+        send_email(to_address=spec['contact'], subject='Database copy failed', body=msg, smtp_server=cfg.smtp_server)
         return
     else:
-        if 'email_notification' in spec:
-            send_email(to_address=spec['contact'], subject='Database copy successful', body=str('Database copy from' + spec['src_uri']) + ' to ' + spec['tgt_uri'] + ' successful', smtp_server=cfg.smtp_server)
         get_logger().info("Copying complete, submitting metadata job")
         spec['progress_complete']=3
         submit_metadata_update(spec)
@@ -200,8 +189,6 @@ def submit_metadata_update(spec):
     spec['metadata_job_id'] = metadata_job_id
     task_id = process_db_metadata.delay(metadata_job_id, spec)
     get_logger().debug("Submitted DB for metadata loading " + str(task_id))
-    if 'email_notification' in spec:
-        send_email(to_address=spec['contact'], subject='Metadata load submitted', body=str(spec['tgt_uri']) + ' submitted for metadata load.' + ' Please see ' + cfg.meta_web_uri + str(metadata_job_id), smtp_server=cfg.smtp_server)
     return task_id
 
 
@@ -224,14 +211,11 @@ def process_db_metadata(self, metadata_job_id, spec):
 Metadata load of %s failed.
 Please see %s
 """ % (spec['tgt_uri'], cfg.meta_uri + str(metadata_job_id))
-        if 'email_notification' in spec:
-            send_email(to_address=spec['contact'], subject='Metadata load failed, please see: '+cfg.meta_uri+ 'jobs/' + str(metadata_job_id) + '?format=failures', body=msg, smtp_server=cfg.smtp_server)
+        send_email(to_address=spec['contact'], subject='Metadata load failed, please see: '+cfg.meta_uri+ 'jobs/' + str(metadata_job_id) + '?format=failures', body=msg, smtp_server=cfg.smtp_server)
         return
     else:
         #get_logger().info("Metadata load complete, submitting event")
         get_logger().info("Metadata load complete, Handover successful")
-        if 'email_notification' in spec:
-            send_email(to_address=spec['contact'], subject='Metadata load successful', body=str(spec['tgt_uri']) + ' successfully loaded into metadata database. Handover successful', smtp_server=cfg.smtp_server)
         #submit_event(spec,result)
     return
 
