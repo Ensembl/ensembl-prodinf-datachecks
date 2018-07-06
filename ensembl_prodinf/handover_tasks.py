@@ -128,7 +128,7 @@ def process_checked_db(self, hc_job_id, spec):
     if (result['status'] == 'failed'):
         get_logger().info("HCs failed to run, please see: "+cfg.hc_web_uri + str(hc_job_id))
         msg = """
-Running healthchecks vs %s failed to execute.
+Running healthchecks on %s failed to execute.
 Please see %s
 """ % (spec['src_uri'], cfg.hc_web_uri + str(hc_job_id))
         send_email(to_address=spec['contact'], subject='HC failed to run', body=msg, smtp_server=cfg.smtp_server)
@@ -136,7 +136,7 @@ Please see %s
     elif (result['output']['status'] == 'failed'):
         get_logger().info("HCs found problems, please see: "+cfg.hc_web_uri + str(hc_job_id))
         msg = """
-Running healthchecks vs %s completed but found failures.
+Running healthchecks on %s completed but found failures.
 Please see %s
 """ % (spec['src_uri'], cfg.hc_web_uri + str(hc_job_id))
         send_email(to_address=spec['contact'], subject='HC ran but failed', body=msg, smtp_server=cfg.smtp_server)
