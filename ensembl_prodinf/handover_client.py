@@ -31,7 +31,7 @@ class HandoverClient(object):
 
 if __name__ == '__main__':
             
-    parser = argparse.ArgumentParser(description='Run HCs via a REST service')
+    parser = argparse.ArgumentParser(description='Handover a database via a REST service')
 
     parser.add_argument('-u', '--uri', help='HC REST service URI', required=True)
     parser.add_argument('-a', '--action', help='Action to take', choices=['submit', 'retrieve', 'list', 'delete', 'events', 'processes'], required=True)
