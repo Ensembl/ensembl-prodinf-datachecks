@@ -615,13 +615,14 @@ def job_email(email, job_id):
     results = get_hive().get_result_for_job_id(job_id)
     if results['status'] == 'complete':
         results['subject'] = 'Copy database from %s to %s successful' % (results['output']['source_db_uri'], results['output']['target_db_uri'])
-        results['body'] = "Copy from %s to %s is successful\n" % (results['output']['source_db_uri'], results['output']['target_db_uri'])
-        results['body'] += "Copy took %s" % (results['output']['runtime'])
+        results['body'] = 'Copy from %s to %s is successful\n' % (results['output']['source_db_uri'], results['output']['target_db_uri'])
+        results['body'] += 'Copy took %s' % (results['output']['runtime'])
     elif results['status'] == 'failed':
         failure = get_hive().get_job_failure_msg_by_id(job_id)
         results['subject'] = 'Copy database from %s to %s failed' % (results['input']['source_db_uri'], results['input']['target_db_uri'])
         results['body'] = 'Copy failed with following message:\n'
-        results['body'] += '%s' % (failure.msg)
+        results['body'] += '%s\n\n' % (failure.msg)
+        results['body'] += 'Please see URL for more details: %s%s \n' % (results['input']['result_url'],job_id)
     results['output'] = None
     return jsonify(results)
 
