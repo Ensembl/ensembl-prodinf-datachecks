@@ -79,7 +79,7 @@ For EG:
 .. code-block:: bash
 
   DATABASE_SERVER=$(mysql-ens-general-prod-1 details url)
-  ENDPOINT=http://ens-prod-1.ebi.ac.uk:4000/handover
+  ENDPOINT=http://ens-prod-1.ebi.ac.uk:9000/handover
   EMAIL=john.doe@ebi.ac.uk
   UPDATE_TYPE="new_assembly"
   COMMENT="handover new Leopard database"
