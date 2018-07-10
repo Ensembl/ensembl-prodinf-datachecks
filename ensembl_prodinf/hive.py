@@ -115,10 +115,11 @@ class Job(Base):
     result = relationship("Result", uselist=False, lazy="joined")
 
     log_messages = relationship("LogMessage", viewonly=True)
+    when_completed = Column(String)
 
     def __repr__(self):
-        return "<Job(job_id='%s', analysis='%s', input_id='%s', status='%s', result='%s', role=%s)>" % (
-            self.job_id, self.analysis.logic_name, self.input_id, self.status, (self.result.output if self.result!=None else None), self.role_id if self.result != None else None)
+        return "<Job(job_id='%s', analysis='%s', input_id='%s', status='%s', result='%s', role=%s, when_completed=%s)>" % (
+            self.job_id, self.analysis.logic_name, self.input_id, self.status, (self.result.output if self.result!=None else None), self.role_id if self.result != None else None, self.when_completed)
 
 Session = sessionmaker()
 class HiveInstance:
@@ -275,6 +276,7 @@ class HiveInstance:
             result['input'] = perl_string_to_python(job.input_id)
         if job.status == 'DONE' and job.result!=None:
             result['status'] = 'complete'
+            result['when_completed'] = job.when_completed
             result['output'] = job.result.output_dict()
         else:
             result['status'] = self.get_job_tree_status(job)
