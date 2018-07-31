@@ -86,7 +86,7 @@ For EG:
 
   cd $BASE_DIR/ensembl-prodinf-core 
   for db in $(cat handover_databases.txt); 
-  do ensembl_prodinf/handover_client.py --action submit --uri ${ENDPOINT} --src_uri "${DATABASE_SERVER}${db}" --email "${EMAIL}" --update_type "${UPDATE_TYPE}" --comment "${COMMENT}";
+  do ensembl_prodinf/handover_client.py --action submit --uri ${ENDPOINT} --src_uri "${DATABASE_SERVER}${db}" --email "${EMAIL}" --type "${UPDATE_TYPE}" --comment "${COMMENT}";
   done
 
 
