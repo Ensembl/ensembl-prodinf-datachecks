@@ -78,7 +78,7 @@ def get_tgt_uri(src_uri):
 def check_db(uri):    
     """Check if source database exists"""
     if(database_exists(uri) == False):
-        get_logger().error(uri + " does not exist")
+        get_logger().error("Handover failed, " + uri + " does not exist")
         raise ValueError(uri + " does not exist")
     else:
         return
