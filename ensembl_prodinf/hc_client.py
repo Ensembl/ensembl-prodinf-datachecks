@@ -82,13 +82,21 @@ class HcClient(RestClient):
         output = defaultdict(list)
         for job in r:
             try:
+                job_id = job['id']
                 if re_pattern.match(job['input']['tag']) and ('output' in job and job['output']['status'] == 'failed'):
-                    job_id = job['id']
                     logging.info("Found tag " + str(pattern) + " for job: " + str(job_id) )
                     for h,r in {k: v for k, v in job['output']['results'].iteritems() if v['status'] == 'failed'}.items():
                         [output[h].append(job['input']['db_uri']+"\t"+m) for m in r['messages']]
+                elif re_pattern.match(job['input']['tag']) and ( job['status'] == 'incomplete' or job['status'] == "submitted"):
+                    logging.info("WARNING: job: " + str(job_id) + " for tag " + str(pattern) + " is still running, skipping it ")
+                elif re_pattern.match(job['input']['tag']) and job['output']['status'] == 'passed':
+                    logging.info("INFO: job: " + str(job_id) + " for tag " + str(pattern) + " has no failure, skipping it")
             except:
-                pass
+                job_id = job['id']
+                if job['status'] == 'failed':
+                    failed_job = super(HcClient, self).retrieve_job(job_id)
+                    if re_pattern.match(failed_job['input']['tag']):
+                        logging.info("WARNING: job: " + str(failed_job['id']) + " for tag " + str(pattern) + " has failed, please check error message")
         if output_file!= None:
             output_file.write(json.dumps(output))
     
