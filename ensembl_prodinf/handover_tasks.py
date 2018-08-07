@@ -85,7 +85,7 @@ def check_db(uri):
 
 core_pattern = re.compile(".*[a-z]_(core|rnaseq|cdna|otherfeatures)_[0-9].*")   
 variation_pattern = re.compile(".*[a-z]_variation_[0-9].*")   
-compara_pattern = re.compile(".*[a-z]_compara_[0-9].*")   
+compara_pattern = re.compile(".*[a-z]_compara_?[a-z]*?_?[a-z]*?_[0-9].*")
 funcgen_pattern = re.compile(".*[a-z]_funcgen_[0-9].*")
 def groups_for_uri(uri):
     """Find which HC group to run on a given database"""
