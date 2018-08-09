@@ -63,10 +63,12 @@ def handover_database(spec):
         spec['tgt_uri'] = get_tgt_uri(spec['src_uri'])
     get_logger().info("Handling " + str(spec))
     check_db(spec['src_uri'])
-    groups = groups_for_uri(spec['src_uri'])
+    (groups,compara_uri) = groups_for_uri(spec['src_uri'])
+    if (compara_uri == None):
+        compara_uri=cfg.compara_uri + 'ensembl_compara_master'
     spec['progress_total']=3
     spec['progress_complete']=1
-    submit_hc(spec, groups)
+    submit_hc(spec, groups, compara_uri)
     return spec['handover_token']
 
 def get_tgt_uri(src_uri):
@@ -85,25 +87,35 @@ def check_db(uri):
 
 core_pattern = re.compile(".*[a-z]_(core|rnaseq|cdna|otherfeatures)_[0-9].*")   
 variation_pattern = re.compile(".*[a-z]_variation_[0-9].*")   
-compara_pattern = re.compile(".*[a-z]_compara_?[a-z]*?_?[a-z]*?_[0-9].*")
+compara_pattern = re.compile(".*[a-z]_compara_?([a-z]*)?_?[a-z]*?_[0-9].*")
 funcgen_pattern = re.compile(".*[a-z]_funcgen_[0-9].*")
 def groups_for_uri(uri):
     """Find which HC group to run on a given database"""
     if(core_pattern.match(uri)):
-        return [cfg.core_handover_group]
+        return [cfg.core_handover_group],None
     elif(variation_pattern.match(uri)):
-        return [cfg.variation_handover_group]
+        return [cfg.variation_handover_group],None
     elif(funcgen_pattern.match(uri)):
-        return [cfg.funcgen_handover_group]
+        return [cfg.funcgen_handover_group],None
     elif(compara_pattern.match(uri)):
-        return [cfg.compara_handover_group]
+        compara_name = compara_pattern.match(uri).group(1)
+        if (compara_name == "pan"):
+            compara_uri=cfg.compara_uri2 + compara_name + '_compara_master'
+            compara_handover_group=cfg.compara_pan_handover_group
+        elif (compara_name):
+            compara_uri=cfg.compara_uri2 + compara_name + '_compara_master'
+            compara_handover_group=cfg.compara_handover_group
+        else:
+            compara_uri=cfg.compara_uri + 'ensembl_compara_master'
+            compara_handover_group=cfg.compara_handover_group
+        return [compara_handover_group],compara_uri
     else:
         return None
 
 
-def submit_hc(spec, groups):
+def submit_hc(spec, groups, compara_uri):
     """Submit the source database for healthchecking. Returns a celery job identifier"""
-    hc_job_id = hc_client.submit_job(spec['src_uri'], cfg.production_uri, cfg.compara_uri, cfg.staging_uri, cfg.live_uri, None, groups, cfg.data_files_path, None, spec['handover_token'])
+    hc_job_id = hc_client.submit_job(spec['src_uri'], cfg.production_uri, compara_uri, cfg.staging_uri, cfg.live_uri, None, groups, cfg.data_files_path, None, spec['handover_token'])
     spec['hc_job_id'] = hc_job_id
     task_id = process_checked_db.delay(hc_job_id, spec)
     get_logger().debug("Submitted DB for checking as " + str(task_id))
@@ -210,7 +222,7 @@ def process_db_metadata(self, metadata_job_id, spec):
         msg = """
 Metadata load of %s failed.
 Please see %s
-""" % (spec['tgt_uri'], cfg.meta_uri + str(metadata_job_id))
+""" % (spec['tgt_uri'], cfg.meta_uri+ 'jobs/' + str(metadata_job_id) + '?format=failures')
         send_email(to_address=spec['contact'], subject='Metadata load failed, please see: '+cfg.meta_uri+ 'jobs/' + str(metadata_job_id) + '?format=failures', body=msg, smtp_server=cfg.smtp_server)
         return
     else:
