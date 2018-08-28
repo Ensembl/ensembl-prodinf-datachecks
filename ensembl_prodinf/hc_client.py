@@ -95,8 +95,9 @@ class HcClient(RestClient):
                 job_id = job['id']
                 if job['status'] == 'failed':
                     failed_job = super(HcClient, self).retrieve_job(job_id)
-                    if re_pattern.match(failed_job['input']['tag']):
-                        logging.info("WARNING: job: " + str(failed_job['id']) + " for tag " + str(pattern) + " has failed, please check error message")
+                    if 'tag' in failed_job['input']:
+                        if re_pattern.match(failed_job['input']['tag']):
+                            logging.info("WARNING: job: " + str(failed_job['id']) + " for tag " + str(pattern) + " has failed, please check error message")
         if output_file!= None:
             output_file.write(json.dumps(output))
     
