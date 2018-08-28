@@ -93,9 +93,19 @@ class Worker(Base):
     process_id = Column(String)
 
     def __repr__(self):
-        return "<LogMessage(worker_id='%s', process_id='%s')>" % (
+        return "<Worker(worker_id='%s', process_id='%s')>" % (
             self.worker_id, self.process_id)
 
+class Semaphore(Base):
+
+    __tablename__ = 'semaphore'
+
+    dependent_job_id = Column(Integer, primary_key=True)
+    local_jobs_counter = Column(Integer, default=0)
+
+    def __repr__(self):
+        return "<Semaphore(dependent_job_id='%s', local_jobs_counter='%s')>" % (
+            self.dependent_job_id, self.local_jobs_counter)
 
 
 class Job(Base):
@@ -105,8 +115,7 @@ class Job(Base):
     input_id = Column(String)
     status = Column(String)
     prev_job_id = Column(Integer)
-    semaphored_job_id = Column(Integer)
-    semaphore_count = Column(Integer, default=0)
+    controlled_semaphore_id = Column(Integer, ForeignKey("semaphore.dependent_job_id"))
     role_id = Column(Integer, ForeignKey("role.role_id"))
     
     analysis_id = Column(Integer, ForeignKey("analysis_base.analysis_id"))
@@ -246,6 +255,16 @@ class HiveInstance:
         finally:
             s.close()
 
+    def get_semaphore_data(self, controlled_semaphore_id):
+
+        """ Get the job semaphore count if exist"""
+        s = Session()
+        try:
+            Semaphore_data = s.query(Semaphore).filter(Semaphore.dependent_job_id == controlled_semaphore_id).first()
+            return Semaphore_data
+        finally:
+            s.close()
+
     def get_result_for_job_id(self, id, child=False):
         
         """ Get result for a given job id. If child flag is turned on and job child exist, get result for child job"""
@@ -316,7 +335,8 @@ class HiveInstance:
 
         """ Recursively check all children of a job """
         # check for semaphores
-        if job.semaphore_count>0:
+        Semaphore_data = self.get_semaphore_data(job.controlled_semaphore_id)
+        if Semaphore_data != None and Semaphore_data.local_jobs_counter>0:
             return self.check_semaphores_for_job(job)
         else:
             if job.status == 'FAILED':
@@ -368,9 +388,9 @@ class HiveInstance:
         s = Session()
         try:
             if status == None:
-                return s.query(Job).filter(Job.semaphored_job_id==job.job_id).all()
+                return s.query(Job).filter(Job.controlled_semaphore_id==job.job_id).all()
             else:
-                return s.query(Job).filter(Job.semaphored_job_id==job.job_id, Job.status == status).all()
+                return s.query(Job).filter(Job.controlled_semaphore_id==job.job_id, Job.status == status).all()
         finally:
             s.close()
 
@@ -381,7 +401,7 @@ class HiveInstance:
         s = Session()
         try:
             status = 'complete'
-            jobs  = dict(s.query(Job.status, func.count(Job.status)).filter(Job.semaphored_job_id==job.job_id).group_by(Job.status).all())
+            jobs  = dict(s.query(Job.status, func.count(Job.status)).filter(Job.controlled_semaphore_id==job.job_id).group_by(Job.status).all())
             if 'FAILED' in jobs and jobs['FAILED']>0:
                 status = 'failed'
             elif ('READY' in jobs and jobs['READY']>0) or ('RUN' in jobs and jobs['RUN']>0):
