@@ -43,6 +43,7 @@ Before you can use the HC endpoint, you need a beekeeper running the pipeline de
   init_pipeline.pl Bio::EnsEMBL::MetaData::Pipeline::MetadataUpdater_conf $($SRV details hive)
 
 Next, run the ``beekeeper.pl`` supplied by the output with the arguments ``--keep_alive -sleep 0.5``. This ensures the hive runs continually, picking up new jobs as they are submitted.
+The current hive version compatible with this service is 2.5
 
 Configuration
 =============

@@ -53,6 +53,7 @@ Next, run the ``beekeeper.pl`` supplied by the output with the arguments ``--kee
 
 Please note that beekeeper need to run from an ebi-cli node to be able to send jobs to the farm.
 Also please make sure the hive run from the ensj-healthcheck directory or org.ensembl.healthcheck.testcase.eg_core.ProteinTranslation will fail as the script won't be found.
+The current hive version compatible with this service is 2.5
 
 Configuration
 =============
