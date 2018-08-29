@@ -20,6 +20,7 @@ production_eg_uri = os.environ.get("PRODUCTION_URI", "mysql://user@127.0.0.1:330
 compara_uri = os.environ.get("COMPARA_URI", "mysql://user@127.0.0.1:3306/")
 compara_eg_uri = os.environ.get("COMPARA_EG_URI", "mysql://user@127.0.0.1:3306/")
 core_handover_group = os.environ.get("CORE_HANDOVER_GROUP", "GenebuildPostHandover")
+core_eg_handover_group = os.environ.get("CORE_EG_HANDOVER_GROUP", "EGCoreHandover")
 variation_handover_group = os.environ.get("VARIATION_HANDOVER_GROUP", "VariationRelease")
 funcgen_handover_group = os.environ.get("FUNCGEN_HANDOVER_GROUP", "FuncgenIntegrity")
 compara_handover_group = os.environ.get("COMPARA_HANDOVER_GROUP", "ComparaIntegrity")
