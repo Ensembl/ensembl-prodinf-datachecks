@@ -97,11 +97,13 @@ def groups_for_uri(uri):
             production_uri=cfg.production_eg_uri
             staging_uri = cfg.staging_eg_uri
             live_uri = cfg.live_eg_uri
+            core_handover_group = cfg.core_eg_handover_group
         else:
             production_uri=cfg.production_uri
             staging_uri = cfg.staging_uri
             live_uri = cfg.live_uri
-        return [cfg.core_handover_group],None,production_uri,staging_uri,live_uri
+            core_handover_group = cfg.core_handover_group
+        return [core_handover_group],None,production_uri,staging_uri,live_uri
     elif(variation_pattern.match(uri)):
         eg_release = variation_pattern.match(uri).group(1)
         if (eg_release):
