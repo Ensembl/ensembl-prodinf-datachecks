@@ -65,7 +65,7 @@ class LogMessage(Base):
     job_id = Column(Integer)
     msg = Column(String)
     status = Column(String)
-    is_error = Column(Integer)
+    message_class = Column(String)
     when_logged = Column(String)
 
     def __repr__(self):
