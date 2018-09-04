@@ -100,12 +100,13 @@ class Semaphore(Base):
 
     __tablename__ = 'semaphore'
 
-    dependent_job_id = Column(Integer, primary_key=True)
+    semaphore_id = Column(Integer, primary_key=True)
+    dependent_job_id = Column(Integer)
     local_jobs_counter = Column(Integer, default=0)
 
     def __repr__(self):
-        return "<Semaphore(dependent_job_id='%s', local_jobs_counter='%s')>" % (
-            self.dependent_job_id, self.local_jobs_counter)
+        return "<Semaphore(semaphore_id = '%s', dependent_job_id='%s', local_jobs_counter='%s')>" % (
+           self.semaphore_id, self.dependent_job_id, self.local_jobs_counter)
 
 
 class Job(Base):
@@ -115,7 +116,7 @@ class Job(Base):
     input_id = Column(String)
     status = Column(String)
     prev_job_id = Column(Integer)
-    controlled_semaphore_id = Column(Integer, ForeignKey("semaphore.dependent_job_id"))
+    controlled_semaphore_id = Column(Integer, ForeignKey("semaphore.semaphore_id"))
     role_id = Column(Integer, ForeignKey("role.role_id"))
     
     analysis_id = Column(Integer, ForeignKey("analysis_base.analysis_id"))
@@ -255,12 +256,12 @@ class HiveInstance:
         finally:
             s.close()
 
-    def get_semaphore_data(self, controlled_semaphore_id):
+    def get_semaphore_data(self, semaphore_job_id):
 
         """ Get the job semaphore count if exist"""
         s = Session()
         try:
-            Semaphore_data = s.query(Semaphore).filter(Semaphore.dependent_job_id == controlled_semaphore_id).first()
+            Semaphore_data = s.query(Semaphore).filter(Semaphore.dependent_job_id == semaphore_job_id).first()
             return Semaphore_data
         finally:
             s.close()
@@ -335,9 +336,16 @@ class HiveInstance:
 
         """ Recursively check all children of a job """
         # check for semaphores
-        Semaphore_data = self.get_semaphore_data(job.controlled_semaphore_id)
+        Semaphore_data = None
+        try:
+            s = Session()
+            semaphored_job = s.query(Job).filter(Job.prev_job_id == job.job_id and job.status == 'SEMAPHORED').first()
+            if semaphored_job != None:
+                Semaphore_data = self.get_semaphore_data(semaphored_job.job_id)
+        finally:
+            s.close()
         if Semaphore_data != None and Semaphore_data.local_jobs_counter>0:
-            return self.check_semaphores_for_job(job)
+            return self.check_semaphores_for_job(Semaphore_data)
         else:
             if job.status == 'FAILED':
                 return 'failed'
@@ -387,21 +395,23 @@ class HiveInstance:
         """
         s = Session()
         try:
+            semaphored_job = s.query(Job).filter(Job.prev_job_id == job.job_id and job.status == 'SEMAPHORED').first()
+            Semaphore_data = self.get_semaphore_data(semaphored_job.job_id)
             if status == None:
-                return s.query(Job).filter(Job.controlled_semaphore_id==job.job_id).all()
+                return s.query(Job).filter(Semaphore_data.semaphore_id==Job.controlled_semaphore_id).all()
             else:
-                return s.query(Job).filter(Job.controlled_semaphore_id==job.job_id, Job.status == status).all()
+                return s.query(Job).filter(Semaphore_data.semaphore_id==Job.controlled_semaphore_id, Job.status == status).all()
         finally:
             s.close()
 
-    def check_semaphores_for_job(self, job):
+    def check_semaphores_for_job(self, Semaphore_data):
 
         """ Find all jobs that are semaphored children of the nominated job, and check whether they have completed """
 
         s = Session()
         try:
             status = 'complete'
-            jobs  = dict(s.query(Job.status, func.count(Job.status)).filter(Job.controlled_semaphore_id==job.job_id).group_by(Job.status).all())
+            jobs  = dict(s.query(Job.status, func.count(Job.status)).filter(Semaphore_data.semaphore_id==Job.controlled_semaphore_id).group_by(Job.status).all())
             if 'FAILED' in jobs and jobs['FAILED']>0:
                 status = 'failed'
             elif ('READY' in jobs and jobs['READY']>0) or ('RUN' in jobs and jobs['RUN']>0):
