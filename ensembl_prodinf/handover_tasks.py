@@ -63,12 +63,12 @@ def handover_database(spec):
         spec['tgt_uri'] = get_tgt_uri(spec['src_uri'])
     get_logger().info("Handling " + str(spec))
     check_db(spec['src_uri'])
-    (groups,compara_uri,production_uri,staging_uri,live_uri) = groups_for_uri(spec['src_uri'])
+    (groups,compara_uri) = groups_for_uri(spec['src_uri'])
     if (compara_uri == None):
         compara_uri=cfg.compara_uri + 'ensembl_compara_master'
     spec['progress_total']=3
     spec['progress_complete']=1
-    submit_hc(spec, groups, compara_uri,production_uri,staging_uri,live_uri)
+    submit_hc(spec, groups, compara_uri)
     return spec['handover_token']
 
 def get_tgt_uri(src_uri):
@@ -92,68 +92,29 @@ funcgen_pattern = re.compile(".*[a-z]_funcgen_?([0-9]*)?_[0-9]*_[0-9]*")
 def groups_for_uri(uri):
     """Find which HC group to run on a given database"""
     if(core_pattern.match(uri)):
-        eg_release = core_pattern.match(uri).group(2)
-        if (eg_release):
-            production_uri=cfg.production_eg_uri
-            staging_uri = cfg.staging_eg_uri
-            live_uri = cfg.live_eg_uri
-            core_handover_group = cfg.core_eg_handover_group
-        else:
-            production_uri=cfg.production_uri
-            staging_uri = cfg.staging_uri
-            live_uri = cfg.live_uri
-            core_handover_group = cfg.core_handover_group
-        return [core_handover_group],None,production_uri,staging_uri,live_uri
+        return [cfg.core_handover_group],None
     elif(variation_pattern.match(uri)):
-        eg_release = variation_pattern.match(uri).group(1)
-        if (eg_release):
-            production_uri=cfg.production_eg_uri
-            staging_uri = cfg.staging_eg_uri
-            live_uri = cfg.live_eg_uri
-        else:
-            production_uri=cfg.production_uri
-            staging_uri = cfg.staging_uri
-            live_uri = cfg.live_uri
-        return [cfg.variation_handover_group],None,production_uri,staging_uri,live_uri
+        return [cfg.variation_handover_group],None
     elif(funcgen_pattern.match(uri)):
-        eg_release = funcgen_pattern.match(uri).group(1)
-        if (eg_release):
-            production_uri=cfg.production_eg_uri
-            staging_uri = cfg.staging_eg_uri
-            live_uri = cfg.live_eg_uri
-        else:
-            production_uri=cfg.production_uri
-            staging_uri = cfg.staging_uri
-            live_uri = cfg.live_uri
-        return [cfg.funcgen_handover_group],None,production_uri,staging_uri,live_uri
+        return [cfg.funcgen_handover_group],None
     elif(compara_pattern.match(uri)):
         compara_name = compara_pattern.match(uri).group(1)
         if (compara_name == "pan"):
-            compara_uri=cfg.compara_eg_uri + compara_name + '_compara_master'
+            compara_uri=cfg.compara_uri + compara_name + '_compara_master'
             compara_handover_group=cfg.compara_pan_handover_group
-            production_uri=cfg.production_eg_uri
-            staging_uri = cfg.staging_eg_uri
-            live_uri = cfg.live_eg_uri
         elif (compara_name):
-            compara_uri=cfg.compara_eg_uri + compara_name + '_compara_master'
-            compara_handover_group=cfg.compara_eg_handover_group
-            production_uri=cfg.production_eg_uri
-            staging_uri = cfg.staging_eg_uri
-            live_uri = cfg.live_eg_uri
-        else:
-            compara_uri=cfg.compara_uri + 'ensembl_compara_master'
+            compara_uri=cfg.compara_uri + compara_name + '_compara_master'
             compara_handover_group=cfg.compara_handover_group
-            production_uri=cfg.production_uri
-            staging_uri = cfg.staging_uri
-            live_uri = cfg.live_uri
-        return [compara_handover_group],compara_uri,production_uri,staging_uri,live_uri
+        else:
+            compara_handover_group=cfg.compara_handover_group
+        return [compara_handover_group],None
     else:
         return None
 
 
-def submit_hc(spec, groups, compara_uri, production_uri,staging_uri,live_uri):
+def submit_hc(spec, groups, compara_uri):
     """Submit the source database for healthchecking. Returns a celery job identifier"""
-    hc_job_id = hc_client.submit_job(spec['src_uri'], production_uri, compara_uri, staging_uri, live_uri, None, groups, cfg.data_files_path, None, spec['handover_token'])
+    hc_job_id = hc_client.submit_job(spec['src_uri'], cfg.production_uri, compara_uri, cfg.staging_uri, cfg.live_uri, None, groups, cfg.data_files_path, None, spec['handover_token'])
     spec['hc_job_id'] = hc_job_id
     task_id = process_checked_db.delay(hc_job_id, spec)
     get_logger().debug("Submitted DB for checking as " + str(task_id))
