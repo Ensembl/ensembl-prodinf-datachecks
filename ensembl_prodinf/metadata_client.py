@@ -101,18 +101,18 @@ if __name__ == '__main__':
     if args.action == 'submit':
 
         if args.input_file == None and args.email_notification == None:
-            logging.info("Submitting " + args.database_uri + "for metadata load")
-            job_id = client.submit_job( args.database_uri, args.e_release, args.eg_release, args.release_date, args.current_release, args.email, args.update_type, args.comment, args.source)
+            logging.info("Submitting " + args.database_uri + " for metadata load")
+            job_id = client.submit_job( args.database_uri, args.e_release, args.eg_release, args.release_date, args.current_release, args.email, args.update_type, args.comment, args.source, None)
             logging.info('Job submitted with ID '+str(job_id))
         elif args.input_file == None:
-            logging.info("Submitting " + args.database_uri + "for metadata load")
+            logging.info("Submitting " + args.database_uri + " for metadata load")
             job_id = client.submit_job( args.database_uri, args.e_release, args.eg_release, args.release_date, args.current_release, args.email, args.update_type, args.comment, args.source, args.email_notification)
             logging.info('Job submitted with ID '+str(job_id))
         else:
             for line in args.input_file:
                 uris = line.split()
-                logging.info("Submitting " + uris[0] + "for metadata load")
-                job_id = client.submit_job(uris[0], args.e_release, args.eg_release, args.release_date, args.current_release, args.email, args.update_type, args.comment, args.source)
+                logging.info("Submitting " + uris[0] + " for metadata load")
+                job_id = client.submit_job(uris[0], args.e_release, args.eg_release, args.release_date, args.current_release, args.email, args.update_type, args.comment, args.source, None)
                 logging.info('Job submitted with ID '+str(job_id))
     
     elif args.action == 'retrieve':
