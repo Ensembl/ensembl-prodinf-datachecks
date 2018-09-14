@@ -85,31 +85,56 @@ def check_db(uri):
     else:
         return
 
-core_pattern = re.compile(".*[a-z]_(core|rnaseq|cdna|otherfeatures)_?([0-9]*)?_[0-9]*_[0-9]*")
+db_types_list = [i for i in cfg.allowed_database_types.split(",")]
+core_pattern = re.compile(".*[a-z]_core_?([0-9]*)?_[0-9]*_[0-9]*")
+core_like_pattern = re.compile(".*[a-z]_(rnaseq|cdna|otherfeatures)_?([0-9]*)?_[0-9]*_[0-9]*")
 variation_pattern = re.compile(".*[a-z]_variation_?([0-9]*)?_[0-9]*_[0-9]*")
 compara_pattern = re.compile(".*[a-z]_compara_?([a-z]*)?_?[a-z]*?_[0-9].*")
 funcgen_pattern = re.compile(".*[a-z]_funcgen_?([0-9]*)?_[0-9]*_[0-9]*")
+
 def groups_for_uri(uri):
     """Find which HC group to run on a given database"""
     if(core_pattern.match(uri)):
-        return [cfg.core_handover_group],None
+        if("core" in db_types_list):
+            return [cfg.core_handover_group],None
+        else:
+            get_logger().error("Handover failed, " + uri + " has been handed over after deadline. Please contact the Production team")
+            raise ValueError(uri + " handover after the deadline")
+    elif(core_like_pattern.match(uri)):
+        if("core_like" in db_types_list):
+              return [cfg.core_handover_group],None
+        else:
+            get_logger().error("Handover failed, " + uri + " has been handed over after deadline. Please contact the Production team")
+            raise ValueError(uri + " handover after the deadline")
     elif(variation_pattern.match(uri)):
-        return [cfg.variation_handover_group],None
+        if("variation" in db_types_list):
+              return [cfg.variation_handover_group],None
+        else:
+            get_logger().error("Handover failed, " + uri + " has been handed over after deadline. Please contact the Production team")
+            raise ValueError(uri + " handover after the deadline")
     elif(funcgen_pattern.match(uri)):
-        return [cfg.funcgen_handover_group],None
+        if("funcgen" in db_types_list):
+                return [cfg.funcgen_handover_group],None
+        else:
+            get_logger().error("Handover failed, " + uri + " has been handed over after deadline. Please contact the Production team")
+            raise ValueError(uri + " handover after the deadline")
     elif(compara_pattern.match(uri)):
         compara_name = compara_pattern.match(uri).group(1)
-        if (compara_name == "pan"):
-            compara_uri=cfg.compara_uri + compara_name + '_compara_master'
-            compara_handover_group=cfg.compara_pan_handover_group
-        elif (compara_name):
-            compara_uri=cfg.compara_uri + compara_name + '_compara_master'
-            compara_handover_group=cfg.compara_handover_group
+        if("compara" in db_types_list):
+            if (compara_name == "pan"):
+                compara_uri=cfg.compara_uri + compara_name + '_compara_master'
+                compara_handover_group=cfg.compara_pan_handover_group
+            elif (compara_name):
+                compara_uri=cfg.compara_uri + compara_name + '_compara_master'
+                compara_handover_group=cfg.compara_handover_group
+            else:
+                compara_handover_group=cfg.compara_handover_group
+            return [compara_handover_group],compara_uri
         else:
-            compara_handover_group=cfg.compara_handover_group
-        return [compara_handover_group],compara_uri
+            get_logger().error("Handover failed, " + uri + " has been handed over after deadline. Please contact the Production team")
+            raise ValueError(uri + " handover after the deadline")
     else:
-        return None
+        return None,None
 
 
 def submit_hc(spec, groups, compara_uri):
