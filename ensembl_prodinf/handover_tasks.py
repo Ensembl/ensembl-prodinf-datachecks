@@ -107,7 +107,7 @@ def groups_for_uri(uri):
             compara_handover_group=cfg.compara_handover_group
         else:
             compara_handover_group=cfg.compara_handover_group
-        return [compara_handover_group],None
+        return [compara_handover_group],compara_uri
     else:
         return None
 
