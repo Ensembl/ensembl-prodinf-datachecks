@@ -39,7 +39,7 @@ if __name__ == '__main__':
     parser.add_argument('-s', '--src_uri', help='URI of database to hand over', required=True)
     parser.add_argument('-e', '--email', help='Email address', required=True)
     parser.add_argument('-t', '--type', help='Update type', required=True, choices=['new_genome','new_genebuild','new_assembly','other'])
-    parser.add_argument('-c', '--comment', help='Comment', required=True)
+    parser.add_argument('-c', '--description', help='Description', required=True)
 
     args = parser.parse_args()
     
@@ -59,7 +59,7 @@ if __name__ == '__main__':
             "src_uri" : args.src_uri,
             "contact" : args.email,
             "type" : args.type,
-            "comment" : args.comment
+            "comment" : args.description
             }
         logging.debug(spec)
         job_id = client.submit_job(spec)

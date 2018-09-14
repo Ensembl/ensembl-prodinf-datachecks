@@ -67,11 +67,11 @@ For Ensembl:
   ENDPOINT=http://ens-prod-1.ebi.ac.uk:9000/handover
   EMAIL=john.doe@ebi.ac.uk
   UPDATE_TYPE="new_assembly"
-  COMMENT="handover new Leopard database"
+  DESCRIPTION="handover new Leopard database"
 
   cd $BASE_DIR/ensembl-prodinf-core 
   for db in $(cat handover_databases.txt); 
-  do ensembl_prodinf/handover_client.py --action submit --uri ${ENDPOINT} --src_uri "${DATABASE_SERVER}${db}" --email "${EMAIL}" --type "${UPDATE_TYPE}" --comment "${COMMENT}";
+  do ensembl_prodinf/handover_client.py --action submit --uri ${ENDPOINT} --src_uri "${DATABASE_SERVER}${db}" --email "${EMAIL}" --type "${UPDATE_TYPE}" --description "${DESCRIPTION}";
   done
 
 For EG:
@@ -82,11 +82,11 @@ For EG:
   ENDPOINT=http://ens-prod-1.ebi.ac.uk:9000/handover
   EMAIL=john.doe@ebi.ac.uk
   UPDATE_TYPE="new_assembly"
-  COMMENT="handover new Leopard database"
+  DESCRIPTION="handover new Leopard database"
 
   cd $BASE_DIR/ensembl-prodinf-core 
   for db in $(cat handover_databases.txt); 
-  do ensembl_prodinf/handover_client.py --action submit --uri ${ENDPOINT} --src_uri "${DATABASE_SERVER}${db}" --email "${EMAIL}" --type "${UPDATE_TYPE}" --comment "${COMMENT}";
+  do ensembl_prodinf/handover_client.py --action submit --uri ${ENDPOINT} --src_uri "${DATABASE_SERVER}${db}" --email "${EMAIL}" --type "${UPDATE_TYPE}" --description "${DESCRIPTION}";
   done
 
 
@@ -102,7 +102,7 @@ The script accept the following arguments:
                           {submit,retrieve,list,delete,events,processes} [-v]
                           -s SRC_URI -e EMAIL -t
                           {new_genome,new_genebuild,new_assembly,other} -c
-                          COMMENT [-n EMAIL_NOTIFICATION]
+                          DESCRIPTION [-n EMAIL_NOTIFICATION]
 
   Handover via a REST service
 
@@ -118,8 +118,8 @@ The script accept the following arguments:
                           Email address
     -t {new_genome,new_genebuild,new_assembly,other}, --type {new_genome,new_genebuild,new_assembly,other}
                           Update type
-    -c COMMENT, --comment COMMENT
-                          Comment
+    -c DESCRIPTION, --description DESCRIPTION
+                          Description
     -n EMAIL_NOTIFICATION, --email_notification EMAIL_NOTIFICATION
                           Get email notification of handover progress
 
