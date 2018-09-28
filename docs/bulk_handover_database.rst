@@ -64,9 +64,9 @@ For Ensembl:
 .. code-block:: bash
 
   DATABASE_SERVER=$(mysql-ens-general-prod-1 details url)
-  ENDPOINT=http://ens-prod-1.ebi.ac.uk:9000/handover
+  ENDPOINT=http://ens-prod-1.ebi.ac.uk:8000/handover
   EMAIL=john.doe@ebi.ac.uk
-  UPDATE_TYPE="new_assembly"
+  UPDATE_TYPE="new_assembly" # choices are "new_genome" , "new_genebuild" , "new_assembly" , "other"
   DESCRIPTION="handover new Leopard database"
 
   cd $BASE_DIR/ensembl-prodinf-core 
@@ -79,9 +79,9 @@ For EG:
 .. code-block:: bash
 
   DATABASE_SERVER=$(mysql-ens-general-prod-1 details url)
-  ENDPOINT=http://ens-prod-1.ebi.ac.uk:9000/handover
+  ENDPOINT=http://ens-prod-1.ebi.ac.uk:7000/handover
   EMAIL=john.doe@ebi.ac.uk
-  UPDATE_TYPE="new_assembly"
+  UPDATE_TYPE="new_assembly" # choices are "new_genome" , "new_genebuild" , "new_assembly" , "other"
   DESCRIPTION="handover new Leopard database"
 
   cd $BASE_DIR/ensembl-prodinf-core 
@@ -126,13 +126,13 @@ The script accept the following arguments:
 Check job status
 ################
 
-You can check job status either on the production interface: `http://ens-prod-1.ebi.ac.uk:9000/#!/database_handover_list` or `http://eg-prod-01.ebi.ac.uk:7000/#!/database_handover_list` for EG
+You can check job status either on the production interface: `http://ens-prod-1.ebi.ac.uk:8000/#!/database_handover_list` or `http://eg-prod-01.ebi.ac.uk:7000/#!/database_handover_list` for EG
 
 or using the Python client:
 
 .. code-block:: bash
 
-  ensembl_prodinf/metadata_client.py --action list --uri http://ens-prod-1.ebi.ac.uk:9000/handover
-  ensembl_prodinf/metadata_client.py --action list --uri http://eg-prod-01.ebi.ac.uk:7000/handover
+  ensembl_prodinf/handover_client.py --action list --uri http://ens-prod-1.ebi.ac.uk:8000/handover
+  ensembl_prodinf/handover_client.py --action list --uri http://eg-prod-01.ebi.ac.uk:7000/handover
   
   
