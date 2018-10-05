@@ -59,22 +59,26 @@ def handover_database(spec):
     reporting.set_logger_context(get_logger(), spec['src_uri'], spec)    
     # create unique identifier
     spec['handover_token'] = str(uuid.uuid1())
-    if 'tgt_uri' not in spec:
-        spec['tgt_uri'] = get_tgt_uri(spec['src_uri'])
-    get_logger().info("Handling " + str(spec))
     check_db(spec['src_uri'])
-    (groups,compara_uri) = groups_for_uri(spec['src_uri'])
+    (groups,compara_uri,staging_uri,GRCh37) = groups_for_uri(spec['src_uri'])
     if (compara_uri == None):
         compara_uri=cfg.compara_uri + 'ensembl_compara_master'
-    spec['progress_total']=3
+    if 'tgt_uri' not in spec:
+        spec['tgt_uri'] = get_tgt_uri(spec['src_uri'],staging_uri)
+    if (GRCh37 == None):
+        spec['progress_total']=3
+    else:
+        spec['GRCh37']=GRCh37
+        spec['progress_total']=2
     spec['progress_complete']=1
-    submit_hc(spec, groups, compara_uri)
+    get_logger().info("Handling " + str(spec))
+    submit_hc(spec, groups, compara_uri, staging_uri)
     return spec['handover_token']
 
-def get_tgt_uri(src_uri):
+def get_tgt_uri(src_uri,staging_uri):
     """Create target URI from staging details and name of source database"""
     url = make_url(src_uri)
-    return str(cfg.staging_uri) + str(url.database)
+    return str(staging_uri) + str(url.database)
 
     
 def check_db(uri):    
@@ -86,35 +90,55 @@ def check_db(uri):
         return
 
 db_types_list = [i for i in cfg.allowed_database_types.split(",")]
-core_pattern = re.compile(".*[a-z]_core_?([0-9]*)?_[0-9]*_[0-9]*")
-core_like_pattern = re.compile(".*[a-z]_(rnaseq|cdna|otherfeatures)_?([0-9]*)?_[0-9]*_[0-9]*")
-variation_pattern = re.compile(".*[a-z]_variation_?([0-9]*)?_[0-9]*_[0-9]*")
+core_pattern = re.compile("(.*[a-z])_core_?[0-9]*?_[0-9]*_([0-9]*)")
+core_like_pattern = re.compile("(.*[a-z])_(rnaseq|cdna|otherfeatures)_?[0-9]*?_[0-9]*_([0-9]*)")
+variation_pattern = re.compile("(.*[a-z])_variation_?[0-9]*?_[0-9]*_([0-9]*)")
 compara_pattern = re.compile(".*[a-z]_compara_?([a-z]*)?_?[a-z]*?_[0-9].*")
-funcgen_pattern = re.compile(".*[a-z]_funcgen_?([0-9]*)?_[0-9]*_[0-9]*")
+funcgen_pattern = re.compile("(.*[a-z])_funcgen_?[0-9]*?_[0-9]*_([0-9]*)")
 
 def groups_for_uri(uri):
     """Find which HC group to run on a given database"""
     if(core_pattern.match(uri)):
         if("core" in db_types_list):
-            return [cfg.core_handover_group],None
+            if("bacteria" in core_pattern.match(uri).group(1)):
+                return [cfg.core_handover_group],None,cfg.secondary_staging_uri,None
+            elif("homo_sapiens" in core_pattern.match(uri).group(1) and core_pattern.match(uri).group(2) == "37"):
+                return [cfg.core_handover_group],None,cfg.secondary_staging_uri,"GRCh37"
+            else:
+                return [cfg.core_handover_group],None,cfg.staging_uri,None
         else:
             get_logger().error("Handover failed, " + uri + " has been handed over after deadline. Please contact the Production team")
             raise ValueError(uri + " handover after the deadline")
     elif(core_like_pattern.match(uri)):
         if("core_like" in db_types_list):
-              return [cfg.core_handover_group],None
+            if("bacteria" in core_like_pattern.match(uri).group(1)):
+                return [cfg.core_handover_group],None,cfg.secondary_staging_uri,None
+            elif("homo_sapiens" in core_like_pattern.match(uri).group(1) and core_like_pattern.match(uri).group(3) == "37"):
+                return [cfg.core_handover_group],None,cfg.secondary_staging_uri,"GRCh37"
+            else:
+                return [cfg.core_handover_group],None,cfg.staging_uri,None
         else:
             get_logger().error("Handover failed, " + uri + " has been handed over after deadline. Please contact the Production team")
             raise ValueError(uri + " handover after the deadline")
     elif(variation_pattern.match(uri)):
         if("variation" in db_types_list):
-              return [cfg.variation_handover_group],None
+            if("bacteria" in variation_pattern.match(uri).group(1)):
+                  return [cfg.variation_handover_group],None,cfg.secondary_staging_uri,None
+            elif("homo_sapiens" in variation_pattern.match(uri).group(1) and variation_pattern.match(uri).group(2) == "37"):
+                return [cfg.variation_handover_group],None,cfg.secondary_staging_uri,"GRCh37"
+            else:
+                return [cfg.variation_handover_group],None,cfg.staging_uri,None
         else:
             get_logger().error("Handover failed, " + uri + " has been handed over after deadline. Please contact the Production team")
             raise ValueError(uri + " handover after the deadline")
     elif(funcgen_pattern.match(uri)):
         if("funcgen" in db_types_list):
-                return [cfg.funcgen_handover_group],None
+            if("bacteria" in funcgen_pattern.match(uri).group(1)):
+                return [cfg.funcgen_handover_group],None,cfg.secondary_staging_uri,None
+            elif("homo_sapiens" in funcgen_pattern.match(uri).group(1) and funcgen_pattern.match(uri).group(2) == "37"):
+                return [cfg.funcgen_handover_group],None,cfg.secondary_staging_uri,"GRCh37"
+            else:
+                return [cfg.funcgen_handover_group],None,cfg.staging_uri,None
         else:
             get_logger().error("Handover failed, " + uri + " has been handed over after deadline. Please contact the Production team")
             raise ValueError(uri + " handover after the deadline")
@@ -124,22 +148,29 @@ def groups_for_uri(uri):
             if (compara_name == "pan"):
                 compara_uri=cfg.compara_uri + compara_name + '_compara_master'
                 compara_handover_group=cfg.compara_pan_handover_group
+                staging_uri=cfg.staging_uri
+            if (compara_name == "bacteria"):
+                compara_uri=cfg.compara_uri + compara_name + '_compara_master'
+                compara_handover_group=cfg.compara_pan_handover_group
+                staging_uri=cfg.secondary_staging_uri
             elif (compara_name):
                 compara_uri=cfg.compara_uri + compara_name + '_compara_master'
                 compara_handover_group=cfg.compara_handover_group
+                staging_uri=cfg.staging_uri
             else:
                 compara_handover_group=cfg.compara_handover_group
-            return [compara_handover_group],compara_uri
+                staging_uri=cfg.staging_uri
+            return [compara_handover_group],compara_uri,staging_uri,None
         else:
             get_logger().error("Handover failed, " + uri + " has been handed over after deadline. Please contact the Production team")
             raise ValueError(uri + " handover after the deadline")
     else:
-        return None,None
+        return None,None,None,None
 
 
-def submit_hc(spec, groups, compara_uri):
+def submit_hc(spec, groups, compara_uri, staging_uri):
     """Submit the source database for healthchecking. Returns a celery job identifier"""
-    hc_job_id = hc_client.submit_job(spec['src_uri'], cfg.production_uri, compara_uri, cfg.staging_uri, cfg.live_uri, None, groups, cfg.data_files_path, None, spec['handover_token'])
+    hc_job_id = hc_client.submit_job(spec['src_uri'], cfg.production_uri, compara_uri, staging_uri, cfg.live_uri, None, groups, cfg.data_files_path, None, spec['handover_token'])
     spec['hc_job_id'] = hc_job_id
     task_id = process_checked_db.delay(hc_job_id, spec)
     get_logger().debug("Submitted DB for checking as " + str(task_id))
@@ -213,10 +244,13 @@ Please see %s
 """ % (spec['src_uri'], spec['tgt_uri'], cfg.copy_web_uri + str(copy_job_id))
         send_email(to_address=spec['contact'], subject='Database copy failed', body=msg, smtp_server=cfg.smtp_server)
         return
-    else:
+    elif(spec['GRCh37'] == None):
         get_logger().info("Copying complete, submitting metadata job")
         spec['progress_complete']=3
         submit_metadata_update(spec)
+    else:
+        get_logger().info("Copying complete, Handover successful")
+        spec['progress_complete']=2
     
 
 def submit_metadata_update(spec):
