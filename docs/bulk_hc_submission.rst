@@ -45,7 +45,7 @@ Ensembl:
 .. code-block:: bash
 
  RELEASE=91
-  ./ensembl-production/scripts/process_division.sh ens mysql-ens-sta-1 ensembl_production_${RELEASE} $RELEASE > db_hc.txt
+  ./ensembl-production/scripts/process_division.sh EV mysql-ens-sta-1 ensembl_production_${RELEASE} $RELEASE > db_hc.txt
 
 Submit the jobs using REST endpoint:
 ####################################
