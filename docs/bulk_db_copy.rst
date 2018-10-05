@@ -43,7 +43,7 @@ To get the list of databases for Fungi:
 .. code-block:: bash
 
   RELEASE=91
-  ./ensembl-production/scripts/process_division.sh ens mysql-ens-sta-1 ensembl_production_${RELEASE} $RELEASE > db_to_copy.txt
+  ./ensembl-production/scripts/process_division.sh EV mysql-ens-sta-1 ensembl_production_${RELEASE} $RELEASE > db_to_copy.txt
 
 Submit the jobs using Python REST db copy endpoint:
 ###################################################

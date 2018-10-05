@@ -45,7 +45,7 @@ Ensembl:
 .. code-block:: bash
 
   RELEASE=94
-  ./ensembl-production/scripts/process_division.sh ens mysql-ens-sta-1 ensembl_production_${RELEASE} $RELEASE > handover_databases.txt
+  ./ensembl-production/scripts/process_division.sh EV mysql-ens-sta-1 ensembl_production_${RELEASE} $RELEASE > handover_databases.txt
 
 Submit the jobs using Python REST db copy endpoint:
 ###################################################
