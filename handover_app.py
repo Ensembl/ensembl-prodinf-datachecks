@@ -12,6 +12,7 @@ from elasticsearch import Elasticsearch
 
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger=logging.getLogger(__name__)
 
 app = Flask(__name__, instance_relative_config=True)
 app.config.from_object('handover_config')
@@ -94,15 +95,15 @@ def handovers():
           {src_uri: "mysql://user@server:port/saccharomyces_cerevisiae_core_91_4", contact: "joe.blogg@ebi.ac.uk", type: "other", comment: "handover new Panda OF"}
     """
     if json_pattern.match(request.headers['Content-Type']):
-        logging.debug("Submitting handover request " + str(request.json))
+        logger.debug("Submitting handover request " + str(request.json))
         spec = request.json
         if 'src_uri' not in spec or 'contact' not in spec or 'type' not in spec or 'comment' not in spec:
-            return "Handover specification incomplete - please specify src_uri, contact, type and comment", 415
+          raise Exception("Handover specification incomplete - please specify src_uri, contact, type and comment")
         ticket = handover_database(spec)
-        logging.info(ticket)
+        logger.info(ticket)
         return jsonify(ticket);
     else:
-        return "Could not handle input of type " + request.headers['Content-Type'], 415
+        raise Exception("Could not handle input of type " + request.headers['Content-Type'])
 
 @app.route('/handovers/<string:handover_token>', methods=['GET'])
 def handover_result(handover_token):
@@ -154,10 +155,10 @@ def handover_result(handover_token):
     """
     try:
         res = requests.get('http://' + es_host + ':' + es_port)
-    except ValueError:
-      return "Can't connect to Elasticsearch"
+    except Exception:
+      raise ValueError("Can't connect to Elasticsearch on " + es_host + ":" + es_port)
     try:    
-        logging.info("Retrieving handover data with token " + str(handover_token))
+        logger.info("Retrieving handover data with token " + str(handover_token))
         es = Elasticsearch([{'host': es_host , 'port': es_port}])
         handover_detail=[]
         res_error=es.search(index="reports",body={"query":{"bool":{"must":[{"term":{"params.handover_token.keyword":str(handover_token)}},{"term":{"report_type.keyword":"ERROR"}}],"must_not":[],"should":[]}},"from":0,"size":1,"sort":[{"report_time":{"order": "desc"}}],"aggs":{}})
@@ -189,9 +190,12 @@ def handover_result(handover_token):
                 result['report_time']=doc['_source']['report_time']
                 result['type']=doc['_source']['params']['type']
                 handover_detail.append(result)
+        if not handover_detail:
+            raise ValueError("Handover token " + str(handover_token) + " not found")
+        else:
             return jsonify(handover_detail)
-    except ValueError:
-        return "Handover token " + str(handover_token) + " not found", 404
+    except Exception:
+        raise ValueError("Handover token " + str(handover_token) + " not found")
 
 @app.route('/handovers/', methods=['GET'])
 def handover_results():
@@ -230,10 +234,10 @@ def handover_results():
     """
     try:
         res = requests.get('http://' + es_host + ':' + es_port)
-    except ValueError:
-      return "Can't connect to Elasticsearch"
+    except Exception:
+      raise ValueError("Can't connect to Elasticsearch on " + es_host + ":" + es_port)
     try:    
-        logging.info("Retrieving all handover report")
+        logger.info("Retrieving all handover report")
         es = Elasticsearch([{'host': es_host, 'port': es_port}])
         res = es.search(index="reports",body={"query": {"bool": {"must": [{"query_string" : {"fields": ["message"],"query" : "Handling*","analyze_wildcard": "true"}}]}},"size":1000,"sort":[{"report_time":{"order": "desc"}}]})
         list_handovers=[]
@@ -257,8 +261,8 @@ def handover_results():
             result['type']=doc['_source']['params']['type']
             list_handovers.append(result)
         return jsonify(list_handovers)
-    except ValueError:
-        return "Handover token data not found", 404
+    except Exception:
+         raise ValueError("Can't load handover list")
 
 @app.route('/handovers/<string:handover_token>', methods=['DELETE'])
 def delete_handover(handover_token):
@@ -314,12 +318,20 @@ def delete_handover(handover_token):
     """
     try:
         res = requests.get('http://' + es_host + ':' + es_port)
-    except ValueError:
-      return "Can't connect to Elasticsearch"
+    except Exception:
+      raise ValueError("Can't connect to Elasticsearch on " + es_host + ":" + es_port)
     try:
-        logging.info("Retrieving handover data with token " + str(handover_token))
+        logger.info("Retrieving handover data with token " + str(handover_token))
         es = Elasticsearch([{'host': es_host, 'port': es_port}])
         es.delete_by_query(index='reports', doc_type='report', body={"query":{"bool":{"must":[{"term":{"params.handover_token.keyword":str(handover_token)}}]}}})
         return jsonify(str(handover_token))
-    except ValueError:
-        return "Handover token " + str(handover_token) + " not found", 404
+    except Exception:
+        raise ValueError("Handover token " + str(handover_token) + " not found")
+
+@app.errorhandler(Exception)
+def handle_error(e):
+    code = 500
+    if isinstance(e, ValueError):
+        code = 400
+    logger.exception(str(e))
+    return jsonify(error=str(e)), code

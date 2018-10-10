@@ -99,21 +99,18 @@ def submit_job():
         processes = get_processes_for_event(event)
         for process in processes:
             get_logger().debug("Submitting process " + str(process))
-            try:
-                hive = get_hive(process)
-                analysis = get_analysis(process)
-                job = hive.create_job(analysis, {'event':event})
-                event_task = process_result.delay(event, process, job.job_id)
-                results['processes'].append({
-                    "process":process,
-                    "job":job.job_id,
-                    "task":event_task.id
-                })
-            except ProcessNotFoundError:
-                return "Process " + str(process) + " not found", 404
+            hive = get_hive(process)
+            analysis = get_analysis(process)
+            job = hive.create_job(analysis, {'event':event})
+            event_task = process_result.delay(event, process, job.job_id)
+            results['processes'].append({
+                "process":process,
+                "job":job.job_id,
+                "task":event_task.id
+            })
         return jsonify(results);
     else:
-        return "Could not handle input of type " + request.headers['Content-Type'], 415
+        raise Exception("Could not handle input of type " + request.headers['Content-Type'])
 
 
 @app.route('/jobs/<string:process>/<int:job_id>', methods=['GET'])
@@ -173,19 +170,16 @@ def job(process, job_id):
     if output_format == 'email':
         email = request.args.get('email')
         if email == None:
-            return "Email not specified", 400
+            raise Exception("Email not specified")
         return results_email(request.args.get('email'), process, job_id)
     elif output_format == None:
         return results(process, job_id)
     else:
-        return "Format "+output_format+" not known", 400
+        raise Exception("Format "+output_format+" not known")
         
 def results(process, job_id):    
-    try:
-        get_logger().info("Retrieving job from " + process + " with ID " + str(job_id))
-        return jsonify(get_hive(process).get_result_for_job_id(job_id))
-    except ValueError:
-        return "Job " + str(job_id) + " not found for process " + process, 404
+    get_logger().info("Retrieving job from " + process + " with ID " + str(job_id))
+    return jsonify(get_hive(process).get_result_for_job_id(job_id))
 
 
 @app.route('/jobs/<string:process>/<int:job_id>', methods=['DELETE'])
@@ -247,8 +241,6 @@ def delete_job(process, job_id):
     """    
     hive = get_hive(process)
     job = hive.get_job_by_id(job_id)
-    if(job == None):
-        return "Job " + str(job_id) + " not found for process " + process, 404
     hive.delete_job(job)
     return jsonify({"id":job_id, "process": process})
 
@@ -256,8 +248,6 @@ def results_email(email, process, job_id):
     get_logger().info("Retrieving job with ID " + str(job_id) + " for " + str(email))
     hive = get_hive(process)
     job = hive.get_job_by_id(job_id)
-    if(job == None):
-        return "Job " + str(job_id) + " not found", 404
     results = hive.get_result_for_job_id(job_id)
     # TODO
     results['email'] = email
@@ -350,3 +340,11 @@ def processes():
         description: Retrieve all the processes
     """     
     return jsonify(process_lookup.keys()) 
+
+@app.errorhandler(Exception)
+def handle_error(e):
+    code = 500
+    if isinstance(e, ValueError):
+        code = 400
+    logger.exception(str(e))
+    return jsonify(error=str(e)), code

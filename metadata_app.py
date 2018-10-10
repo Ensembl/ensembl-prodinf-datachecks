@@ -12,6 +12,7 @@ import time
 import json
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger=logging.getLogger(__name__)
 
 app = Flask(__name__, instance_relative_config=True)
 app.config.from_object('metadata_config')
@@ -129,18 +130,19 @@ def submit_job():
     """
     if json_pattern.match(request.headers['Content-Type']):
         request.json["metadata_uri"]=app.config["METADATA_URI"]
-        logging.debug("Submitting metadata job " + str(request.json))
+        logger.debug("Submitting metadata job " + str(request.json))
         job = get_hive().create_job(app.analysis, request.json)
         results = {"job_id":job.job_id};
         email = request.json.get('email')
         email_notification = request.json.get('email_notification')
         if email != None and email != '' and email_notification != None:
-            logging.debug("Submitting email request for  " + email)
+            logger.debug("Submitting email request for  " + email)
             email_results = email_when_complete.delay(request.url_root + "jobs/" + str(job.job_id) + "?format=email", email)
             results['email_task'] = email_results.id
         return jsonify(results);
     else:
-        return "Could not handle input of type " + request.headers['Content-Type'], 415
+        logger.error("Could not handle input of type " + request.headers['Content-Type'])
+        raise ValueError("Could not handle input of type " + request.headers['Content-Type'])
 
 
 @app.route('/jobs/<int:job_id>', methods=['GET'])
@@ -215,26 +217,21 @@ def job_result(job_id):
           status: complete
     """
     fmt = request.args.get('format')
-    logging.debug("Format "+str(fmt))
+    logger.debug("Format "+str(fmt))
     if fmt == 'email':
         email = request.args.get('email')
         return job_email(email, job_id)
     elif fmt == 'failures':
         return failure(job_id)
-    elif fmt == None:
-        try:    
-            logging.info("Retrieving job with ID " + str(job_id))
-            return jsonify(get_hive().get_result_for_job_id(job_id, child=True))
-        except ValueError:
-            return "Job " + str(job_id) + " not found", 404
+    elif fmt == None:  
+        logger.info("Retrieving job with ID " + str(job_id))
+        return jsonify(get_hive().get_result_for_job_id(job_id, child=True))
     else:
-        return "Format "+fmt+" not valid", 400
+        raise Exception("Format "+fmt+" not valid")
 
 def job_email(email, job_id):
-    logging.info("Retrieving job with ID " + str(job_id) + " for " + str(email))
+    logger.info("Retrieving job with ID " + str(job_id) + " for " + str(email))
     job = get_hive().get_job_by_id(job_id)
-    if(job == None):
-        return "Job " + str(job_id) + " not found", 404
     results = get_hive().get_result_for_job_id(job_id, child=True)
     if results['status'] == 'complete':
         results['subject'] = 'Metadata load for database %s is successful' % (results['output']['database_uri'])
@@ -299,12 +296,9 @@ def failure(job_id):
         examples:
           msg: 'Missing table meta in database'
     """
-    try:
-        logging.info("Retrieving failure for job with ID " + str(job_id))
-        failure = get_hive().get_job_failure_msg_by_id(job_id, child=True)
-        return jsonify({"msg":failure.msg})
-    except ValueError:
-        return "Job " + str(job_id) + " not found", 404
+    logger.info("Retrieving failure for job with ID " + str(job_id))
+    failure = get_hive().get_job_failure_msg_by_id(job_id, child=True)
+    return jsonify({"msg":failure.msg})
 
 @app.route('/jobs/<int:job_id>', methods=['DELETE'])
 def delete_job(job_id):
@@ -360,8 +354,6 @@ def delete_job(job_id):
     """
     hive = get_hive()
     job = get_hive().get_job_by_id(job_id)
-    if(job == None):
-        return "Job " + str(job_id) + " not found", 404
     hive.delete_job(job, child=True)
     return jsonify({"id":job_id})
 
@@ -426,8 +418,16 @@ def jobs():
             total: 1
           status: failed
     """
-    logging.info("Retrieving jobs")
+    logger.info("Retrieving jobs")
     return jsonify(get_hive().get_all_results(app.analysis, child=True))
+
+@app.errorhandler(Exception)
+def handle_error(e):
+    code = 500
+    if isinstance(e, ValueError):
+        code = 400
+    logger.exception(str(e))
+    return jsonify(error=str(e)), code
 
 if __name__ == "__main__":
     app.run(debug=True)

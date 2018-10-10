@@ -11,6 +11,7 @@ from flasgger import Swagger
 
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger=logging.getLogger(__name__)
 
 app = Flask(__name__, instance_relative_config=True)
 app.config['SWAGGER'] = {
@@ -141,18 +142,18 @@ def submit_job():
           {db_uri: "mysql://user@server:port/saccharomyces_cerevisiae_core_91_4", staging_uri: "mysql://user@server:port/", live_uri: "mysql://user@server:port/", production_uri: "mysql://user@server:port/ensembl_production_91", compara_uri: "mysql://user@server:port/ensembl_compara_master", hc_names: ["org.ensembl.healthcheck.testcase.generic.StableID"]}
     """
     if json_pattern.match(request.headers['Content-Type']):
-        logging.debug("Submitting HC " + str(request.json))
+        logger.debug("Submitting HC " + str(request.json))
         job = get_hive().create_job(app.analysis, request.json)
         results = {"job_id":job.job_id};
         email = request.json.get('email')
         if email != None and email != '':
-            logging.debug("Submitting email request for  " + email)
+            logger.debug("Submitting email request for  " + email)
             email_results = email_when_complete.delay(request.url_root + "jobs/" + str(job.job_id) + "?format=email", email)
             results['email_task'] = email_results.id
         return jsonify(results);
     else:
-        return "Could not handle input of type " + request.headers['Content-Type'], 415
-
+        logger.error("Could not handle input of type " + request.headers['Content-Type'])
+        raise ValueError("Could not handle input of type " + request.headers['Content-Type'])
 
 @app.route('/jobs/<int:job_id>', methods=['GET'])
 def job_result(job_id):
@@ -235,26 +236,21 @@ def job_result(job_id):
           status: complete
     """
     fmt = request.args.get('format')
-    logging.debug("Format "+str(fmt))
+    logger.debug("Format "+str(fmt))
     if fmt == 'email':
         email = request.args.get('email')
         return job_email(email, job_id)
     elif fmt == 'failures':
         return job_failures(job_id)
     elif fmt == None:
-        try:    
-            logging.info("Retrieving job with ID " + str(job_id))
-            return jsonify(get_hive().get_result_for_job_id(job_id))
-        except ValueError:
-            return "Job " + str(job_id) + " not found", 404
+        logger.info("Retrieving job with ID " + str(job_id))
+        return jsonify(get_hive().get_result_for_job_id(job_id))
     else:
-        return "Format "+fmt+" not valid", 400
+        raise Exception("Format "+fmt+" not valid")
 
 def job_email(email, job_id):
-    logging.info("Retrieving job with ID " + str(job_id) + " for " + str(email))
+    logger.info("Retrieving job with ID " + str(job_id) + " for " + str(email))
     job = get_hive().get_job_by_id(job_id)
-    if(job == None):
-        return "Job " + str(job_id) + " not found", 404
     results = get_hive().get_result_for_job_id(job_id)
     if results['status'] == 'complete':
         results['subject'] = 'Healthchecks for %s - %s' % (results['output']['db_name'], results['output']['status'])
@@ -276,12 +272,8 @@ def job_email(email, job_id):
     return jsonify(results)
 
 def job_failures(job_id):
-    try:
-        logging.info("Retrieving failure for job with ID " + str(job_id))
-        failures=get_hive().get_jobs_failure_msg(job_id)
-        return jsonify(failures)
-    except ValueError:
-        return "Job " + str(job_id) + " not found", 404
+    logger.info("Retrieving failure for job with ID " + str(job_id))
+    return jsonify(get_hive().get_jobs_failure_msg(job_id))
     
 @app.route('/jobs/<int:job_id>', methods=['DELETE'])
 def delete_job(job_id):
@@ -337,8 +329,6 @@ def delete_job(job_id):
     """
     hive = get_hive()
     job = get_hive().get_job_by_id(job_id)
-    if(job == None):
-        return "Job " + str(job_id) + " not found", 404
     hive.delete_job(job)
     return jsonify({"id":job_id})
 
@@ -425,7 +415,7 @@ def jobs():
           status: complete
           subject: 'Healthchecks for ailuropoda_melanoleuca_core_91_1 - failed'
     """
-    logging.info("Retrieving jobs")
+    logger.info("Retrieving jobs")
     return jsonify(get_hive().get_all_results(app.analysis))
 
 @app.route('/healthchecks/tests', methods=['GET'])
@@ -483,7 +473,7 @@ def list_healthchecks_tests_endpoint():
     query = request.args.get('query')
     if query == None:
         return jsonify(get_hc_list())
-    logging.debug("Finding healthchecks tests matching " + query)
+    logger.debug("Finding healthchecks tests matching " + query)
     hc_list = filter(lambda x:str(query).lower() in x.lower(), get_hc_list())
     return jsonify(hc_list)
 
@@ -543,7 +533,7 @@ def list_healthchecks_groups_endpoint():
     query = request.args.get('query')
     if query == None:
         return jsonify(get_hc_groups())
-    logging.debug("Finding healthchecks groups matching " + query)
+    logger.debug("Finding healthchecks groups matching " + query)
     hc_groups = filter(lambda x:str(query).lower() in x.lower(), get_hc_groups())
     return jsonify(hc_groups)
 
@@ -551,6 +541,13 @@ def list_healthchecks_groups_endpoint():
 def healthchecks_endpoint():
     return jsonify({"tests":request.url + "/tests","groups":request.url + "/groups"})
 
+@app.errorhandler(Exception)
+def handle_error(e):
+    code = 500
+    if isinstance(e, ValueError):
+        code = 400
+    logger.exception(str(e))
+    return jsonify(error=str(e)), code
 
 if __name__ == "__main__":
     app.run(debug=True)
