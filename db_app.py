@@ -14,6 +14,7 @@ import time
 import json
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger=logging.getLogger(__name__)
 
 app = Flask(__name__, instance_relative_config=True)
 app.config.from_object('db_config')
@@ -129,13 +130,10 @@ def list_databases_endpoint():
         examples:
           ["homo_sapiens_cdna_91_38", "homo_sapiens_core_91_38","homo_sapiens_funcgen_91_38","homo_sapiens_otherfeatures_91_38","homo_sapiens_rnaseq_91_38","homo_sapiens_variation_91_38"]
     """
-    try:
-        db_uri = request.args.get('db_uri')
-        query = request.args.get('query')
-        logging.debug("Finding dbs matching " + query + " on " + db_uri)
-        return jsonify(list_databases(db_uri, query))
-    except Exception as e:
-        return "Could not list databases: "+str(e), 500
+    db_uri = request.args.get('db_uri')
+    query = request.args.get('query')
+    logger.debug("Finding dbs matching " + query + " on " + db_uri)
+    return jsonify(list_databases(db_uri, query))
 
 @app.route('/databases/sizes', methods=['GET'])
 def database_sizes_endpoint():
@@ -215,16 +213,13 @@ def database_sizes_endpoint():
         examples:
           {  "mus_caroli_core_91_11": 4890, "ncbi_taxonomy": 362 }
     """
-    try:
-        db_uri = request.args.get('db_uri')
-        query = request.args.get('query')
-        dir_name = request.args.get('dir_name')
-        if(dir_name == None):
-            dir_name = '/instances'
-        logging.debug("Finding sizes of dbs matching " + str(query) + " on " + db_uri)
-        return jsonify(get_database_sizes(db_uri, query, dir_name))
-    except Exception as e:
-        return "Could not list database sizes: "+str(e), 500
+    db_uri = request.args.get('db_uri')
+    query = request.args.get('query')
+    dir_name = request.args.get('dir_name')
+    if(dir_name == None):
+        dir_name = '/instances'
+    logger.debug("Finding sizes of dbs matching " + str(query) + " on " + db_uri)
+    return jsonify(get_database_sizes(db_uri, query, dir_name))
 
 @app.route('/hosts/<host>', methods=['GET'])
 def get_status_endpoint(host):
@@ -294,11 +289,8 @@ def get_status_endpoint(host):
     dir_name = request.args.get('dir_name')
     if(dir_name == None):
         dir_name = '/instances'
-    logging.debug("Finding status of " + host + " (dir " + dir_name + ")")
-    try:
-        return jsonify(get_status(host=host, dir_name=dir_name))
-    except Exception as e:
-        return "Could not get status: "+str(e), 500
+    logger.debug("Finding status of " + host + " (dir " + dir_name + ")")
+    return jsonify(get_status(host=host, dir_name=dir_name))
 
 @app.route('/hosts/<host>/load', methods=['GET'])
 def get_load_endpoint(host):
@@ -354,11 +346,8 @@ def get_load_endpoint(host):
           load_1m: 0.05 
           load_5m: 0.03
     """
-    logging.debug("Finding load of " + host)
-    try:
-        return jsonify(get_load(host=host))
-    except Exception as e:
-        return "Could not get status: "+str(e), 500
+    logger.debug("Finding load of " + host)
+    return jsonify(get_load(host=host))
 
 
 @app.route('/servers/<user>', methods=['GET'])
@@ -428,14 +417,14 @@ def list_servers_endpoint(user):
     """
     query = request.args.get('query')
     if query == None:
-        return "Query not specified", 400
+        raise ValueError("Query not specified")
     if user in get_servers():
-        logging.debug("Finding servers matching " + query + " for " + user)
+        logger.debug("Finding servers matching " + query + " for " + user)
         user_urls = get_servers()[user] or []
         urls = filter(lambda x:query in x, user_urls)
         return jsonify(urls)
     else:
-        return "User " + user + " not found", 404
+        raise ValueError("User " + user + " not found")
 
 
 @app.route('/jobs', methods=['POST'])
@@ -506,17 +495,18 @@ def submit():
           {source_db_uri: "mysql://user@server:port/saccharomyces_cerevisiae_core_91_4", target_db_uri: "mysql://user:password@server:port/saccharomyces_cerevisiae_core_91_4", only_tables: undefined, skip_tables: undefined, update: undefined, drop: 1, email: undefined }
     """
     if json_pattern.match(request.headers['Content-Type']):
-        logging.debug("Submitting Database copy " + str(request.json))
+        logger.debug("Submitting Database copy " + str(request.json))
         job = get_hive().create_job(app.analysis, request.json)
         results = {"job_id":job.job_id};
         email = request.json.get('email')
         if email != None and email != '':
-            logging.debug("Submitting email request for  " + email)
+            logger.debug("Submitting email request for  " + email)
             email_results = email_when_complete.delay(request.url_root + "jobs/" + str(job.job_id) + "?format=email", email)
             results['email_task'] = email_results.id
         return jsonify(results);
     else:
-        return "Could not handle input of type " + request.headers['Content-Type'], 415
+        logger.error("Could not handle input of type " + request.headers['Content-Type'])
+        raise ValueError("Could not handle input of type " + request.headers['Content-Type'])
 
 
 @app.route('/jobs/<int:job_id>', methods=['GET'])
@@ -591,27 +581,19 @@ def jobs(job_id):
     elif fmt == 'failures':
         return failure(job_id)
     elif fmt == None:
-        try:
-            logging.info("Retrieving job with ID " + str(job_id))
-            return jsonify(get_hive().get_result_for_job_id(job_id))
-        except ValueError:
-            return "Job " + str(job_id) + " not found", 404
+        logger.info("Retrieving job with ID " + str(job_id))
+        return jsonify(get_hive().get_result_for_job_id(job_id))
     else:    
-        return "Format "+str(fmt)+" not known", 400
+        raise ValueError("Format "+str(fmt)+" not known")
 
 def failure(job_id):
-    try:
-        logging.info("Retrieving failure for job with ID " + str(job_id))
-        failure = get_hive().get_job_failure_msg_by_id(job_id)
-        return jsonify({"msg":failure.msg})
-    except ValueError:
-        return "Job " + str(job_id) + " not found", 404
+    logger.info("Retrieving failure for job with ID " + str(job_id))
+    failure = get_hive().get_job_failure_msg_by_id(job_id)
+    return jsonify({"msg":failure.msg})
 
 def job_email(email, job_id):
-    logging.info("Retrieving job with ID " + str(job_id) + " for " + str(email))
+    logger.info("Retrieving job with ID " + str(job_id) + " for " + str(email))
     job = get_hive().get_job_by_id(job_id)
-    if(job == None):
-        return "Job " + str(job_id) + " not found", 404
     results = get_hive().get_result_for_job_id(job_id)
     if results['status'] == 'complete':
         results['subject'] = 'Copy database from %s to %s successful' % (results['output']['source_db_uri'], results['output']['target_db_uri'])
@@ -687,25 +669,22 @@ def delete(job_id):
     if 'kill' in request.args.keys() and request.args['kill'] == 1:
         kill_job(job_id)
     job = get_hive().get_job_by_id(job_id)
-    if(job == None):
-        return "Job " + str(job_id) + " not found", 404
     hive.delete_job(job)
     return jsonify({"id":job_id})
 
 def kill_job(job_id):
     job = get_hive().get_job_by_id(job_id)
-    if(job == None):
-        return "Job " + str(job_id) + " not found", 404
-    logging.debug("Getting worker_id for job_id " + str(job_id))
+    logger.debug("Getting worker_id for job_id " + str(job_id))
     worker = get_hive().get_worker_id(job.role_id)
-    logging.debug("Getting process_id for worker_id " + str(worker.worker_id))
+    logger.debug("Getting process_id for worker_id " + str(worker.worker_id))
     process_id = get_hive().get_worker_process_id(worker.worker_id)
-    logging.debug("Process_id is " + str(process_id.process_id))
+    logger.debug("Process_id is " + str(process_id.process_id))
     os.kill(int(process_id.process_id), signal.SIGTERM)
     time.sleep(5)
     # Check if the process that we killed is alive.
     if (is_running(int(process_id.process_id))):
-        return "Wasn't able to kill the process: " + str(process_id.process_id), 404
+        logger.error("Wasn't able to kill the process: " + str(process_id.process_id))
+        raise ValueError("Wasn't able to kill the process: " + str(process_id.process_id))
     else:
         return jsonify({"process_id":process_id.process_id})
 
@@ -774,8 +753,16 @@ def list_jobs():
             total: 1
           status: failed
     """
-    logging.info("Retrieving jobs")
+    logger.info("Retrieving jobs")
     return jsonify(get_hive().get_all_results(app.analysis))
+
+@app.errorhandler(Exception)
+def handle_error(e):
+    code = 500
+    if isinstance(e, ValueError):
+        code = 400
+    logger.exception(str(e))
+    return jsonify(error=str(e)), code
 
 if __name__ == "__main__":
     app.run(debug=True)

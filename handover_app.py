@@ -12,6 +12,7 @@ from elasticsearch import Elasticsearch
 
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger=logging.getLogger(__name__)
 
 app = Flask(__name__, instance_relative_config=True)
 app.config.from_object('handover_config')
@@ -21,6 +22,8 @@ cors = CORS(app)
 
 # use re to support different charsets
 json_pattern = re.compile("application/json")
+es_host=app.config['ES_HOST']
+es_port=str(app.config['ES_PORT'])
 
 @app.route('/', methods=['GET'])
 def info():
@@ -92,15 +95,15 @@ def handovers():
           {src_uri: "mysql://user@server:port/saccharomyces_cerevisiae_core_91_4", contact: "joe.blogg@ebi.ac.uk", type: "other", comment: "handover new Panda OF"}
     """
     if json_pattern.match(request.headers['Content-Type']):
-        logging.debug("Submitting handover request " + str(request.json))
+        logger.debug("Submitting handover request " + str(request.json))
         spec = request.json
         if 'src_uri' not in spec or 'contact' not in spec or 'type' not in spec or 'comment' not in spec:
-            return "Handover specification incomplete - please specify src_uri, contact, type and comment", 415
+          raise Exception("Handover specification incomplete - please specify src_uri, contact, type and comment")
         ticket = handover_database(spec)
-        logging.info(ticket)
+        logger.info(ticket)
         return jsonify(ticket);
     else:
-        return "Could not handle input of type " + request.headers['Content-Type'], 415
+        raise Exception("Could not handle input of type " + request.headers['Content-Type'])
 
 @app.route('/handovers/<string:handover_token>', methods=['GET'])
 def handover_result(handover_token):
@@ -151,12 +154,12 @@ def handover_result(handover_token):
           [{"comment": "handover new Tiger database", "contact": "maurel@ebi.ac.uk", "handover_token": "605f1191-7a13-11e8-aa7e-005056ab00f0", "id": "X1qcQWQBiZ0vMed2vaAt", "message": "Metadata load complete, Handover successful", "progress_total": 3, "report_time": "2018-06-27T15:19:08.459", "src_uri": "mysql://ensadmin:ensembl@mysql-ens-general-prod-1:4525/panthera_tigris_altaica_core_93_1", "tgt_uri": "mysql://ensadmin:ensembl@mysql-ens-general-dev-1:4484/panthera_tigris_altaica_core_93_1", "type": "new_assembly"} ]
     """
     try:
-        res = requests.get('http://localhost:9200')
-    except ValueError:
-      return "Can't connect to Elasticsearch"
+        res = requests.get('http://' + es_host + ':' + es_port)
+    except Exception:
+      raise ValueError("Can't connect to Elasticsearch on " + es_host + ":" + es_port)
     try:    
-        logging.info("Retrieving handover data with token " + str(handover_token))
-        es = Elasticsearch([{'host': 'localhost', 'port': 9200}])
+        logger.info("Retrieving handover data with token " + str(handover_token))
+        es = Elasticsearch([{'host': es_host , 'port': es_port}])
         handover_detail=[]
         res_error=es.search(index="reports",body={"query":{"bool":{"must":[{"term":{"params.handover_token.keyword":str(handover_token)}},{"term":{"report_type.keyword":"ERROR"}}],"must_not":[],"should":[]}},"from":0,"size":1,"sort":[{"report_time":{"order": "desc"}}],"aggs":{}})
         if len(res_error['hits']['hits']) != 0:
@@ -187,9 +190,12 @@ def handover_result(handover_token):
                 result['report_time']=doc['_source']['report_time']
                 result['type']=doc['_source']['params']['type']
                 handover_detail.append(result)
+        if not handover_detail:
+            raise ValueError("Handover token " + str(handover_token) + " not found")
+        else:
             return jsonify(handover_detail)
-    except ValueError:
-        return "Handover token " + str(handover_token) + " not found", 404
+    except Exception:
+        raise ValueError("Handover token " + str(handover_token) + " not found")
 
 @app.route('/handovers/', methods=['GET'])
 def handover_results():
@@ -227,12 +233,12 @@ def handover_results():
           [{"comment": "handover new Tiger database", "contact": "maurel@ebi.ac.uk", "handover_token": "605f1191-7a13-11e8-aa7e-005056ab00f0", "id": "QFqRQWQBiZ0vMed2vKDI", "message": "Handling {u'comment': u'handover new Tiger database', 'handover_token': '605f1191-7a13-11e8-aa7e-005056ab00f0', u'contact': u'maurel@ebi.ac.uk', u'src_uri': u'mysql://ensadmin:ensembl@mysql-ens-general-prod-1:4525/panthera_tigris_altaica_core_93_1', 'tgt_uri': 'mysql://ensadmin:ensembl@mysql-ens-general-dev-1:4484/panthera_tigris_altaica_core_93_1', u'type': u'new_assembly'}", "report_time": "2018-06-27T15:07:07.462", "src_uri": "mysql://ensadmin:ensembl@mysql-ens-general-prod-1:4525/panthera_tigris_altaica_core_93_1", "tgt_uri": "mysql://ensadmin:ensembl@mysql-ens-general-dev-1:4484/panthera_tigris_altaica_core_93_1", "type": "new_assembly"}, {"comment": "handover new Leopard database", "contact": "maurel@ebi.ac.uk", "handover_token": "5dcb1aca-7a13-11e8-b24e-005056ab00f0", "id": "P1qRQWQBiZ0vMed2rqBh", "message": "Handling {u'comment': u'handover new Leopard database', 'handover_token': '5dcb1aca-7a13-11e8-b24e-005056ab00f0', u'contact': u'maurel@ebi.ac.uk', u'src_uri': u'mysql://ensadmin:ensembl@mysql-ens-general-prod-1:4525/panthera_pardus_core_93_1', 'tgt_uri': 'mysql://ensadmin:ensembl@mysql-ens-general-dev-1:4484/panthera_pardus_core_93_1', u'type': u'new_assembly'}", "report_time": "2018-06-27T15:07:03.145", "src_uri": "mysql://ensadmin:ensembl@mysql-ens-general-prod-1:4525/panthera_pardus_core_93_1", "tgt_uri": "mysql://ensadmin:ensembl@mysql-ens-general-dev-1:4484/panthera_pardus_core_93_1", "type": "new_assembly"} ]
     """
     try:
-        res = requests.get('http://localhost:9200')
-    except ValueError:
-      return "Can't connect to Elasticsearch"
+        res = requests.get('http://' + es_host + ':' + es_port)
+    except Exception:
+      raise ValueError("Can't connect to Elasticsearch on " + es_host + ":" + es_port)
     try:    
-        logging.info("Retrieving all handover report")
-        es = Elasticsearch([{'host': 'localhost', 'port': 9200}])
+        logger.info("Retrieving all handover report")
+        es = Elasticsearch([{'host': es_host, 'port': es_port}])
         res = es.search(index="reports",body={"query": {"bool": {"must": [{"query_string" : {"fields": ["message"],"query" : "Handling*","analyze_wildcard": "true"}}]}},"size":1000,"sort":[{"report_time":{"order": "desc"}}]})
         list_handovers=[]
         for doc in res['hits']['hits']:
@@ -255,8 +261,8 @@ def handover_results():
             result['type']=doc['_source']['params']['type']
             list_handovers.append(result)
         return jsonify(list_handovers)
-    except ValueError:
-        return "Handover token data not found", 404
+    except Exception:
+         raise ValueError("Can't load handover list")
 
 @app.route('/handovers/<string:handover_token>', methods=['DELETE'])
 def delete_handover(handover_token):
@@ -311,13 +317,21 @@ def delete_handover(handover_token):
           id: 15ce20fd-68cd-11e8-8117-005056ab00f0
     """
     try:
-        res = requests.get('http://localhost:9200')
-    except ValueError:
-      return "Can't connect to Elasticsearch"
+        res = requests.get('http://' + es_host + ':' + es_port)
+    except Exception:
+      raise ValueError("Can't connect to Elasticsearch on " + es_host + ":" + es_port)
     try:
-        logging.info("Retrieving handover data with token " + str(handover_token))
-        es = Elasticsearch([{'host': 'localhost', 'port': 9200}])
+        logger.info("Retrieving handover data with token " + str(handover_token))
+        es = Elasticsearch([{'host': es_host, 'port': es_port}])
         es.delete_by_query(index='reports', doc_type='report', body={"query":{"bool":{"must":[{"term":{"params.handover_token.keyword":str(handover_token)}}]}}})
         return jsonify(str(handover_token))
-    except ValueError:
-        return "Handover token " + str(handover_token) + " not found", 404
+    except Exception:
+        raise ValueError("Handover token " + str(handover_token) + " not found")
+
+@app.errorhandler(Exception)
+def handle_error(e):
+    code = 500
+    if isinstance(e, ValueError):
+        code = 400
+    logger.exception(str(e))
+    return jsonify(error=str(e)), code
