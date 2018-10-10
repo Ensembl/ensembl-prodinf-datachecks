@@ -108,7 +108,7 @@ def groups_for_uri(uri):
                 return [cfg.core_handover_group],None,cfg.staging_uri,None
         else:
             get_logger().error("Handover failed, " + uri + " has been handed over after deadline. Please contact the Production team")
-            raise ValueError(uri + " handover after the deadline")
+            raise ValueError(uri + " has been handed over after the deadline. Please contact the Production team")
     elif(core_like_pattern.match(uri)):
         if("core_like" in db_types_list):
             if("bacteria" in core_like_pattern.match(uri).group(1)):
@@ -119,7 +119,7 @@ def groups_for_uri(uri):
                 return [cfg.core_handover_group],None,cfg.staging_uri,None
         else:
             get_logger().error("Handover failed, " + uri + " has been handed over after deadline. Please contact the Production team")
-            raise ValueError(uri + " handover after the deadline")
+            raise ValueError(uri + " has been handed over after the deadline. Please contact the Production team")
     elif(variation_pattern.match(uri)):
         if("variation" in db_types_list):
             if("bacteria" in variation_pattern.match(uri).group(1)):
@@ -130,7 +130,7 @@ def groups_for_uri(uri):
                 return [cfg.variation_handover_group],None,cfg.staging_uri,None
         else:
             get_logger().error("Handover failed, " + uri + " has been handed over after deadline. Please contact the Production team")
-            raise ValueError(uri + " handover after the deadline")
+            raise ValueError(uri + " has been handed over after the deadline. Please contact the Production team")
     elif(funcgen_pattern.match(uri)):
         if("funcgen" in db_types_list):
             if("bacteria" in funcgen_pattern.match(uri).group(1)):
@@ -141,7 +141,7 @@ def groups_for_uri(uri):
                 return [cfg.funcgen_handover_group],None,cfg.staging_uri,None
         else:
             get_logger().error("Handover failed, " + uri + " has been handed over after deadline. Please contact the Production team")
-            raise ValueError(uri + " handover after the deadline")
+            raise ValueError(uri + " has been handed over after the deadline. Please contact the Production team")
     elif(compara_pattern.match(uri)):
         compara_name = compara_pattern.match(uri).group(1)
         if("compara" in db_types_list):
@@ -163,7 +163,7 @@ def groups_for_uri(uri):
             return [compara_handover_group],compara_uri,staging_uri,None
         else:
             get_logger().error("Handover failed, " + uri + " has been handed over after deadline. Please contact the Production team")
-            raise ValueError(uri + " handover after the deadline")
+            raise ValueError(uri + " has been handed over after the deadline. Please contact the Production team")
     else:
         return None,None,None,None
 
