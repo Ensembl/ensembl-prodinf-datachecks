@@ -94,6 +94,7 @@ core_pattern = re.compile("(.*[a-z])_core_?[0-9]*?_[0-9]*_([0-9]*)")
 core_like_pattern = re.compile("(.*[a-z])_(rnaseq|cdna|otherfeatures)_?[0-9]*?_[0-9]*_([0-9]*)")
 variation_pattern = re.compile("(.*[a-z])_variation_?[0-9]*?_[0-9]*_([0-9]*)")
 compara_pattern = re.compile(".*[a-z]_compara_?([a-z]*)?_?[a-z]*?_[0-9].*")
+ancestral_pattern = re.compile(".*[a-z]_ancestral_[0-9]*")
 funcgen_pattern = re.compile("(.*[a-z])_funcgen_?[0-9]*?_[0-9]*_([0-9]*)")
 
 def groups_for_uri(uri):
@@ -142,6 +143,12 @@ def groups_for_uri(uri):
         else:
             get_logger().error("Handover failed, " + uri + " has been handed over after deadline. Please contact the Production team")
             raise ValueError(uri + " has been handed over after the deadline. Please contact the Production team")
+    elif(ancestral_pattern.match(uri)):
+        if("ancestral" in db_types_list):
+            return [cfg.ancestral_handover_group],None,cfg.staging_uri,None
+        else:
+            get_logger().error("Handover failed, " + uri + " has been handed over after deadline. Please contact the Production team")
+            raise ValueError(uri + " has been handed over after the deadline. Please contact the Production team")
     elif(compara_pattern.match(uri)):
         compara_name = compara_pattern.match(uri).group(1)
         if("compara" in db_types_list):
@@ -165,7 +172,7 @@ def groups_for_uri(uri):
             get_logger().error("Handover failed, " + uri + " has been handed over after deadline. Please contact the Production team")
             raise ValueError(uri + " has been handed over after the deadline. Please contact the Production team")
     else:
-        return None,None,None,None
+         raise ValueError(uri + " database type is not expected. Please contact the Production team")
 
 
 def submit_hc(spec, groups, compara_uri, staging_uri):
@@ -244,14 +251,13 @@ Please see %s
 """ % (spec['src_uri'], spec['tgt_uri'], cfg.copy_web_uri + str(copy_job_id))
         send_email(to_address=spec['contact'], subject='Database copy failed', body=msg, smtp_server=cfg.smtp_server)
         return
-    elif(spec['GRCh37'] == None):
+    elif('GRCh37'in spec):
+        get_logger().info("Copying complete, Handover successful")
+        spec['progress_complete']=2
+    else:
         get_logger().info("Copying complete, submitting metadata job")
         spec['progress_complete']=3
         submit_metadata_update(spec)
-    else:
-        get_logger().info("Copying complete, Handover successful")
-        spec['progress_complete']=2
-    
 
 def submit_metadata_update(spec):
     """Submit the source database for copying to the target. Returns a celery job identifier."""
