@@ -1,38 +1,43 @@
 #!/usr/bin/env python
-from flask import Flask, request, jsonify
-from flask_cors import CORS
-from flasgger import Swagger
 import logging
 import re
+
 import requests
-import json
-from ensembl_prodinf.handover_tasks import handover_database
 from elasticsearch import Elasticsearch
+from flasgger import Swagger
+from flask import Flask, request, jsonify
+from flask_cors import CORS
 
+import app_logging
+from ensembl_prodinf.handover_tasks import handover_database
 
-
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-logger=logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 app = Flask(__name__, instance_relative_config=True)
 app.config.from_object('handover_config')
 app.config.from_pyfile('handover_config.py')
+app.logger.addHandler(app_logging.file_handler(__name__))
+app.logger.addHandler(app_logging.default_handler())
+
 swagger = Swagger(app)
 cors = CORS(app)
 
 # use re to support different charsets
 json_pattern = re.compile("application/json")
-es_host=app.config['ES_HOST']
-es_port=str(app.config['ES_PORT'])
+es_host = app.config['ES_HOST']
+es_port = str(app.config['ES_PORT'])
+
 
 @app.route('/', methods=['GET'])
 def info():
-    app.config['SWAGGER']= {'title': 'Handover REST endpoints','uiversion': 2}
+    app.config['SWAGGER'] = {'title': 'Handover REST endpoints', 'uiversion': 2}
     return jsonify(app.config['SWAGGER'])
+
 
 @app.route('/ping', methods=['GET'])
 def ping():
-    return jsonify({"status":"ok"})
+    return jsonify({"status": "ok"})
+
 
 @app.route('/handovers', methods=['POST'])
 def handovers():
@@ -98,12 +103,13 @@ def handovers():
         logger.debug("Submitting handover request " + str(request.json))
         spec = request.json
         if 'src_uri' not in spec or 'contact' not in spec or 'type' not in spec or 'comment' not in spec:
-          raise Exception("Handover specification incomplete - please specify src_uri, contact, type and comment")
+            raise Exception("Handover specification incomplete - please specify src_uri, contact, type and comment")
         ticket = handover_database(spec)
         logger.info(ticket)
         return jsonify(ticket);
     else:
         raise Exception("Could not handle input of type " + request.headers['Content-Type'])
+
 
 @app.route('/handovers/<string:handover_token>', methods=['GET'])
 def handover_result(handover_token):
@@ -156,45 +162,52 @@ def handover_result(handover_token):
     try:
         res = requests.get('http://' + es_host + ':' + es_port)
     except Exception:
-      raise ValueError("Can't connect to Elasticsearch on " + es_host + ":" + es_port)
+        raise ValueError("Can't connect to Elasticsearch on " + es_host + ":" + es_port)
     try:
         logger.info("Retrieving handover data with token " + str(handover_token))
-        es = Elasticsearch([{'host': es_host , 'port': es_port}])
-        handover_detail=[]
-        res_error=es.search(index="reports",body={"query":{"bool":{"must":[{"term":{"params.handover_token.keyword":str(handover_token)}},{"term":{"report_type.keyword":"ERROR"}}],"must_not":[],"should":[]}},"from":0,"size":1,"sort":[{"report_time":{"order": "desc"}}],"aggs":{}})
+        es = Elasticsearch([{'host': es_host, 'port': es_port}])
+        handover_detail = []
+        res_error = es.search(index="reports", body={"query": {"bool": {
+            "must": [{"term": {"params.handover_token.keyword": str(handover_token)}},
+                     {"term": {"report_type.keyword": "ERROR"}}], "must_not": [], "should": []}}, "from": 0, "size": 1,
+            "sort": [{"report_time": {"order": "desc"}}], "aggs": {}})
         if len(res_error['hits']['hits']) != 0:
             for doc in res_error['hits']['hits']:
-                result={"id":doc['_id']}
-                result['message']=doc['_source']['message']
-                result['comment']=doc['_source']['params']['comment']
-                result['handover_token']=doc['_source']['params']['handover_token']
-                result['contact']=doc['_source']['params']['contact']
-                result['src_uri']=doc['_source']['params']['src_uri']
-                result['tgt_uri']=doc['_source']['params']['tgt_uri']
-                result['report_time']=doc['_source']['report_time']
-                result['type']=doc['_source']['params']['type']
+                result = {"id": doc['_id']}
+                result['message'] = doc['_source']['message']
+                result['comment'] = doc['_source']['params']['comment']
+                result['handover_token'] = doc['_source']['params']['handover_token']
+                result['contact'] = doc['_source']['params']['contact']
+                result['src_uri'] = doc['_source']['params']['src_uri']
+                result['tgt_uri'] = doc['_source']['params']['tgt_uri']
+                result['report_time'] = doc['_source']['report_time']
+                result['type'] = doc['_source']['params']['type']
                 handover_detail.append(result)
         else:
-                res=es.search(index="reports",body={"query":{"bool":{"must":[{"term":{"params.handover_token.keyword":str(handover_token)}},{"term":{"report_type.keyword":"INFO"}}],"must_not":[],"should":[]}},"from":0,"size":1,"sort":[{"report_time":{"order": "desc"}}],"aggs":{}})
-                for doc in res['hits']['hits']:
-                    result={"id":doc['_id']}
-                    result['message']=doc['_source']['message']
-                    result['comment']=doc['_source']['params']['comment']
-                    result['handover_token']=doc['_source']['params']['handover_token']
-                    result['contact']=doc['_source']['params']['contact']
-                    result['src_uri']=doc['_source']['params']['src_uri']
-                    result['tgt_uri']=doc['_source']['params']['tgt_uri']
-                    result['progress_complete']=doc['_source']['params']['progress_complete']
-                    result['progress_total']=doc['_source']['params']['progress_total']
-                    result['report_time']=doc['_source']['report_time']
-                    result['type']=doc['_source']['params']['type']
-                    handover_detail.append(result)
+            res = es.search(index="reports", body={"query": {"bool": {
+                "must": [{"term": {"params.handover_token.keyword": str(handover_token)}},
+                         {"term": {"report_type.keyword": "INFO"}}], "must_not": [], "should": []}}, "from": 0,
+                "size": 1, "sort": [{"report_time": {"order": "desc"}}], "aggs": {}})
+            for doc in res['hits']['hits']:
+                result = {"id": doc['_id']}
+                result['message'] = doc['_source']['message']
+                result['comment'] = doc['_source']['params']['comment']
+                result['handover_token'] = doc['_source']['params']['handover_token']
+                result['contact'] = doc['_source']['params']['contact']
+                result['src_uri'] = doc['_source']['params']['src_uri']
+                result['tgt_uri'] = doc['_source']['params']['tgt_uri']
+                result['progress_complete'] = doc['_source']['params']['progress_complete']
+                result['progress_total'] = doc['_source']['params']['progress_total']
+                result['report_time'] = doc['_source']['report_time']
+                result['type'] = doc['_source']['params']['type']
+                handover_detail.append(result)
     except Exception:
         raise ValueError("Issue retrieving information for Handover token: " + str(handover_token))
     if len(handover_detail) == 0:
         raise ValueError("Handover token " + str(handover_token) + " not found")
     else:
         return jsonify(handover_detail)
+
 
 @app.route('/handovers/', methods=['GET'])
 def handover_results():
@@ -234,34 +247,44 @@ def handover_results():
     try:
         res = requests.get('http://' + es_host + ':' + es_port)
     except Exception:
-      raise ValueError("Can't connect to Elasticsearch on " + es_host + ":" + es_port)
-    try:    
+        raise ValueError("Can't connect to Elasticsearch on " + es_host + ":" + es_port)
+    try:
         logger.info("Retrieving all handover report")
         es = Elasticsearch([{'host': es_host, 'port': es_port}])
-        res = es.search(index="reports",body={"query": {"bool": {"must": [{"query_string" : {"fields": ["message"],"query" : "Handling*","analyze_wildcard": "true"}}]}},"size":1000,"sort":[{"report_time":{"order": "desc"}}]})
-        list_handovers=[]
+        res = es.search(index="reports", body={"query": {"bool": {
+            "must": [{"query_string": {"fields": ["message"], "query": "Handling*", "analyze_wildcard": "true"}}]}},
+            "size": 1000, "sort": [{"report_time": {"order": "desc"}}]})
+        list_handovers = []
         for doc in res['hits']['hits']:
-            result={"id":doc['_id']}
-            result['message']=doc['_source']['message']
-            result['comment']=doc['_source']['params']['comment']
-            result['handover_token']=doc['_source']['params']['handover_token']
-            res_error=es.search(index="reports",body={"query":{"bool":{"must":[{"term":{"params.handover_token.keyword":str(doc['_source']['params']['handover_token'])}},{"term":{"report_type.keyword":"ERROR"}}],"must_not":[],"should":[]}},"from":0,"size":1,"sort":[{"report_time":{"order": "desc"}}],"aggs":{}})
+            result = {"id": doc['_id']}
+            result['message'] = doc['_source']['message']
+            result['comment'] = doc['_source']['params']['comment']
+            result['handover_token'] = doc['_source']['params']['handover_token']
+            res_error = es.search(index="reports", body={"query": {"bool": {
+                "must": [{"term": {"params.handover_token.keyword": str(doc['_source']['params']['handover_token'])}},
+                         {"term": {"report_type.keyword": "ERROR"}}], "must_not": [], "should": []}}, "from": 0,
+                "size": 1, "sort": [{"report_time": {"order": "desc"}}],
+                "aggs": {}})
             if len(res_error['hits']['hits']) != 0:
-                  for doc_error in res_error['hits']['hits']:
-                     result['current_message'] = doc_error['_source']['message']
+                for doc_error in res_error['hits']['hits']:
+                    result['current_message'] = doc_error['_source']['message']
             else:
-                res2=es.search(index="reports",body={"query":{"bool":{"must":[{"term":{"params.handover_token.keyword":str(doc['_source']['params']['handover_token'])}},{"term":{"report_type.keyword":"INFO"}}],"must_not":[],"should":[]}},"from":0,"size":1,"sort":[{"report_time":{"order": "desc"}}],"aggs":{}})
+                res2 = es.search(index="reports", body={"query": {"bool": {"must": [
+                    {"term": {"params.handover_token.keyword": str(doc['_source']['params']['handover_token'])}},
+                    {"term": {"report_type.keyword": "INFO"}}], "must_not": [], "should": []}}, "from": 0, "size": 1,
+                    "sort": [{"report_time": {"order": "desc"}}], "aggs": {}})
                 for doc2 in res2['hits']['hits']:
                     result['current_message'] = doc2['_source']['message']
-            result['contact']=doc['_source']['params']['contact']
-            result['src_uri']=doc['_source']['params']['src_uri']
-            result['tgt_uri']=doc['_source']['params']['tgt_uri']
-            result['report_time']=doc['_source']['report_time']
-            result['type']=doc['_source']['params']['type']
+            result['contact'] = doc['_source']['params']['contact']
+            result['src_uri'] = doc['_source']['params']['src_uri']
+            result['tgt_uri'] = doc['_source']['params']['tgt_uri']
+            result['report_time'] = doc['_source']['report_time']
+            result['type'] = doc['_source']['params']['type']
             list_handovers.append(result)
         return jsonify(list_handovers)
     except Exception:
-         raise ValueError("Can't load handover list")
+        raise ValueError("Can't load handover list")
+
 
 @app.route('/handovers/<string:handover_token>', methods=['DELETE'])
 def delete_handover(handover_token):
@@ -318,14 +341,16 @@ def delete_handover(handover_token):
     try:
         res = requests.get('http://' + es_host + ':' + es_port)
     except Exception:
-      raise ValueError("Can't connect to Elasticsearch on " + es_host + ":" + es_port)
+        raise ValueError("Can't connect to Elasticsearch on " + es_host + ":" + es_port)
     try:
         logger.info("Retrieving handover data with token " + str(handover_token))
         es = Elasticsearch([{'host': es_host, 'port': es_port}])
-        es.delete_by_query(index='reports', doc_type='report', body={"query":{"bool":{"must":[{"term":{"params.handover_token.keyword":str(handover_token)}}]}}})
+        es.delete_by_query(index='reports', doc_type='report', body={
+            "query": {"bool": {"must": [{"term": {"params.handover_token.keyword": str(handover_token)}}]}}})
         return jsonify(str(handover_token))
     except Exception:
         raise ValueError("Handover token " + str(handover_token) + " not found")
+
 
 @app.errorhandler(Exception)
 def handle_error(e):

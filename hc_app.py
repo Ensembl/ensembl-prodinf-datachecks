@@ -1,17 +1,17 @@
 #!/usr/bin/env python
-from flask import Flask, request, jsonify
-from flask_cors import CORS
+import json
 import logging
 import re
-import json
 
+from flasgger import Swagger
+from flask import Flask, request, jsonify
+from flask_cors import CORS
+
+import app_logging
 from ensembl_prodinf import HiveInstance
 from ensembl_prodinf.email_tasks import email_when_complete
-from flasgger import Swagger
 
-
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-logger=logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 app = Flask(__name__, instance_relative_config=True)
 app.config['SWAGGER'] = {
@@ -21,43 +21,58 @@ app.config['SWAGGER'] = {
 app.config.from_object('hc_config')
 app.config.from_pyfile('hc_config.py', silent=True)
 app.analysis = app.config["HIVE_ANALYSIS"]
-print app.config
+
+app.logger.addHandler(app_logging.file_handler(__name__))
+app.logger.addHandler(app_logging.default_handler())
+
+logger.info(app.config)
 swagger = Swagger(app)
 
 hive = None
+
+
 def get_hive():
     global hive
-    if hive == None:
+    if hive is None:
         hive = HiveInstance(app.config["HIVE_URI"])
     return hive
 
+
 app.hc_list = None
 
+
 def get_hc_list():
-    if app.hc_list == None:
+    if app.hc_list is None:
         with open(app.config["HC_LIST_FILE"], 'r') as f:
             app.hc_list = json.loads(f.read())
     return app.hc_list
 
+
 app.hc_groups = None
 
+
 def get_hc_groups():
-    if app.hc_groups == None:
+    if app.hc_groups is None:
         with open(app.config["HC_GROUPS_FILE"], 'r') as f:
             app.hc_groups = json.loads(f.read())
     return app.hc_groups
+
 
 cors = CORS(app)
 
 # use re to support different charsets
 json_pattern = re.compile("application/json")
+
+
 @app.route('/', methods=['GET'])
 def info():
     return jsonify(app.config['SWAGGER'])
 
+
 @app.route('/ping', methods=['GET'])
 def ping():
-    return jsonify({"status":"ok"})
+    return jsonify({"status": "ok"})
+
 
 @app.route('/jobs', methods=['POST'])
 def submit_job():
@@ -144,16 +159,18 @@ def submit_job():
     if json_pattern.match(request.headers['Content-Type']):
         logger.debug("Submitting HC " + str(request.json))
         job = get_hive().create_job(app.analysis, request.json)
-        results = {"job_id":job.job_id};
+        results = {"job_id": job.job_id};
         email = request.json.get('email')
         if email != None and email != '':
             logger.debug("Submitting email request for  " + email)
-            email_results = email_when_complete.delay(request.url_root + "jobs/" + str(job.job_id) + "?format=email", email)
+            email_results = email_when_complete.delay(request.url_root + "jobs/" + str(job.job_id) + "?format=email",
+                                                      email)
             results['email_task'] = email_results.id
         return jsonify(results);
     else:
         logger.error("Could not handle input of type " + request.headers['Content-Type'])
         raise ValueError("Could not handle input of type " + request.headers['Content-Type'])
+
 
 @app.route('/jobs/<int:job_id>', methods=['GET'])
 def job_result(job_id):
@@ -236,17 +253,18 @@ def job_result(job_id):
           status: complete
     """
     fmt = request.args.get('format')
-    logger.debug("Format "+str(fmt))
+    logger.debug("Format " + str(fmt))
     if fmt == 'email':
         email = request.args.get('email')
         return job_email(email, job_id)
     elif fmt == 'failures':
         return job_failures(job_id)
-    elif fmt == None:
+    elif fmt is None:
         logger.info("Retrieving job with ID " + str(job_id))
         return jsonify(get_hive().get_result_for_job_id(job_id))
     else:
-        raise Exception("Format "+fmt+" not valid")
+        raise Exception("Format " + fmt + " not valid")
+
 
 def job_email(email, job_id):
     logger.info("Retrieving job with ID " + str(job_id) + " for " + str(email))
@@ -254,7 +272,7 @@ def job_email(email, job_id):
     results = get_hive().get_result_for_job_id(job_id)
     if results['status'] == 'complete':
         results['subject'] = 'Healthchecks for %s - %s' % (results['output']['db_name'], results['output']['status'])
-        results['body'] = 'Please see URL for more details: %s%s\n\n' % (results['input']['result_url'],job_id)
+        results['body'] = 'Please see URL for more details: %s%s\n\n' % (results['input']['result_url'], job_id)
         results['body'] += "Results for %s:\n" % (results['output']['db_uri'])
         for (test, result) in results['output']['results'].iteritems():
             results['body'] += "* %s : %s\n" % (test, result['status'])
@@ -262,19 +280,21 @@ def job_email(email, job_id):
                 for msg in result['messages']:
                     results['body'] += "** %s\n" % (msg)
     elif results['status'] == 'failed':
-        failures=get_hive().get_jobs_failure_msg(job_id)
+        failures = get_hive().get_jobs_failure_msg(job_id)
         results['subject'] = 'Healthcheck job failed'
-        results['body'] = 'Please see URL for more details: %s%s\n\n' % (results['input']['result_url'],job_id)
+        results['body'] = 'Please see URL for more details: %s%s\n\n' % (results['input']['result_url'], job_id)
         results['body'] += 'Healthcheck job failed with following message:\n'
-        for (jobid,msg) in failures.iteritems():
+        for (jobid, msg) in failures.iteritems():
             results['body'] += "* Job ID %s : %s\n" % (jobid, msg)
     results['output'] = None
     return jsonify(results)
 
+
 def job_failures(job_id):
     logger.info("Retrieving failure for job with ID " + str(job_id))
     return jsonify(get_hive().get_jobs_failure_msg(job_id))
-    
+
+
 @app.route('/jobs/<int:job_id>', methods=['DELETE'])
 def delete_job(job_id):
     """
@@ -330,7 +350,8 @@ def delete_job(job_id):
     hive = get_hive()
     job = get_hive().get_job_by_id(job_id)
     hive.delete_job(job)
-    return jsonify({"id":job_id})
+    return jsonify({"id": job_id})
+
 
 @app.route('/jobs', methods=['GET'])
 def jobs():
@@ -418,6 +439,7 @@ def jobs():
     logger.info("Retrieving jobs")
     return jsonify(get_hive().get_all_results(app.analysis))
 
+
 @app.route('/healthchecks/tests', methods=['GET'])
 def list_healthchecks_tests_endpoint():
     """
@@ -471,10 +493,10 @@ def list_healthchecks_tests_endpoint():
           ["org.ensembl.healthcheck.testcase.eg_core.MultiDbCompareNames"]
     """
     query = request.args.get('query')
-    if query == None:
+    if query is None:
         return jsonify(get_hc_list())
     logger.debug("Finding healthchecks tests matching " + query)
-    hc_list = filter(lambda x:str(query).lower() in x.lower(), get_hc_list())
+    hc_list = filter(lambda x: str(query).lower() in x.lower(), get_hc_list())
     return jsonify(hc_list)
 
 
@@ -531,15 +553,17 @@ def list_healthchecks_groups_endpoint():
           ["org.ensembl.healthcheck.testcase.eg_core.MultiDbCompareNames"]
     """
     query = request.args.get('query')
-    if query == None:
+    if query is None:
         return jsonify(get_hc_groups())
     logger.debug("Finding healthchecks groups matching " + query)
-    hc_groups = filter(lambda x:str(query).lower() in x.lower(), get_hc_groups())
+    hc_groups = filter(lambda x: str(query).lower() in x.lower(), get_hc_groups())
     return jsonify(hc_groups)
+
 
 @app.route('/healthchecks', methods=['GET'])
 def healthchecks_endpoint():
-    return jsonify({"tests":request.url + "/tests","groups":request.url + "/groups"})
+    return jsonify({"tests": request.url + "/tests", "groups": request.url + "/groups"})
+
 
 @app.errorhandler(Exception)
 def handle_error(e):
@@ -548,6 +572,7 @@ def handle_error(e):
         code = 400
     logger.exception(str(e))
     return jsonify(error=str(e)), code
+
 
 if __name__ == "__main__":
     app.run(debug=True)
