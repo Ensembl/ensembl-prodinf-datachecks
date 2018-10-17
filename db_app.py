@@ -1,20 +1,22 @@
 #!/usr/bin/env python
-from flask import Flask, request, jsonify
-from flask_cors import CORS
-from ensembl_prodinf.db_utils import list_databases, get_database_sizes
-from ensembl_prodinf.server_utils import get_status, get_load
-from ensembl_prodinf import HiveInstance
-from ensembl_prodinf.email_tasks import email_when_complete
-from flasgger import Swagger
+import json
 import logging
-import re
 import os
+import re
+
 import signal
 import time
-import json
+from flasgger import Swagger
+from flask import Flask, request, jsonify
+from flask_cors import CORS
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-logger=logging.getLogger(__name__)
+import app_logging
+from ensembl_prodinf import HiveInstance
+from ensembl_prodinf.db_utils import list_databases, get_database_sizes
+from ensembl_prodinf.email_tasks import email_when_complete
+from ensembl_prodinf.server_utils import get_status, get_load
+
+logger = logging.getLogger(__name__)
 
 app = Flask(__name__, instance_relative_config=True)
 app.config.from_object('db_config')
@@ -27,19 +29,23 @@ app.config['SWAGGER'] = {
 print app.config
 swagger = Swagger(app)
 app.servers = None
+app.logger.addHandler(app_logging.file_handler(__name__))
+app.logger.addHandler(app_logging.default_handler())
+
 
 def get_servers():
-    if app.servers == None:
+    if app.servers is None:
         with open(app.config["SERVER_URIS_FILE"], 'r') as f:
             app.servers = json.loads(f.read())
     return app.servers
+
 
 hive = None
 
 
 def get_hive():
     global hive
-    if hive == None:
+    if hive is None:
         hive = HiveInstance(app.config["HIVE_URI"])
     return hive
 
@@ -57,13 +63,16 @@ cors = CORS(app)
 # use re to support different charsets
 json_pattern = re.compile("application/json")
 
+
 @app.route('/', methods=['GET'])
 def info():
     return jsonify(app.config['SWAGGER'])
 
+
 @app.route('/ping', methods=['GET'])
 def ping():
-    return jsonify({"status":"ok"})
+    return jsonify({"status": "ok"})
+
 
 @app.route('/databases', methods=['GET'])
 def list_databases_endpoint():
@@ -134,6 +143,7 @@ def list_databases_endpoint():
     query = request.args.get('query')
     logger.debug("Finding dbs matching " + query + " on " + db_uri)
     return jsonify(list_databases(db_uri, query))
+
 
 @app.route('/databases/sizes', methods=['GET'])
 def database_sizes_endpoint():
@@ -216,10 +226,11 @@ def database_sizes_endpoint():
     db_uri = request.args.get('db_uri')
     query = request.args.get('query')
     dir_name = request.args.get('dir_name')
-    if(dir_name == None):
+    if (dir_name is None):
         dir_name = '/instances'
     logger.debug("Finding sizes of dbs matching " + str(query) + " on " + db_uri)
     return jsonify(get_database_sizes(db_uri, query, dir_name))
+
 
 @app.route('/hosts/<host>', methods=['GET'])
 def get_status_endpoint(host):
@@ -287,10 +298,11 @@ def get_status_endpoint(host):
           n_cpus: 16
     """
     dir_name = request.args.get('dir_name')
-    if(dir_name == None):
+    if (dir_name is None):
         dir_name = '/instances'
     logger.debug("Finding status of " + host + " (dir " + dir_name + ")")
     return jsonify(get_status(host=host, dir_name=dir_name))
+
 
 @app.route('/hosts/<host>/load', methods=['GET'])
 def get_load_endpoint(host):
@@ -416,12 +428,12 @@ def list_servers_endpoint(user):
           ["mysql://user@server:port/"]
     """
     query = request.args.get('query')
-    if query == None:
+    if query is None:
         raise ValueError("Query not specified")
     if user in get_servers():
         logger.debug("Finding servers matching " + query + " for " + user)
         user_urls = get_servers()[user] or []
-        urls = filter(lambda x:query in x, user_urls)
+        urls = filter(lambda x: query in x, user_urls)
         return jsonify(urls)
     else:
         raise ValueError("User " + user + " not found")
@@ -497,11 +509,12 @@ def submit():
     if json_pattern.match(request.headers['Content-Type']):
         logger.debug("Submitting Database copy " + str(request.json))
         job = get_hive().create_job(app.analysis, request.json)
-        results = {"job_id":job.job_id};
+        results = {"job_id": job.job_id};
         email = request.json.get('email')
         if email != None and email != '':
             logger.debug("Submitting email request for  " + email)
-            email_results = email_when_complete.delay(request.url_root + "jobs/" + str(job.job_id) + "?format=email", email)
+            email_results = email_when_complete.delay(request.url_root + "jobs/" + str(job.job_id) + "?format=email",
+                                                      email)
             results['email_task'] = email_results.id
         return jsonify(results);
     else:
@@ -580,31 +593,36 @@ def jobs(job_id):
         return job_email(request.args.get('email'), job_id)
     elif fmt == 'failures':
         return failure(job_id)
-    elif fmt == None:
+    elif fmt is None:
         logger.info("Retrieving job with ID " + str(job_id))
         return jsonify(get_hive().get_result_for_job_id(job_id))
-    else:    
-        raise ValueError("Format "+str(fmt)+" not known")
+    else:
+        raise ValueError("Format " + str(fmt) + " not known")
+
 
 def failure(job_id):
     logger.info("Retrieving failure for job with ID " + str(job_id))
     failure = get_hive().get_job_failure_msg_by_id(job_id)
-    return jsonify({"msg":failure.msg})
+    return jsonify({"msg": failure.msg})
+
 
 def job_email(email, job_id):
     logger.info("Retrieving job with ID " + str(job_id) + " for " + str(email))
     job = get_hive().get_job_by_id(job_id)
     results = get_hive().get_result_for_job_id(job_id)
     if results['status'] == 'complete':
-        results['subject'] = 'Copy database from %s to %s successful' % (results['output']['source_db_uri'], results['output']['target_db_uri'])
-        results['body'] = 'Copy from %s to %s is successful\n' % (results['output']['source_db_uri'], results['output']['target_db_uri'])
+        results['subject'] = 'Copy database from %s to %s successful' % (
+        results['output']['source_db_uri'], results['output']['target_db_uri'])
+        results['body'] = 'Copy from %s to %s is successful\n' % (
+        results['output']['source_db_uri'], results['output']['target_db_uri'])
         results['body'] += 'Copy took %s' % (results['output']['runtime'])
     elif results['status'] == 'failed':
         failure = get_hive().get_job_failure_msg_by_id(job_id)
-        results['subject'] = 'Copy database from %s to %s failed' % (results['input']['source_db_uri'], results['input']['target_db_uri'])
+        results['subject'] = 'Copy database from %s to %s failed' % (
+        results['input']['source_db_uri'], results['input']['target_db_uri'])
         results['body'] = 'Copy failed with following message:\n'
         results['body'] += '%s\n\n' % (failure.msg)
-        results['body'] += 'Please see URL for more details: %s%s \n' % (results['input']['result_url'],job_id)
+        results['body'] += 'Please see URL for more details: %s%s \n' % (results['input']['result_url'], job_id)
     results['output'] = None
     return jsonify(results)
 
@@ -670,7 +688,8 @@ def delete(job_id):
         kill_job(job_id)
     job = get_hive().get_job_by_id(job_id)
     hive.delete_job(job)
-    return jsonify({"id":job_id})
+    return jsonify({"id": job_id})
+
 
 def kill_job(job_id):
     job = get_hive().get_job_by_id(job_id)
@@ -686,8 +705,7 @@ def kill_job(job_id):
         logger.error("Wasn't able to kill the process: " + str(process_id.process_id))
         raise ValueError("Wasn't able to kill the process: " + str(process_id.process_id))
     else:
-        return jsonify({"process_id":process_id.process_id})
-
+        return jsonify({"process_id": process_id.process_id})
 
 
 @app.route('/jobs', methods=['GET'])
@@ -756,6 +774,7 @@ def list_jobs():
     logger.info("Retrieving jobs")
     return jsonify(get_hive().get_all_results(app.analysis))
 
+
 @app.errorhandler(Exception)
 def handle_error(e):
     code = 500
@@ -763,6 +782,7 @@ def handle_error(e):
         code = 400
     logger.exception(str(e))
     return jsonify(error=str(e)), code
+
 
 if __name__ == "__main__":
     app.run(debug=True)

@@ -1,100 +1,102 @@
 #!/usr/bin/env python
 import logging
 import re
+from _mysql import IntegrityError
 
 from flasgger import Swagger
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 
+import app_logging
 from ensembl_prodinf.resource_lock import ResourceLocker, LockException
-from _mysql import IntegrityError
-
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 app = Flask(__name__, instance_relative_config=True)
 app.config['SWAGGER'] = {
     'title': 'Production resource lock REST endpoints',
     'uiversion': 2,
-    'definitions':{
-        'ResourceUri':{
-            'type':'string',
-            'example':'ProteinFeaturePipeline'
+    'definitions': {
+        'ResourceUri': {
+            'type': 'string',
+            'example': 'ProteinFeaturePipeline'
         },
-        'ClientName':{
-            'type':'string',
-            'example':'mysql://server:3306/mydb'
+        'ClientName': {
+            'type': 'string',
+            'example': 'mysql://server:3306/mydb'
         },
-        'Resource':{
-          'required':['resource_id', 'uri'],
-          'properties': {
-            'resource_id':{
-              'type': 'integer',
-              'example': 88
-               },
-            'uri':{
-                '$ref': '#/definitions/ResourceUri'
+        'Resource': {
+            'required': ['resource_id', 'uri'],
+            'properties': {
+                'resource_id': {
+                    'type': 'integer',
+                    'example': 88
+                },
+                'uri': {
+                    '$ref': '#/definitions/ResourceUri'
+                }
             }
-            }            
         },
-        'Client':{
-          'required':['client_id', 'name'],
-          'properties': {
-              'client_id':{
-                  'type': 'integer',
-                  'example': 69 
-                  },
-              'name':{
-                '$ref': '#/definitions/ClientName'
-              }
-            }            
-        },
-        'LockType':{
-            'type':'string',
-            'enum':['read', 'write'],
-            'example':'read'
-        },
-        'LockRequest':{
-            'required':['resource_uri', 'client_name', 'lock_type'],
-            'properties':{
-           'resource_uri':{
-                               '$ref': '#/definitions/ResourceUri'
-            },
-           'client_name':{
-                               '$ref': '#/definitions/ClientName'
-            },
-           'lock_type':{
-                               '$ref': '#/definitions/LockType'
+        'Client': {
+            'required': ['client_id', 'name'],
+            'properties': {
+                'client_id': {
+                    'type': 'integer',
+                    'example': 69
+                },
+                'name': {
+                    '$ref': '#/definitions/ClientName'
+                }
             }
-         }
-         },
-        'Lock':{
-          'required':['resource_lock_id', 'lock_type', 'created', 'client', 'resource'],
-          'properties': {
-            'resource_lock_id':{
-                'type': 'integer',
-                'example': 22 
-            },
-            'lock_type':{
-                '$ref': '#/definitions/LockType'
-            },
-            'created':{
-                'type':'date',
-                'example':'Tue, 17 Apr 2018 13:39:57 GMT'
-            },
-            'client':{
-                '$ref': '#/definitions/Client'
-            },
-            'resource':{
-                '$ref': '#/definitions/Resource'
-            }            
-          }
+        },
+        'LockType': {
+            'type': 'string',
+            'enum': ['read', 'write'],
+            'example': 'read'
+        },
+        'LockRequest': {
+            'required': ['resource_uri', 'client_name', 'lock_type'],
+            'properties': {
+                'resource_uri': {
+                    '$ref': '#/definitions/ResourceUri'
+                },
+                'client_name': {
+                    '$ref': '#/definitions/ClientName'
+                },
+                'lock_type': {
+                    '$ref': '#/definitions/LockType'
+                }
+            }
+        },
+        'Lock': {
+            'required': ['resource_lock_id', 'lock_type', 'created', 'client', 'resource'],
+            'properties': {
+                'resource_lock_id': {
+                    'type': 'integer',
+                    'example': 22
+                },
+                'lock_type': {
+                    '$ref': '#/definitions/LockType'
+                },
+                'created': {
+                    'type': 'date',
+                    'example': 'Tue, 17 Apr 2018 13:39:57 GMT'
+                },
+                'client': {
+                    '$ref': '#/definitions/Client'
+                },
+                'resource': {
+                    '$ref': '#/definitions/Resource'
+                }
+            }
         }
     }
 }
 
 app.config.from_object('lock_config')
 app.config.from_pyfile('lock_config.py', silent=True)
-if app.config.get("LOCK_URI") == None:
+app.logger.addHandler(app_logging.file_handler(__name__))
+app.logger.addHandler(app_logging.default_handler())
+
+if app.config.get("LOCK_URI") is None:
     raise ValueError("LOCK_URI not set in configuration")
 
 swagger = Swagger(app)
@@ -105,7 +107,7 @@ locker = None
 def get_locker():
     """Lazily load the locker object"""
     global locker
-    if locker == None:
+    if locker is None:
         locker = ResourceLocker(app.config["LOCK_URI"])
     return locker
 
@@ -144,7 +146,8 @@ def info():
                    type: string
                    example: Production resource lock REST endpoints 
     """
-    return jsonify({"title":app.config['SWAGGER']['title']})
+    return jsonify({"title": app.config['SWAGGER']['title']})
+
 
 @app.route('/ping', methods=['GET'])
 def ping():
@@ -166,7 +169,7 @@ def ping():
                    type: string
                    example: ok 
     """
-    return jsonify({"status":"ok"})
+    return jsonify({"status": "ok"})
 
 
 @app.route('/locks', methods=['POST'])
@@ -218,12 +221,13 @@ def lock():
     if json_pattern.match(request.headers['Content-Type']):
         logging.debug("Requesting lock " + str(request.json))
         try:
-            return jsonify_obj(get_locker().lock(request.json['client_name'], request.json['resource_uri'], request.json['lock_type']))
+            return jsonify_obj(
+                get_locker().lock(request.json['client_name'], request.json['resource_uri'], request.json['lock_type']))
         except ValueError as e:
             return "Bad lock request: " + str(e), 400
         except LockException as e:
             return "Could not obtain lock: " + str(e), 415
-            
+
     else:
         return "Could not handle input of type " + request.headers['Content-Type'], 415
 
@@ -259,8 +263,8 @@ def get_lock(lock_id):
     try:
         logging.info("Retrieving lock with ID " + str(lock_id))
         lock = get_locker().get_lock(lock_id)
-        if lock == None:
-            return "Lock " + str(lock_id) + " not found", 404            
+        if lock is None:
+            return "Lock " + str(lock_id) + " not found", 404
         else:
             return jsonify_obj(lock)
     except ValueError:
@@ -296,7 +300,7 @@ def unlock(lock_id):
     """
     try:
         get_locker().unlock(lock_id)
-        return jsonify({"id":lock_id})
+        return jsonify({"id": lock_id})
     except ValueError:
         return "Lock " + str(lock_id) + " not found", 404
 
@@ -330,7 +334,9 @@ def get_locks():
           items:
             $ref: '#/definitions/Lock'
     """
-    return jsonify_obj(get_locker().get_locks(client_name=request.args.get('client_name'), resource_uri=request.args.get('resource_uri'), lock_type=request.args.get('lock_type')))
+    return jsonify_obj(get_locker().get_locks(client_name=request.args.get('client_name'),
+                                              resource_uri=request.args.get('resource_uri'),
+                                              lock_type=request.args.get('lock_type')))
 
 
 @app.route('/clients', methods=['POST'])
@@ -388,12 +394,12 @@ def delete_client(client_id):
     """
     try:
         get_locker().delete_client(client_id)
-        return jsonify({"id":client_id})    
+        return jsonify({"id": client_id})
     except IntegrityError:
         return "Client " + str(client_id) + " has active locks", 400
     except ValueError:
         return "Client " + str(client_id) + " not found", 404
-        
+
 
 @app.route('/clients', methods=['GET'])
 def get_clients():
@@ -444,7 +450,7 @@ def get_client(client_id):
             - Client 1 not found
     """
     client = get_locker().get_client_by_id(client_id)
-    if client == None:
+    if client is None:
         return "Client " + str(client_id) + " not found", 404
     else:
         return jsonify_obj(client)
@@ -474,7 +480,7 @@ def resource():
     logging.debug("Creating resource " + str(request.args.get('resource_uri')))
     return jsonify_obj(get_locker().get_resource(request.args.get('resource_uri')))
 
-    
+
 @app.route('/resources/<int:resource_id>', methods=['DELETE'])
 def delete_resource(resource_id):
     """
@@ -501,7 +507,7 @@ def delete_resource(resource_id):
                    example: 1
     """
     get_locker().delete_resource(resource_id)
-    return jsonify_obj({"id":resource_id})
+    return jsonify_obj({"id": resource_id})
 
 
 @app.route('/resources', methods=['GET'])
@@ -553,7 +559,7 @@ def get_resource(resource_id):
             - Resource 1 not found
     """
     resource = get_locker().get_resource_by_id(resource_id)
-    if resource == None:
+    if resource is None:
         return "Resource " + str(resource_id) + " not found", 404
     else:
         return jsonify_obj(resource)
