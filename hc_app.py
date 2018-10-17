@@ -7,6 +7,7 @@ from flasgger import Swagger
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 
+
 import app_logging
 from ensembl_prodinf import HiveInstance
 from ensembl_prodinf.email_tasks import email_when_complete
@@ -161,12 +162,12 @@ def submit_job():
         job = get_hive().create_job(app.analysis, request.json)
         results = {"job_id": job.job_id};
         email = request.json.get('email')
-        if email != None and email != '':
+        if email is not None and email != '':
             logger.debug("Submitting email request for  " + email)
             email_results = email_when_complete.delay(request.url_root + "jobs/" + str(job.job_id) + "?format=email",
                                                       email)
             results['email_task'] = email_results.id
-        return jsonify(results);
+        return jsonify(results), 201
     else:
         logger.error("Could not handle input of type " + request.headers['Content-Type'])
         raise ValueError("Could not handle input of type " + request.headers['Content-Type'])
