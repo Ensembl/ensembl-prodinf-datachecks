@@ -1,23 +1,25 @@
 #!/usr/bin/env python
+import logging
+import os
+import re
+
+from flasgger import Swagger
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+
+import app_logging
 from ensembl_prodinf import HiveInstance
 from ensembl_prodinf.email_tasks import email_when_complete
-from flasgger import Swagger
-import logging
-import re
-import os
-import signal
-import time
-import json
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-logger=logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 app = Flask(__name__, instance_relative_config=True)
 app.config.from_object('metadata_config')
 app.config.from_pyfile('metadata_config.py', silent=True)
 app.analysis = app.config["HIVE_ANALYSIS"]
+app.logger.addHandler(app_logging.file_handler(__name__))
+app.logger.addHandler(app_logging.default_handler())
+
 app.config['SWAGGER'] = {
     'title': 'Metadata updater REST endpoints',
     'uiversion': 2
@@ -30,7 +32,7 @@ hive = None
 
 def get_hive():
     global hive
-    if hive == None:
+    if hive is None:
         hive = HiveInstance(app.config["HIVE_URI"])
     return hive
 
@@ -47,6 +49,7 @@ cors = CORS(app)
 
 # use re to support different charsets
 json_pattern = re.compile("application/json")
+
 
 @app.route('/jobs', methods=['POST'])
 def submit_job():
@@ -129,15 +132,16 @@ def submit_job():
           {metadata_uri : "mysql://user:pass@mysql-ens-general-dev-1:4484/ensembl_metadata_new_test", database_uri : "mysql://ensro@mysql-ensembl-mirror:4240/octodon_degus_otherfeatures_91_1", update_type : "new_assembly", source : "Handover", comment : "handover new Leopard database", email : "joe.bloggs@ebi.ac.uk"}
     """
     if json_pattern.match(request.headers['Content-Type']):
-        request.json["metadata_uri"]=app.config["METADATA_URI"]
+        request.json["metadata_uri"] = app.config["METADATA_URI"]
         logger.debug("Submitting metadata job " + str(request.json))
         job = get_hive().create_job(app.analysis, request.json)
-        results = {"job_id":job.job_id};
+        results = {"job_id": job.job_id};
         email = request.json.get('email')
         email_notification = request.json.get('email_notification')
         if email != None and email != '' and email_notification != None:
             logger.debug("Submitting email request for  " + email)
-            email_results = email_when_complete.delay(request.url_root + "jobs/" + str(job.job_id) + "?format=email", email)
+            email_results = email_when_complete.delay(request.url_root + "jobs/" + str(job.job_id) + "?format=email",
+                                                      email)
             results['email_task'] = email_results.id
         return jsonify(results);
     else:
@@ -217,17 +221,18 @@ def job_result(job_id):
           status: complete
     """
     fmt = request.args.get('format')
-    logger.debug("Format "+str(fmt))
+    logger.debug("Format " + str(fmt))
     if fmt == 'email':
         email = request.args.get('email')
         return job_email(email, job_id)
     elif fmt == 'failures':
         return failure(job_id)
-    elif fmt == None:  
+    elif fmt is None:
         logger.info("Retrieving job with ID " + str(job_id))
         return jsonify(get_hive().get_result_for_job_id(job_id, child=True))
     else:
-        raise Exception("Format "+fmt+" not valid")
+        raise Exception("Format " + fmt + " not valid")
+
 
 def job_email(email, job_id):
     logger.info("Retrieving job with ID " + str(job_id) + " for " + str(email))
@@ -244,6 +249,7 @@ def job_email(email, job_id):
         results['body'] += '%s' % (failure.msg)
     results['output'] = None
     return jsonify(results)
+
 
 def failure(job_id):
     """
@@ -298,7 +304,8 @@ def failure(job_id):
     """
     logger.info("Retrieving failure for job with ID " + str(job_id))
     failure = get_hive().get_job_failure_msg_by_id(job_id, child=True)
-    return jsonify({"msg":failure.msg})
+    return jsonify({"msg": failure.msg})
+
 
 @app.route('/jobs/<int:job_id>', methods=['DELETE'])
 def delete_job(job_id):
@@ -355,7 +362,7 @@ def delete_job(job_id):
     hive = get_hive()
     job = get_hive().get_job_by_id(job_id)
     hive.delete_job(job, child=True)
-    return jsonify({"id":job_id})
+    return jsonify({"id": job_id})
 
 
 @app.route('/jobs', methods=['GET'])
@@ -421,6 +428,7 @@ def jobs():
     logger.info("Retrieving jobs")
     return jsonify(get_hive().get_all_results(app.analysis, child=True))
 
+
 @app.errorhandler(Exception)
 def handle_error(e):
     code = 500
@@ -428,6 +436,7 @@ def handle_error(e):
         code = 400
     logger.exception(str(e))
     return jsonify(error=str(e)), code
+
 
 if __name__ == "__main__":
     app.run(debug=True)
