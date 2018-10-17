@@ -1,6 +1,6 @@
 import logging
 
-from celery import Celery, exceptions as cel_exceptions
+from celery import Celery
 
 app = Celery('ensembl_prodinf',
              include=['ensembl_prodinf.email_tasks'])
@@ -10,7 +10,7 @@ try:
     import email_celery_app_config
 
     app.config_from_object('email_celery_app_config')
-except cel_exceptions.CeleryError:
+except:
     logging.warning('Celery email requires email_celery_app_config module')
 
 if __name__ == '__main__':
