@@ -37,6 +37,11 @@ db_copy_client = DbCopyClient(cfg.copy_uri)
 metadata_client = MetadataClient(cfg.meta_uri)
 event_client = EventClient(cfg.event_uri)
 
+db_types_list = [i for i in cfg.allowed_database_types.split(",")]
+species_pattern = re.compile("(.*[a-z])_(core|rnaseq|cdna|otherfeatures|variation|funcgen)_?[0-9]*?_([0-9]*)_([0-9]*)")
+compara_pattern = re.compile(".*[a-z]_(compara)_?([a-z]*)?_?([a-z]*)?_?[0-9]*?_[0-9].*")
+ancestral_pattern = re.compile("(.*[a-z])_(ancestral)_[0-9]*")
+
 def get_logger():    
     return reporting.get_logger(pool, cfg.report_exchange, 'handover', None, {})
                 
@@ -60,26 +65,32 @@ def handover_database(spec):
     reporting.set_logger_context(get_logger(), spec['src_uri'], spec)    
     # create unique identifier
     spec['handover_token'] = str(uuid.uuid1())
+    spec['progress_total']=3
     check_db(spec['src_uri'])
-    (groups,compara_uri,staging_uri,GRCh37) = groups_for_uri(spec['src_uri'])
+    src_url = make_url(spec['src_uri'])
+    #Scan database name and retrieve species or compara name, database type, release number and assembly version
+    (db_prefix, db_type, release, assembly) = parse_db_infos(src_url.database)
+    # Check if the given database can be handed over
+    if(db_type not in db_types_list):
+        get_logger().error("Handover failed, " + spec['src_uri'] + " has been handed over after deadline. Please contact the Production team")
+        raise ValueError(spec['src_uri'] + " has been handed over after the deadline. Please contact the Production team")
+    #Get database hc group and compara_uri
+    (groups,compara_uri) = hc_groups(db_type,db_prefix,spec['src_uri'])
+    #Check to which staging server the database need to be copied to
+    (spec,staging_uri) = check_staging_server(spec,db_type,db_prefix,assembly)
+    #setting compara url to default value for species databases. This value is only used by Compara healthchecks
     if (compara_uri == None):
         compara_uri=cfg.compara_uri + 'ensembl_compara_master'
     if 'tgt_uri' not in spec:
-        spec['tgt_uri'] = get_tgt_uri(spec['src_uri'],staging_uri)
-    if (GRCh37 == None):
-        spec['progress_total']=3
-    else:
-        spec['GRCh37']=GRCh37
-        spec['progress_total']=2
+        spec['tgt_uri'] = get_tgt_uri(src_url,staging_uri)
     spec['progress_complete']=1
     get_logger().info("Handling " + str(spec))
     submit_hc(spec, groups, compara_uri, staging_uri)
     return spec['handover_token']
 
-def get_tgt_uri(src_uri,staging_uri):
+def get_tgt_uri(src_url,staging_uri):
     """Create target URI from staging details and name of source database"""
-    url = make_url(src_uri)
-    return str(staging_uri) + str(url.database)
+    return str(staging_uri) + str(src_url.database)
 
     
 def check_db(uri):    
@@ -90,96 +101,65 @@ def check_db(uri):
     else:
         return
 
-
-db_types_list = [i for i in cfg.allowed_database_types.split(",")]
-core_pattern = re.compile("(.*[a-z])_core_?[0-9]*?_[0-9]*_([0-9]*)")
-core_like_pattern = re.compile("(.*[a-z])_(rnaseq|cdna|otherfeatures)_?[0-9]*?_[0-9]*_([0-9]*)")
-variation_pattern = re.compile("(.*[a-z])_variation_?[0-9]*?_[0-9]*_([0-9]*)")
-compara_pattern = re.compile(".*[a-z]_compara_?([a-z]*)?_?[a-z]*?_[0-9].*")
-ancestral_pattern = re.compile(".*[a-z]_ancestral_[0-9]*")
-funcgen_pattern = re.compile("(.*[a-z])_funcgen_?[0-9]*?_[0-9]*_([0-9]*)")
-
-def groups_for_uri(uri):
-    """Find which HC group to run on a given database"""
-    if(core_pattern.match(uri)):
-        if("core" in db_types_list):
-            if("bacteria" in core_pattern.match(uri).group(1)):
-                return [cfg.core_handover_group],None,cfg.secondary_staging_uri,None
-            elif("homo_sapiens" in core_pattern.match(uri).group(1) and core_pattern.match(uri).group(2) == "37"):
-                return [cfg.core_handover_group],None,cfg.secondary_staging_uri,"GRCh37"
-            else:
-                return [cfg.core_handover_group],None,cfg.staging_uri,None
-        else:
-            get_logger().error("Handover failed, " + uri + " has been handed over after deadline. Please contact the Production team")
-            raise ValueError(uri + " has been handed over after the deadline. Please contact the Production team")
-    elif(core_like_pattern.match(uri)):
-        if("core_like" in db_types_list):
-            if("bacteria" in core_like_pattern.match(uri).group(1)):
-                return [cfg.core_handover_group],None,cfg.secondary_staging_uri,None
-            elif("homo_sapiens" in core_like_pattern.match(uri).group(1) and core_like_pattern.match(uri).group(3) == "37"):
-                return [cfg.core_handover_group],None,cfg.secondary_staging_uri,"GRCh37"
-            else:
-                return [cfg.core_handover_group],None,cfg.staging_uri,None
-        else:
-            get_logger().error("Handover failed, " + uri + " has been handed over after deadline. Please contact the Production team")
-            raise ValueError(uri + " has been handed over after the deadline. Please contact the Production team")
-    elif(variation_pattern.match(uri)):
-        if("variation" in db_types_list):
-            if("bacteria" in variation_pattern.match(uri).group(1)):
-                  return [cfg.variation_handover_group],None,cfg.secondary_staging_uri,None
-            elif("homo_sapiens" in variation_pattern.match(uri).group(1) and variation_pattern.match(uri).group(2) == "37"):
-                return [cfg.variation_handover_group],None,cfg.secondary_staging_uri,"GRCh37"
-            else:
-                return [cfg.variation_handover_group],None,cfg.staging_uri,None
-        else:
-            get_logger().error("Handover failed, " + uri + " has been handed over after deadline. Please contact the Production team")
-            raise ValueError(uri + " has been handed over after the deadline. Please contact the Production team")
-    elif(funcgen_pattern.match(uri)):
-        if("funcgen" in db_types_list):
-            if("bacteria" in funcgen_pattern.match(uri).group(1)):
-                return [cfg.funcgen_handover_group],None,cfg.secondary_staging_uri,None
-            elif("homo_sapiens" in funcgen_pattern.match(uri).group(1) and funcgen_pattern.match(uri).group(2) == "37"):
-                return [cfg.funcgen_handover_group],None,cfg.secondary_staging_uri,"GRCh37"
-            else:
-                return [cfg.funcgen_handover_group],None,cfg.staging_uri,None
-        else:
-            get_logger().error("Handover failed, " + uri + " has been handed over after deadline. Please contact the Production team")
-            raise ValueError(uri + " has been handed over after the deadline. Please contact the Production team")
-    elif(ancestral_pattern.match(uri)):
-        if("ancestral" in db_types_list):
-            return [cfg.ancestral_handover_group],None,cfg.staging_uri,None
-        else:
-            get_logger().error("Handover failed, " + uri + " has been handed over after deadline. Please contact the Production team")
-            raise ValueError(uri + " has been handed over after the deadline. Please contact the Production team")
-    elif(compara_pattern.match(uri)):
-        compara_name = compara_pattern.match(uri).group(1)
-        if("compara" in db_types_list):
-            if (compara_name == "pan"):
-                compara_uri=cfg.compara_uri + compara_name + '_compara_master'
-                compara_handover_group=cfg.compara_pan_handover_group
-                staging_uri=cfg.staging_uri
-            if (compara_name == "bacteria"):
-                compara_uri=cfg.compara_uri + compara_name + '_compara_master'
-                compara_handover_group=cfg.compara_pan_handover_group
-                staging_uri=cfg.secondary_staging_uri
-            elif (compara_name):
-                compara_uri=cfg.compara_uri + compara_name + '_compara_master'
-                compara_handover_group=cfg.compara_handover_group
-                staging_uri=cfg.staging_uri
-            elif (check_grch37(uri,'homo_sapiens')):
-                compara_uri=cfg.compara_uri + 'ensembl_compara_master_grch37'
-                compara_handover_group=cfg.compara_handover_group
-                return  [compara_handover_group],compara_uri,cfg.secondary_staging_uri,"GRCh37"
-            else:
-                compara_uri=cfg.compara_uri + 'ensembl_compara_master'
-                compara_handover_group=cfg.compara_handover_group
-                staging_uri=cfg.staging_uri
-            return [compara_handover_group],compara_uri,staging_uri,None
-        else:
-            get_logger().error("Handover failed, " + uri + " has been handed over after deadline. Please contact the Production team")
-            raise ValueError(uri + " has been handed over after the deadline. Please contact the Production team")
+def parse_db_infos(database):
+    """Parse database name and extract db_prefix and db_type. Also extract release and assembly for species databases"""
+    if(species_pattern.match(database)):
+        db_prefix = species_pattern.match(database).group(1)
+        db_type = species_pattern.match(database).group(2)
+        release = species_pattern.match(database).group(3)
+        assembly = species_pattern.match(database).group(4)
+        return db_prefix, db_type, release, assembly
+    elif(compara_pattern.match(database)):
+        db_type = compara_pattern.match(database).group(1)
+        db_prefix = compara_pattern.match(database).group(2)
+        return db_prefix, db_type, None, None
+    elif(ancestral_pattern.match(database)):
+        db_prefix = ancestral_pattern.match(database).group(1)
+        db_type = ancestral_pattern.match(database).group(2)
+        return db_prefix, db_type, None, None
     else:
-         raise ValueError(uri + " database type is not expected. Please contact the Production team")
+        raise ValueError("Database type for "+database+" is not expected. Please contact the Production team")
+
+def hc_groups(db_type,db_prefix,uri):
+    """Find which HC group to run on a given database type. For Compara generate the compara master uri"""
+    if(db_type in ['core','rnaseq','cdna','otherfeatures']):
+        return [cfg.core_handover_group],None
+    elif(db_type == 'variation'):
+        return [cfg.variation_handover_group],None
+    elif(db_type == 'funcgen'):
+        return [cfg.funcgen_handover_group],None
+    elif(db_type == 'ancestral'):
+        return [cfg.ancestral_handover_group],None
+    elif(db_type == 'compara'):
+        if (db_prefix == "pan"):
+            compara_uri=cfg.compara_uri + db_prefix + '_compara_master'
+            compara_handover_group=cfg.compara_pan_handover_group
+        elif (check_grch37(uri,'homo_sapiens')):
+            compara_uri=cfg.compara_uri + 'ensembl_compara_master_grch37'
+            compara_handover_group=cfg.compara_handover_group
+        elif (db_prefix):
+            compara_uri=cfg.compara_uri + db_prefix + '_compara_master'
+            compara_handover_group=cfg.compara_handover_group
+        else:
+            compara_uri=cfg.compara_uri + 'ensembl_compara_master'
+            compara_handover_group=cfg.compara_handover_group
+        return [compara_handover_group],compara_uri
+
+def check_staging_server(spec,db_type,db_prefix,assembly):
+    """Find which staging server should be use. secondary_staging for GRCh37 and Bacteria, staging for the rest"""
+    if('bacteria' in db_prefix):
+        staging_uri = cfg.secondary_staging_uri
+    elif(db_prefix == 'homo_sapiens' and assembly == '37'):
+        staging_uri = cfg.secondary_staging_uri
+        spec['GRCh37']=1
+        spec['progress_total']=2
+    elif(db_type == 'compara' and check_grch37(spec['src_uri'],'homo_sapiens')):
+        staging_uri = cfg.secondary_staging_uri
+        spec['GRCh37']=1
+        spec['progress_total']=2
+    else:
+        staging_uri = cfg.staging_uri
+    return spec,staging_uri
 
 
 def submit_hc(spec, groups, compara_uri, staging_uri):
