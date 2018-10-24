@@ -25,6 +25,7 @@ from event_client import EventClient
 from sqlalchemy_utils.functions import database_exists
 from sqlalchemy.engine.url import make_url
 from .utils import send_email
+from .models.compara import check_grch37
 import handover_config as cfg
 import uuid
 import re
@@ -35,7 +36,7 @@ hc_client = HcClient(cfg.hc_uri)
 db_copy_client = DbCopyClient(cfg.copy_uri)
 metadata_client = MetadataClient(cfg.meta_uri)
 event_client = EventClient(cfg.event_uri)
-     
+
 def get_logger():    
     return reporting.get_logger(pool, cfg.report_exchange, 'handover', None, {})
                 
@@ -88,6 +89,7 @@ def check_db(uri):
         raise ValueError(uri + " does not exist")
     else:
         return
+
 
 db_types_list = [i for i in cfg.allowed_database_types.split(",")]
 core_pattern = re.compile("(.*[a-z])_core_?[0-9]*?_[0-9]*_([0-9]*)")
@@ -164,7 +166,12 @@ def groups_for_uri(uri):
                 compara_uri=cfg.compara_uri + compara_name + '_compara_master'
                 compara_handover_group=cfg.compara_handover_group
                 staging_uri=cfg.staging_uri
+            elif (check_grch37(uri,'homo_sapiens')):
+                compara_uri=cfg.compara_uri + 'ensembl_compara_master_grch37'
+                compara_handover_group=cfg.compara_handover_group
+                return  [compara_handover_group],compara_uri,cfg.secondary_staging_uri,"GRCh37"
             else:
+                compara_uri=cfg.compara_uri + 'ensembl_compara_master'
                 compara_handover_group=cfg.compara_handover_group
                 staging_uri=cfg.staging_uri
             return [compara_handover_group],compara_uri,staging_uri,None
