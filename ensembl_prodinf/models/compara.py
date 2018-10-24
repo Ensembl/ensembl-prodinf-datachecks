@@ -46,11 +46,14 @@ class ComparaInstance:
             genome_db = s.query(GenomeDb).filter(GenomeDb.name == species).first()
             return genome_db
         finally:
-                s.close()
+            s.close()
 
     def is_GRCh37(self, species):
         gen_db = self.get_compara_species_assembly(species)
-        return gen_db.assembly == 'GRCh37'
+        if (gen_db):
+            return gen_db.assembly == 'GRCh37'
+        else:
+            return 0
 
 def check_grch37(uri, species):
     inst = ComparaInstance(uri)
