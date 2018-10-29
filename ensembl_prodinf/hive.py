@@ -8,6 +8,8 @@ from sqlalchemy.orm import sessionmaker, relationship
 
 from .utils import dict_to_perl_string, perl_string_to_python
 
+__all__ = [ 'Result', 'LogMessage', 'Job', 'HiveInstance', 'Analysis' ]
+
 Base = declarative_base()
 
 
