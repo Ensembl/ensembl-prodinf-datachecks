@@ -397,15 +397,14 @@ class HiveInstance:
             s.close()
 
     def get_semaphored_jobs(self, job, status=None):
-
-        """ Find all jobs that are semaphored children of the nominated job, optionall filtering by status 
+        """ Find all jobs that are semaphored children of the nominated job, optional filtering by status
         'complete' indicates that all children completed successfully
         'failed' indicates that at least one child has failed
         'incomplete' indicates that at least one child is running or ready
         """
         s = Session()
         try:
-            semaphored_job = s.query(Job).filter(Job.prev_job_id == job.job_id and job.status == 'SEMAPHORED').first()
+            semaphored_job = s.query(Job).filter(Job.prev_job_id == job.job_id,job.status == 'SEMAPHORED').first()
             Semaphore_data = self.get_semaphore_data(semaphored_job.job_id)
             if status == None:
                 return s.query(Job).filter(Semaphore_data.semaphore_id == Job.controlled_semaphore_id).all()

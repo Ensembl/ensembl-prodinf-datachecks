@@ -17,46 +17,37 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 Base = declarative_base()
 
-__all__ = ['ComparaInstance' ,'check_grch37']
+__all__ = ['CoreInstance' ,'get_coredb_assembly']
 
-class GenomeDb(Base):
-    __tablename__ = 'genome_db'
+class Meta(Base):
+    __tablename__ = 'meta'
 
-    genome_db_id = Column(Integer, primary_key=True)
-    assembly = Column(String)
-    name = Column(String)
+    meta_id = Column(Integer, primary_key=True)
+    meta_key = Column(String)
+    meta_value = Column(String)
+    species_id = Column(Integer)
 
     def __repr__(self):
-        return "<GenomeDb(genome_db_id='%s',assembly='%s', name='%s')>" % (
-            self.genome_db_id, self.assembly, self.name)
+        return "<Meta(meta_id='%s',meta_key='%s', meta_value='%s', species_id='%s')>" % (
+            self.meta_id, self.meta_key, self.meta_value, self.species_id)
 
 Session = sessionmaker()
 
-
-
-class ComparaInstance:
+class CoreInstance:
 
     def __init__(self, url, timeout=3600):
         self.engine = create_engine(url, pool_recycle=timeout, echo=False)
         Session.configure(bind=self.engine)
 
-    def get_compara_species_assembly(self,species):
-        """Get the species assembly version from the compara database"""
+    def get_core_species_assembly(self):
+        """Retrieve a species assembly.default value from the core database meta table"""
         s = Session()
         try:
-            genome_db = s.query(GenomeDb).filter(GenomeDb.name == species).first()
-            return genome_db
+            MetaValues = s.query(Meta).filter(Meta.meta_key == 'assembly.default').first()
+            return MetaValues
         finally:
-            s.close()
+                s.close()
 
-    def is_GRCh37(self, species):
-        """Check if the assembly for human is GRCh37 in the Compara database"""
-        gen_db = self.get_compara_species_assembly(species)
-        if gen_db:
-            return gen_db.assembly == 'GRCh37'
-        else:
-            return 0
-
-def check_grch37(uri, species):
-    inst = ComparaInstance(uri)
-    return inst.is_GRCh37(species)
+def get_coredb_assembly(uri):
+    inst = CoreInstance(uri)
+    return inst.get_core_species_assembly()
