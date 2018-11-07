@@ -41,7 +41,6 @@ class ComparaInstance:
         Session.configure(bind=self.engine)
 
     def get_compara_species_assembly(self,species):
-        """Get the species assembly version from the compara database"""
         s = Session()
         try:
             genome_db = s.query(GenomeDb).filter(GenomeDb.name == species).first()
@@ -50,9 +49,8 @@ class ComparaInstance:
             s.close()
 
     def is_GRCh37(self, species):
-        """Check if the assembly for human is GRCh37 in the Compara database"""
         gen_db = self.get_compara_species_assembly(species)
-        if gen_db:
+        if (gen_db):
             return gen_db.assembly == 'GRCh37'
         else:
             return 0
