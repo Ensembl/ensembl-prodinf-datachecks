@@ -265,7 +265,7 @@ def process_db_metadata(self, metadata_job_id, spec):
     self.max_retries = None
     get_logger().info("Loading into metadata database, please see: "+cfg.meta_uri + "jobs/"+ str(metadata_job_id))
     result = metadata_client.retrieve_job(metadata_job_id)
-    if (result['status'] == 'incomplete') or (result['status'] == 'running') or (result['status'] == 'submitted'):
+    if result['status'] in ['incomplete', 'running', 'submitted']:
         get_logger().debug("Metadata load Job incomplete, checking again later")
         raise self.retry()
     if (result['status'] == 'failed'):
