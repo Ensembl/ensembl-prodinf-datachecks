@@ -109,7 +109,7 @@ def parse_db_infos(database):
         release = species_pattern.match(database).group(3)
         assembly = species_pattern.match(database).group(4)
         return db_prefix, db_type, release, assembly
-     elif compara_pattern.match(database):
+    elif compara_pattern.match(database):
         db_type = compara_pattern.match(database).group(1)
         db_prefix = compara_pattern.match(database).group(2)
         return db_prefix, db_type, None, None
