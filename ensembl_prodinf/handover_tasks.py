@@ -238,7 +238,7 @@ Please see %s
 """ % (spec['src_uri'], spec['tgt_uri'], cfg.copy_web_uri + str(copy_job_id))
         send_email(to_address=spec['contact'], subject='Database copy failed', body=msg, smtp_server=cfg.smtp_server)
         return
-    elif('GRCh37'in spec):
+    elif 'GRCh37'in spec:
         get_logger().info("Copying complete, Handover successful")
         spec['progress_complete']=2
     else:
