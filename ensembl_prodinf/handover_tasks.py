@@ -181,7 +181,7 @@ def process_checked_db(self, hc_job_id, spec):
     self.max_retries = None
     get_logger().info("HCs in progress, please see: " +cfg.hc_web_uri + str(hc_job_id))
     result = hc_client.retrieve_job(hc_job_id)
-    if (result['status'] == 'incomplete') or (result['status'] == 'running') or (result['status'] == 'submitted'):
+    if result['status'] in ['incomplete', 'running', 'submitted']:
         get_logger().debug("HC Job incomplete, checking again later")
         raise self.retry()
     
