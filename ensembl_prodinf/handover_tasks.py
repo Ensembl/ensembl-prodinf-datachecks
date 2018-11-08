@@ -227,7 +227,7 @@ def process_copied_db(self, copy_job_id, spec):
     self.max_retries = None
     get_logger().info("Copying in progress, please see: " +cfg.copy_web_uri + str(copy_job_id))
     result = db_copy_client.retrieve_job(copy_job_id)
-    if (result['status'] == 'incomplete') or (result['status'] == 'running') or (result['status'] == 'submitted'):
+    if result['status'] in ['incomplete', 'running', 'submitted']:
         get_logger().debug("Database copy job incomplete, checking again later")
         raise self.retry()
     if (result['status'] == 'failed'):
