@@ -22,12 +22,10 @@ from hc_client import HcClient
 from db_copy_client import DbCopyClient
 from metadata_client import MetadataClient
 from event_client import EventClient
-from sqlalchemy_utils.functions import database_exists, drop_database
+from sqlalchemy_utils.functions import database_exists
 from sqlalchemy.engine.url import make_url
 from .utils import send_email
 from .models.compara import check_grch37
-from .models.core import get_coredb_assembly
-from .models.metadata import get_metadb_assembly, get_previous_assembly_db_list
 import handover_config as cfg
 import uuid
 import re
@@ -73,11 +71,9 @@ def handover_database(spec):
     #Scan database name and retrieve species or compara name, database type, release number and assembly version
     (db_prefix, db_type, release, assembly) = parse_db_infos(src_url.database)
     # Check if the given database can be handed over
-    if db_type not in db_types_list:
+    if(db_type not in db_types_list):
         get_logger().error("Handover failed, " + spec['src_uri'] + " has been handed over after deadline. Please contact the Production team")
         raise ValueError(spec['src_uri'] + " has been handed over after the deadline. Please contact the Production team")
-    #Check if this is a new assembly
-    spec = check_new_assembly(spec,cfg.metadata_uri,db_prefix,release,db_type)
     #Get database hc group and compara_uri
     (groups,compara_uri) = hc_groups(db_type,db_prefix,spec['src_uri'])
     #Check to which staging server the database need to be copied to
@@ -87,7 +83,6 @@ def handover_database(spec):
         compara_uri=cfg.compara_uri + 'ensembl_compara_master'
     if 'tgt_uri' not in spec:
         spec['tgt_uri'] = get_tgt_uri(src_url,staging_uri)
-    spec['staging_uri'] = staging_uri
     spec['progress_complete']=1
     get_logger().info("Handling " + str(spec))
     submit_hc(spec, groups, compara_uri, staging_uri)
@@ -136,7 +131,7 @@ def hc_groups(db_type,db_prefix,uri):
     elif db_type == 'ancestral':
         return [cfg.ancestral_handover_group],None
     elif db_type == 'compara':
-        if  db_prefix == "pan":
+        if db_prefix == "pan":
             compara_uri=cfg.compara_uri + db_prefix + '_compara_master'
             compara_handover_group=cfg.compara_pan_handover_group
         elif check_grch37(uri,'homo_sapiens'):
@@ -149,8 +144,6 @@ def hc_groups(db_type,db_prefix,uri):
             compara_uri=cfg.compara_uri + 'ensembl_compara_master'
             compara_handover_group=cfg.compara_handover_group
         return [compara_handover_group],compara_uri
-    else:
-        raise ValueError("Can't find hc group for "+uri+" Please check handover config file")
 
 def check_staging_server(spec,db_type,db_prefix,assembly):
     """Find which staging server should be use. secondary_staging for GRCh37 and Bacteria, staging for the rest"""
@@ -168,25 +161,6 @@ def check_staging_server(spec,db_type,db_prefix,assembly):
         staging_uri = cfg.staging_uri
     return spec,staging_uri
 
-def check_new_assembly(spec,metadata_uri,species,release,db_type):
-    """Check the core database assembly value and compare it with what we have in the Metadata database
-    if the assembly doesn't exist in the metadata database then it's a new species, update the handover type
-    if the assembly is the same, all good, nothing to do here
-    if the assembly is different, make sure that we update the handover type and generate a list of old assembly databases to clean up
-    """
-    metadata_assembly = get_metadb_assembly(metadata_uri,species,release)
-    if metadata_assembly:
-        if db_type == 'core':
-            if get_coredb_assembly(spec['src_uri']).meta_value != metadata_assembly.assembly_default:
-                get_logger().info(str(species) + ' has a new assembly')
-                spec['type']='new_assembly'
-                old_assembly_databases_list = get_previous_assembly_db_list(metadata_uri,species,release)
-                if old_assembly_databases_list:
-                    spec['old_assembly_dbs'] = old_assembly_databases_list
-    else:
-        spec['type']='new_assembly'
-        get_logger().info(str(species) + ' has a new assembly')
-    return spec
 
 def submit_hc(spec, groups, compara_uri, staging_uri):
     """Submit the source database for healthchecking. Returns a celery job identifier"""
@@ -233,19 +207,9 @@ Please see %s
         spec['progress_complete']=2
         submit_copy(spec)
 
-def drop_old_assembly_databases(spec):
-    """Drop databases on a previous assembly from the staging MySQL server"""
-    if 'old_assembly_dbs' in spec:
-        for database in spec['old_assembly_dbs']:
-            db_uri = spec['staging_uri'] + database
-            get_logger().info("Dropping " + str(db_uri))
-            drop_database(db_uri)
-    else:
-        return
 
 def submit_copy(spec):
-    """Submit the source database for copying to the target. Returns a celery job identifier"""
-    drop_old_assembly_databases(spec)   
+    """Submit the source database for copying to the target. Returns a celery job identifier"""    
     copy_job_id = db_copy_client.submit_job(spec['src_uri'], spec['tgt_uri'], None, None, False, True, None)
     spec['copy_job_id'] = copy_job_id
     task_id = process_copied_db.delay(copy_job_id, spec)    

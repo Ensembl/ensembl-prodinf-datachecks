@@ -27,4 +27,3 @@ report_server = os.environ.get("REPORT_SERVER", "amqp://guest:guest@localhost:56
 report_exchange = os.environ.get("REPORT_EXCHANGE", 'report_exchange')
 data_files_path = os.environ.get("DATA_FILE_PATH" , '/data_files/')
 allowed_database_types = os.environ.get("ALLOWED_DATABASE_TYPES" , 'core,rnaseq,cdna,otherfeatures,variation,funcgen,compara,ancestral')
-metadata_uri = os.environ.get("METADATA_URI", "mysql://ensprod:s3cr3t@mysql-ens-meta-prod-1:4483/ensembl_metadata")
