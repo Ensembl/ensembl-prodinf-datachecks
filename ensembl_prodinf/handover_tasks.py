@@ -186,7 +186,7 @@ def process_checked_db(self, hc_job_id, spec):
         raise self.retry()
     
     # check results
-    if (result['status'] == 'failed'):
+    if result['status'] == 'failed':
         get_logger().info("HCs failed to run, please see: "+cfg.hc_web_uri + str(hc_job_id))
         msg = """
 Running healthchecks on %s failed to execute.
