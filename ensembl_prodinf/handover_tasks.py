@@ -137,7 +137,7 @@ def hc_groups(db_type,db_prefix,uri):
         elif check_grch37(uri,'homo_sapiens'):
             compara_uri=cfg.compara_uri + 'ensembl_compara_master_grch37'
             compara_handover_group=cfg.compara_handover_group
-        elif (db_prefix):
+        elif db_prefix:
             compara_uri=cfg.compara_uri + db_prefix + '_compara_master'
             compara_handover_group=cfg.compara_handover_group
         else:
