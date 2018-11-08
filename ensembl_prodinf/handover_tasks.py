@@ -126,7 +126,7 @@ def hc_groups(db_type,db_prefix,uri):
         return [cfg.core_handover_group],None
     elif db_type == 'variation':
         return [cfg.variation_handover_group],None
-    elif(db_type == 'funcgen'):
+    elif db_type == 'funcgen':
         return [cfg.funcgen_handover_group],None
     elif(db_type == 'ancestral'):
         return [cfg.ancestral_handover_group],None
