@@ -130,7 +130,7 @@ def hc_groups(db_type,db_prefix,uri):
         return [cfg.funcgen_handover_group],None
     elif db_type == 'ancestral':
         return [cfg.ancestral_handover_group],None
-    elif(db_type == 'compara'):
+    elif db_type == 'compara':
         if (db_prefix == "pan"):
             compara_uri=cfg.compara_uri + db_prefix + '_compara_master'
             compara_handover_group=cfg.compara_pan_handover_group
