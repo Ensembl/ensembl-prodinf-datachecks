@@ -149,7 +149,7 @@ def check_staging_server(spec,db_type,db_prefix,assembly):
     """Find which staging server should be use. secondary_staging for GRCh37 and Bacteria, staging for the rest"""
     if 'bacteria' in db_prefix:
         staging_uri = cfg.secondary_staging_uri
-    elif(db_prefix == 'homo_sapiens' and assembly == '37'):
+    elif db_prefix == 'homo_sapiens' and assembly == '37':
         staging_uri = cfg.secondary_staging_uri
         spec['GRCh37']=1
         spec['progress_total']=2
