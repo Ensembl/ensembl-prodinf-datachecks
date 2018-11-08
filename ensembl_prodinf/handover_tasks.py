@@ -103,7 +103,7 @@ def check_db(uri):
 
 def parse_db_infos(database):
     """Parse database name and extract db_prefix and db_type. Also extract release and assembly for species databases"""
-    if(species_pattern.match(database)):
+    if species_pattern.match(database):
         db_prefix = species_pattern.match(database).group(1)
         db_type = species_pattern.match(database).group(2)
         release = species_pattern.match(database).group(3)
