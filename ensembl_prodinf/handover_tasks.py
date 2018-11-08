@@ -194,7 +194,7 @@ Please see %s
 """ % (spec['src_uri'], cfg.hc_web_uri + str(hc_job_id))
         send_email(to_address=spec['contact'], subject='HC failed to run', body=msg, smtp_server=cfg.smtp_server)
         return 
-    elif (result['output']['status'] == 'failed'):
+    elif result['output']['status'] == 'failed':
         get_logger().info("HCs found problems, please see: "+cfg.hc_web_uri + str(hc_job_id))
         msg = """
 Running healthchecks on %s completed but found failures.
