@@ -230,7 +230,7 @@ def process_copied_db(self, copy_job_id, spec):
     if result['status'] in ['incomplete', 'running', 'submitted']:
         get_logger().debug("Database copy job incomplete, checking again later")
         raise self.retry()
-    if (result['status'] == 'failed'):
+    if result['status'] == 'failed':
         get_logger().info("Copy failed, please see: "+cfg.copy_web_uri + str(copy_job_id))
         msg = """
 Copying %s to %s failed.
