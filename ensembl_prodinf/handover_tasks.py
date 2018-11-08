@@ -113,7 +113,7 @@ def parse_db_infos(database):
         db_type = compara_pattern.match(database).group(1)
         db_prefix = compara_pattern.match(database).group(2)
         return db_prefix, db_type, None, None
-    elif(ancestral_pattern.match(database)):
+    elif ancestral_pattern.match(database):
         db_prefix = ancestral_pattern.match(database).group(1)
         db_type = ancestral_pattern.match(database).group(2)
         return db_prefix, db_type, None, None
