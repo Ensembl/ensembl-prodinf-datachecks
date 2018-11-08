@@ -79,7 +79,7 @@ def handover_database(spec):
     #Check to which staging server the database need to be copied to
     (spec,staging_uri) = check_staging_server(spec,db_type,db_prefix,assembly)
     #setting compara url to default value for species databases. This value is only used by Compara healthchecks
-    if (compara_uri == None):
+    if compara_uri is None:
         compara_uri=cfg.compara_uri + 'ensembl_compara_master'
     if 'tgt_uri' not in spec:
         spec['tgt_uri'] = get_tgt_uri(src_url,staging_uri)
