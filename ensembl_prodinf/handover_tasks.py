@@ -122,7 +122,7 @@ def parse_db_infos(database):
 
 def hc_groups(db_type,db_prefix,uri):
     """Find which HC group to run on a given database type. For Compara generate the compara master uri"""
-    if(db_type in ['core','rnaseq','cdna','otherfeatures']):
+    if db_type in ['core','rnaseq','cdna','otherfeatures']:
         return [cfg.core_handover_group],None
     elif(db_type == 'variation'):
         return [cfg.variation_handover_group],None
