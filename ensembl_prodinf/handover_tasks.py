@@ -268,7 +268,7 @@ def process_db_metadata(self, metadata_job_id, spec):
     if result['status'] in ['incomplete', 'running', 'submitted']:
         get_logger().debug("Metadata load Job incomplete, checking again later")
         raise self.retry()
-    if (result['status'] == 'failed'):
+    if result['status'] == 'failed':
         get_logger().info("Metadata load failed, please see "+cfg.meta_uri+ 'jobs/' + str(metadata_job_id) + '?format=failures')
         msg = """
 Metadata load of %s failed.
