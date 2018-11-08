@@ -153,7 +153,7 @@ def check_staging_server(spec,db_type,db_prefix,assembly):
         staging_uri = cfg.secondary_staging_uri
         spec['GRCh37']=1
         spec['progress_total']=2
-    elif(db_type == 'compara' and check_grch37(spec['src_uri'],'homo_sapiens')):
+    elif db_type == 'compara' and check_grch37(spec['src_uri'],'homo_sapiens'):
         staging_uri = cfg.secondary_staging_uri
         spec['GRCh37']=1
         spec['progress_total']=2
