@@ -131,7 +131,7 @@ def hc_groups(db_type,db_prefix,uri):
     elif db_type == 'ancestral':
         return [cfg.ancestral_handover_group],None
     elif db_type == 'compara':
-        if (db_prefix == "pan"):
+        if db_prefix == "pan":
             compara_uri=cfg.compara_uri + db_prefix + '_compara_master'
             compara_handover_group=cfg.compara_pan_handover_group
         elif (check_grch37(uri,'homo_sapiens')):
