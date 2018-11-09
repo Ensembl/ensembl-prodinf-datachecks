@@ -22,7 +22,7 @@ from hc_client import HcClient
 from db_copy_client import DbCopyClient
 from metadata_client import MetadataClient
 from event_client import EventClient
-from sqlalchemy_utils.functions import database_exists
+from sqlalchemy_utils.functions import database_exists, drop_database
 from sqlalchemy.engine.url import make_url
 from .utils import send_email
 from .models.compara import check_grch37
@@ -30,6 +30,7 @@ import handover_config as cfg
 import uuid
 import re
 import reporting
+import json
 
 pool = reporting.get_pool(cfg.report_server)
 hc_client = HcClient(cfg.hc_uri)
@@ -71,7 +72,7 @@ def handover_database(spec):
     #Scan database name and retrieve species or compara name, database type, release number and assembly version
     (db_prefix, db_type, release, assembly) = parse_db_infos(src_url.database)
     # Check if the given database can be handed over
-    if(db_type not in db_types_list):
+    if db_type not in db_types_list:
         get_logger().error("Handover failed, " + spec['src_uri'] + " has been handed over after deadline. Please contact the Production team")
         raise ValueError(spec['src_uri'] + " has been handed over after the deadline. Please contact the Production team")
     #Get database hc group and compara_uri
@@ -83,6 +84,7 @@ def handover_database(spec):
         compara_uri=cfg.compara_uri + 'ensembl_compara_master'
     if 'tgt_uri' not in spec:
         spec['tgt_uri'] = get_tgt_uri(src_url,staging_uri)
+    spec['staging_uri'] = staging_uri
     spec['progress_complete']=1
     get_logger().info("Handling " + str(spec))
     submit_hc(spec, groups, compara_uri, staging_uri)
@@ -277,8 +279,13 @@ Please see %s
         send_email(to_address=spec['contact'], subject='Metadata load failed, please see: '+cfg.meta_uri+ 'jobs/' + str(metadata_job_id) + '?format=failures', body=msg, smtp_server=cfg.smtp_server)
         return
     else:
-        #get_logger().info("Metadata load complete, submitting event")
+        #Cleaning up old assembly databases
+        for event in result['output']['events']:
+            details = json.loads(event['details'])
+            if 'old_assembly_database_list' in details :
+                drop_old_assembly_databases(details['old_assembly_database_list'],spec['staging_uri'])
         get_logger().info("Metadata load complete, Handover successful")
+        #get_logger().info("Metadata load complete, submitting event")
         #submit_event(spec,result)
     return
 
@@ -289,3 +296,12 @@ def submit_event(spec,result):
         print(event)
         event_client.submit_job({"type":event['type'],"genome":event['genome']})
         get_logger().debug("Submitted event to event handler endpoint")
+
+def drop_old_assembly_databases(old_assembly_db_list,staging_uri):
+    """Drop databases on a previous assembly from the staging MySQL server"""
+    for database in old_assembly_db_list:
+        db_uri = staging_uri + database
+        if database_exists(db_uri):
+            get_logger().info("Dropping " + str(db_uri))
+            drop_database(db_uri)
+    return
