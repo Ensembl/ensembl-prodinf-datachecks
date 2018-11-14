@@ -280,10 +280,11 @@ Please see %s
         return
     else:
         #Cleaning up old assembly databases
-        for event in result['output']['events']:
-            details = json.loads(event['details'])
-            if 'old_assembly_database_list' in details :
-                drop_old_assembly_databases(details['old_assembly_database_list'],spec['staging_uri'])
+        if 'events' in result['output'] and result['output']['events']:
+            for event in result['output']['events']:
+                details = json.loads(event['details'])
+                if 'old_assembly_database_list' in details :
+                    drop_old_assembly_databases(details['old_assembly_database_list'],spec['staging_uri'])
         get_logger().info("Metadata load complete, Handover successful")
         #get_logger().info("Metadata load complete, submitting event")
         #submit_event(spec,result)
