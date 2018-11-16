@@ -166,7 +166,11 @@ def check_staging_server(spec,db_type,db_prefix,assembly):
 
 def submit_hc(spec, groups, compara_uri, staging_uri):
     """Submit the source database for healthchecking. Returns a celery job identifier"""
-    hc_job_id = hc_client.submit_job(spec['src_uri'], cfg.production_uri, compara_uri, staging_uri, cfg.live_uri, None, groups, cfg.data_files_path, None, spec['handover_token'])
+    try:
+        hc_job_id = hc_client.submit_job(spec['src_uri'], cfg.production_uri, compara_uri, staging_uri, cfg.live_uri, None, groups, cfg.data_files_path, None, spec['handover_token'])
+    except:
+        get_logger().error("Handover failed, Cannot submit hc job")
+        raise ValueError("Handover failed, Cannot submit hc job")
     spec['hc_job_id'] = hc_job_id
     task_id = process_checked_db.delay(hc_job_id, spec)
     get_logger().debug("Submitted DB for checking as " + str(task_id))
@@ -182,11 +186,14 @@ def process_checked_db(self, hc_job_id, spec):
     # allow infinite retries 
     self.max_retries = None
     get_logger().info("HCs in progress, please see: " +cfg.hc_web_uri + str(hc_job_id))
-    result = hc_client.retrieve_job(hc_job_id)
+    try:
+        result = hc_client.retrieve_job(hc_job_id)
+    except:
+        get_logger().error("Handover failed, cannot retrieve hc job")
+        raise ValueError("Handover failed, cannot retrieve hc job")
     if result['status'] in ['incomplete', 'running', 'submitted']:
         get_logger().debug("HC Job incomplete, checking again later")
         raise self.retry()
-    
     # check results
     if result['status'] == 'failed':
         get_logger().info("HCs failed to run, please see: "+cfg.hc_web_uri + str(hc_job_id))
@@ -209,15 +216,17 @@ Please see %s
         spec['progress_complete']=2
         submit_copy(spec)
 
-
 def submit_copy(spec):
     """Submit the source database for copying to the target. Returns a celery job identifier"""    
-    copy_job_id = db_copy_client.submit_job(spec['src_uri'], spec['tgt_uri'], None, None, False, True, None)
+    try:
+        copy_job_id = db_copy_client.submit_job(spec['src_uri'], spec['tgt_uri'], None, None, False, True, None)
+    except:
+        get_logger().error("Handover failed, cannot submit copy job")
+        raise ValueError("Handover failed, cannot submit copy job")
     spec['copy_job_id'] = copy_job_id
     task_id = process_copied_db.delay(copy_job_id, spec)    
     get_logger().debug("Submitted DB for copying as " + str(task_id))
     return task_id
-
 
 @app.task(bind=True)    
 def process_copied_db(self, copy_job_id, spec):
@@ -228,7 +237,11 @@ def process_copied_db(self, copy_job_id, spec):
     # allow infinite retries     
     self.max_retries = None
     get_logger().info("Copying in progress, please see: " +cfg.copy_web_uri + str(copy_job_id))
-    result = db_copy_client.retrieve_job(copy_job_id)
+    try:
+        result = db_copy_client.retrieve_job(copy_job_id)
+    except:
+        get_logger().error("Handover failed, cannot retrieve copy job")
+        raise ValueError("Handover failed, cannot retrieve copy job")
     if result['status'] in ['incomplete', 'running', 'submitted']:
         get_logger().debug("Database copy job incomplete, checking again later")
         raise self.retry()
@@ -250,12 +263,15 @@ Please see %s
 
 def submit_metadata_update(spec):
     """Submit the source database for copying to the target. Returns a celery job identifier."""
-    metadata_job_id = metadata_client.submit_job( spec['tgt_uri'], None, None, None, None, spec['contact'], spec['type'], spec['comment'], 'Handover', None)
+    try:
+        metadata_job_id = metadata_client.submit_job( spec['tgt_uri'], None, None, None, None, spec['contact'], spec['type'], spec['comment'], 'Handover', None)
+    except:
+        get_logger().error("Handover failed, cannot submit metadata job")
+        raise ValueError("Handover failed, cannot submit metadata job")
     spec['metadata_job_id'] = metadata_job_id
     task_id = process_db_metadata.delay(metadata_job_id, spec)
     get_logger().debug("Submitted DB for metadata loading " + str(task_id))
     return task_id
-
 
 @app.task(bind=True)    
 def process_db_metadata(self, metadata_job_id, spec):
@@ -266,7 +282,11 @@ def process_db_metadata(self, metadata_job_id, spec):
     # allow infinite retries
     self.max_retries = None
     get_logger().info("Loading into metadata database, please see: "+cfg.meta_uri + "jobs/"+ str(metadata_job_id))
-    result = metadata_client.retrieve_job(metadata_job_id)
+    try:
+        result = metadata_client.retrieve_job(metadata_job_id)
+    except:
+        get_logger().error("Handover failed, Cannot retrieve metadata job")
+        raise ValueError("Handover failed, Cannot retrieve metadata job")
     if result['status'] in ['incomplete', 'running', 'submitted']:
         get_logger().debug("Metadata load Job incomplete, checking again later")
         raise self.retry()
