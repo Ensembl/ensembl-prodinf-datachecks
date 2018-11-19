@@ -56,10 +56,8 @@ For Ensembl:
 
 .. code-block:: bash
 
-  METADATA_SERVER=$(mysql-ens-meta-prod-1-ensprod details url) #e.g: mysql://ensprod:pass@mysql-ens-meta-prod-1:4483/
   DATABASE_SERVER=$(mysql-ens-general-prod-1 details url)
   ENDPOINT=http://ens-prod-1.ebi.ac.uk:8000/metadata
-  METADATA=ensembl_metadata
   ENS_VERSION=91
   RELEASE_DATE="2017-12-06"
   CURRENT_RELEASE=1
@@ -70,17 +68,15 @@ For Ensembl:
 
   cd $BASE_DIR/ensembl-prodinf-core 
   for db in $(cat metadata_load.txt); 
-  do ensembl_prodinf/metadata_client.py --action submit --uri ${ENDPOINT} --metadata_uri "${METADATA_SERVER}${METADATA}" --database_uri "${DATABASE_SERVER}${db}" --e_release ${ENS_VERSION} --release_date ${RELEASE_DATE} --current_release ${CURRENT_RELEASE} --email "${EMAIL}" --update_type "${UPDATE_TYPE}" --comment "${COMMENT}" --source "${SOURCE}";
+  do ensembl_prodinf/metadata_client.py --action submit --uri ${ENDPOINT} --database_uri "${DATABASE_SERVER}${db}" --e_release ${ENS_VERSION} --release_date ${RELEASE_DATE} --current_release ${CURRENT_RELEASE} --email "${EMAIL}" --update_type "${UPDATE_TYPE}" --comment "${COMMENT}" --source "${SOURCE}";
   done
 
 For EG:
 
 .. code-block:: bash
 
-  METADATA_SERVER=$(mysql-ens-meta-prod-1-ensprod details url) #e.g: mysql://ensprod:pass@mysql-ens-meta-prod-1:4483/
   DATABASE_SERVER=$(mysql-eg-staging-2 details url)
-  ENDPOINT=http://ens-prod-1.ebi.ac.uk:7000/metadata
-  METADATA=ensembl_metadata
+  ENDPOINT=http://eg-prod-01.ebi.ac.uk:7000/metadata
   ENS_VERSION=91
   RELEASE_DATE="2017-12-13"
   EG_VERSION=38
@@ -92,7 +88,7 @@ For EG:
 
   cd $BASE_DIR/ensembl-prodinf-core 
   for db in $(cat eg_metadata_load.txt); 
-  do ensembl_prodinf/metadata_client.py --action submit --uri ${ENDPOINT} --metadata_uri "${METADATA_SERVER}${METADATA}" --database_uri "${DATABASE_SERVER}${db}" --e_release ${ENS_VERSION} --release_date ${RELEASE_DATE} --current_release ${CURRENT_RELEASE} --eg_release ${EG_VERSION} --email "${EMAIL}" --update_type "${UPDATE_TYPE}" --comment "${COMMENT}" --source "${SOURCE}";
+  do ensembl_prodinf/metadata_client.py --action submit --uri ${ENDPOINT} --database_uri "${DATABASE_SERVER}${db}" --e_release ${ENS_VERSION} --release_date ${RELEASE_DATE} --current_release ${CURRENT_RELEASE} --eg_release ${EG_VERSION} --email "${EMAIL}" --update_type "${UPDATE_TYPE}" --comment "${COMMENT}" --source "${SOURCE}";
   done
 
 
