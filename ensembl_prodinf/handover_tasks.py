@@ -39,7 +39,7 @@ metadata_client = MetadataClient(cfg.meta_uri)
 event_client = EventClient(cfg.event_uri)
 
 db_types_list = [i for i in cfg.allowed_database_types.split(",")]
-species_pattern = re.compile("(.*[a-z])_(core|rnaseq|cdna|otherfeatures|variation|funcgen)_?[0-9]*?_([0-9]*)_([0-9]*)")
+species_pattern = re.compile("(.*[a-z0-9])_(core|rnaseq|cdna|otherfeatures|variation|funcgen)_?[0-9]*?_([0-9]*)_([0-9a-z]*)")
 compara_pattern = re.compile(".*[a-z]_(compara)_?([a-z]*)?_?([a-z]*)?_?[0-9]*?_[0-9].*")
 ancestral_pattern = re.compile("(.*[a-z])_(ancestral)_[0-9]*")
 
