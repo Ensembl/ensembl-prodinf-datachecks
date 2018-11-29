@@ -73,12 +73,8 @@ To Submit the job via the REST enpoint for Ensembl
   TAG=my_hc_run
   
   cd $BASE_DIR/ensembl-prodinf-core 
-  for db in $(cat db_hc.txt); do
-    echo "Submitting HC check for $db"
-    output=`python ensembl_prodinf/hc_client.py --uri $ENDPOINT --db_uri "${SERVER}${db}" --production_uri "${PRODUCTION}ensembl_production_${RELEASE}" --staging_uri $STAGING --live_uri $LIVE --compara_uri "${COMPARA_MASTER}ensembl_compara_master" --hc_groups $GROUP --data_files_path $DATA_FILE_PATH --tag $TAG  --action submit` || {
-          echo "Cannot submit $db" 1>&2
-          exit 2
-    }
+  for db in $(cat db_hc.txt); 
+  do python ensembl_prodinf/hc_client.py --uri $ENDPOINT --db_uri "${SERVER}${db}" --production_uri "${PRODUCTION}ensembl_production_${RELEASE}" --staging_uri $STAGING --live_uri $LIVE --compara_uri "${COMPARA_MASTER}ensembl_compara_master" --hc_groups $GROUP --data_files_path $DATA_FILE_PATH --tag $TAG  --action submit
   done
   
 To Submit the job via the REST enpoint for EG
@@ -96,12 +92,8 @@ To Submit the job via the REST enpoint for EG
   TAG=my_hc_run
   
   cd $BASE_DIR/ensembl-prodinf-core 
-  for db in $(cat db_hc.txt); do
-    echo "Submitting HC check for $db"
-    output=`python ensembl_prodinf/hc_client.py --uri $ENDPOINT --db_uri "${SERVER}${db}" --production_uri "${PRODUCTION}ensembl_production" --staging_uri $STAGING --live_uri $LIVE --compara_uri "${COMPARA_MASTER}ensembl_compara_master" --hc_groups $GROUP --data_files_path $DATA_FILE_PATH --tag $TAG  --action submit` || {
-          echo "Cannot submit $db" 1>&2
-          exit 2
-    }
+  for db in $(cat db_hc.txt); 
+  do python ensembl_prodinf/hc_client.py --uri $ENDPOINT --db_uri "${SERVER}${db}" --production_uri "${PRODUCTION}ensembl_production" --staging_uri $STAGING --live_uri $LIVE --compara_uri "${COMPARA_MASTER}ensembl_compara_master" --hc_groups $GROUP --data_files_path $DATA_FILE_PATH --tag $TAG  --action submit 
   done
   
 To run multiple hcs and groups
