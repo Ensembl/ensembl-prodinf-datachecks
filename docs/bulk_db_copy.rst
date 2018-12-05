@@ -21,29 +21,29 @@ Create file with list of databases to copy, e.g: ``db_to_copy.txt``
 
 Or for all the database of a given division:
 
-1. EG:
-Please find below the list of EG divisions short names:
+1.Please find below the list of divisions short names:
 
-* Bacteria - EB
-* Protists - EPr
-* Fungi	- EF
-* Metazoa - EM
-* Plants - EPl
-* Pan - EG
+* bacteria - EnsemblBacteria
+* protists - EnsemblProtists
+* fungi	- EnsemblFungi
+* metazoa - EnsemblMetazoa
+* plants - EnsemblPlants
+* pan - EnsemblPan
+* vertebrates - EnsemblVertebrates
 
 To get the list of databases for Fungi:
 
 .. code-block:: bash
 
   RELEASE=38
-  ./ensembl-production/scripts/process_division.sh EF mysql-eg-pan-prod ensembl_production $RELEASE > fungi_db_to_copy.txt
+  perl ensembl-metadata/misc_scripts/get_list_databases_for_division.pl $(mysql-ens-meta-prod-1 details script) -division fungi -release $RELEASE > fungi_db_to_copy.txt
 
 2. Ensembl:
 
 .. code-block:: bash
 
   RELEASE=91
-  ./ensembl-production/scripts/process_division.sh EV mysql-ens-sta-1 ensembl_production_${RELEASE} $RELEASE > db_to_copy.txt
+  perl ensembl-metadata/misc_scripts/get_list_databases_for_division.pl $(mysql-ens-meta-prod-1 details script) -division vertebrates -release $RELEASE > vertebrates_db_to_copy.txt
 
 Submit the jobs using Python REST db copy endpoint:
 ###################################################
