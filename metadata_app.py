@@ -20,11 +20,6 @@ app.analysis = app.config["HIVE_ANALYSIS"]
 app.logger.addHandler(app_logging.file_handler(__name__))
 app.logger.addHandler(app_logging.default_handler())
 
-app.config['SWAGGER'] = {
-    'title': 'Metadata updater REST endpoints',
-    'uiversion': 2
-}
-print app.config
 swagger = Swagger(app)
 
 hive = None
@@ -50,6 +45,10 @@ cors = CORS(app)
 # use re to support different charsets
 json_pattern = re.compile("application/json")
 
+@app.route('/', methods=['GET'])
+def info():
+    app.config['SWAGGER'] = {'title': 'Metadata updater REST endpoints', 'uiversion': 2}
+    return jsonify(app.config['SWAGGER'])
 
 @app.route('/jobs', methods=['POST'])
 def submit_job():

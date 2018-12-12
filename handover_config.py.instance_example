@@ -4,3 +4,4 @@ HOST = '0.0.0.0'
 PORT = 5001
 ES_HOST = 'localhost'
 ES_PORT = 9200
+RELEASE = 96
