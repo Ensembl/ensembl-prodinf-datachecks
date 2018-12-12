@@ -212,12 +212,17 @@ def handover_result(handover_token):
 @app.route('/handovers/', methods=['GET'])
 def handover_results():
     """
-    Endpoint to get an handover job detail
+    Endpoint to get a list of all the handover by release
     This is using docstring for specifications
     ---
     tags:
       - handovers
     operationId: handovers
+    parameters:
+      - name: release
+        in: query
+        type: string
+        description: get handover list for the given release
     consumes:
       - application/json
     produces:
@@ -244,6 +249,9 @@ def handover_results():
         examples:
           [{"comment": "handover new Tiger database", "contact": "maurel@ebi.ac.uk", "handover_token": "605f1191-7a13-11e8-aa7e-005056ab00f0", "id": "QFqRQWQBiZ0vMed2vKDI", "message": "Handling {u'comment': u'handover new Tiger database', 'handover_token': '605f1191-7a13-11e8-aa7e-005056ab00f0', u'contact': u'maurel@ebi.ac.uk', u'src_uri': u'mysql://ensadmin:ensembl@mysql-ens-general-prod-1:4525/panthera_tigris_altaica_core_93_1', 'tgt_uri': 'mysql://ensadmin:ensembl@mysql-ens-general-dev-1:4484/panthera_tigris_altaica_core_93_1', u'type': u'new_assembly'}", "report_time": "2018-06-27T15:07:07.462", "src_uri": "mysql://ensadmin:ensembl@mysql-ens-general-prod-1:4525/panthera_tigris_altaica_core_93_1", "tgt_uri": "mysql://ensadmin:ensembl@mysql-ens-general-dev-1:4484/panthera_tigris_altaica_core_93_1", "type": "new_assembly"}, {"comment": "handover new Leopard database", "contact": "maurel@ebi.ac.uk", "handover_token": "5dcb1aca-7a13-11e8-b24e-005056ab00f0", "id": "P1qRQWQBiZ0vMed2rqBh", "message": "Handling {u'comment': u'handover new Leopard database', 'handover_token': '5dcb1aca-7a13-11e8-b24e-005056ab00f0', u'contact': u'maurel@ebi.ac.uk', u'src_uri': u'mysql://ensadmin:ensembl@mysql-ens-general-prod-1:4525/panthera_pardus_core_93_1', 'tgt_uri': 'mysql://ensadmin:ensembl@mysql-ens-general-dev-1:4484/panthera_pardus_core_93_1', u'type': u'new_assembly'}", "report_time": "2018-06-27T15:07:03.145", "src_uri": "mysql://ensadmin:ensembl@mysql-ens-general-prod-1:4525/panthera_pardus_core_93_1", "tgt_uri": "mysql://ensadmin:ensembl@mysql-ens-general-dev-1:4484/panthera_pardus_core_93_1", "type": "new_assembly"} ]
     """
+    release = request.args.get('release')
+    if release is None:
+        release = str(app.config['RELEASE'])
     try:
         res = requests.get('http://' + es_host + ':' + es_port)
     except Exception:
@@ -252,7 +260,8 @@ def handover_results():
         logger.info("Retrieving all handover report")
         es = Elasticsearch([{'host': es_host, 'port': es_port}])
         res = es.search(index="reports", body={"query": {"bool": {
-            "must": [{"query_string": {"fields": ["message"], "query": "Handling*", "analyze_wildcard": "true"}}]}},
+            "must": [{"query_string": {"fields": ["message"], "query": "Handling*", "analyze_wildcard": "true"}},
+            {"query_string": {"fields": ["params.tgt_uri"], "query": "*_"+release+"*", "analyze_wildcard": "true"}}]}},
             "size": 1000, "sort": [{"report_time": {"order": "desc"}}]})
         list_handovers = []
         for doc in res['hits']['hits']:
