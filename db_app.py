@@ -247,6 +247,10 @@ def get_status_endpoint(host):
         required: true
         default: server_name
         description: MySQL server host name
+      - name: dir_name
+        in: query
+        type: string
+        description: database directory name on MySQL server
     operationId: hosts
     consumes:
       - application/json
@@ -276,6 +280,13 @@ def get_status_endpoint(host):
             type: string
             items:
               $ref: '#/definitions/status'
+      dir_name:
+        type: dir_name
+        properties:
+          dir_name:
+            type: string
+            items:
+              $ref: '#/definitions/dir_name'
     responses:
       200:
         description: Status of a MySQL server
