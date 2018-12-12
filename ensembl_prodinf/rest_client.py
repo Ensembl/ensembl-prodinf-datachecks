@@ -1,11 +1,35 @@
 #!/usr/bin/env python
 import logging
 import requests
-import argparse   
+import argparse
+import time
 from server_utils import assert_http_uri
+from requests.exceptions import HTTPError
+
+
+
+def retry_requests(test_func):
+    """
+    Decorator for retrying calls to API in case of Network issues
+    :param api_func: Api client function to call
+    :return:
+    """
+    def retry_call_api(*args, **kwargs):
+        retry = 1
+        max_retry = 6
+        while retry <= max_retry:
+            try:
+                return test_func(*args, **kwargs)
+            except HTTPError as e:
+                logging.warning('Call retry (%s/%s): ', retry, max_retry)
+                retry += 1
+                time.sleep(2)
+                if retry > max_retry:
+                    logging.error('API unrecoverable error after %s retry', retry-1)
+                    raise e
+    return retry_call_api
          
 class RestClient(object):
-                  
     """
     Base client for interacting with a standard production REST service where the URIs meet a common standard.    
     Most methods are stubs for overriding or decoration by classes that extend this for specific services
@@ -18,6 +42,7 @@ class RestClient(object):
         assert_http_uri(uri)
         self.uri = uri
     
+    @retry_requests
     def submit_job(self, payload):
         """
         Submit a job using the supplied dict as payload. No checking is carried out on the payload
@@ -30,6 +55,7 @@ class RestClient(object):
         r.raise_for_status()
         return r.json()['job_id']
     
+    @retry_requests
     def delete_job(self, job_id, kill=False):
         """
         Delete job
@@ -44,6 +70,7 @@ class RestClient(object):
         r.raise_for_status()
         return True
     
+    @retry_requests
     def list_jobs(self):
         """
         Find all current jobs
@@ -53,6 +80,7 @@ class RestClient(object):
         r.raise_for_status()    
         return r.json()
 
+    @retry_requests
     def retrieve_job_failure(self, job_id):
         """
         Retrieve information on a job using the special format "failure" which renders failures from the supplied job. 
@@ -66,6 +94,7 @@ class RestClient(object):
         failure_msg = r.json()
         return failure_msg
 
+    @retry_requests
     def retrieve_job_email(self, job_id):
         """
         Retrieve information on a job using the special format "email" which renders the supplied job in a format suitable
@@ -79,6 +108,7 @@ class RestClient(object):
         r.raise_for_status()
         return r.json()
 
+    @retry_requests
     def retrieve_job(self, job_id):
         """
         Retrieve information on a job.
