@@ -29,7 +29,7 @@ EG:
 
   EG_VERSION=38
   SERVER=mysql-eg-staging-2
-  mysql --batch --raw --skip-column-names $($SERVER details mysql) information_schema -e "select schema_name from SCHEMATA where (schema_name like '%core%' or schema_name like '%otherfeatures%' or schema_name like '%rnaseq%' or schema_name like '%cdna%' or schema_name like '%funcgen%%' or schema_name like '%variation%' or schema_name like '%compara%' or schema_name like '%mart%') and ( schema_name like '%${EG_VERSION}_{ENS_VERSION}_%' or  schema_name like '%${EG_VERSION}' ) and schema_name not like 'master_schema%'" > eg_metadata_load.txt
+  mysql --batch --raw --skip-column-names $($SERVER details mysql) information_schema -e "SELECT schema_name from SCHEMATA where schema_name not in ('performance_schema','mysql','information_schema','PERCONA_SCHEMA') and schema_name not like 'master_schema%'" > eg_metadata_load.txt
 
 Ensembl:
 ========
@@ -38,7 +38,7 @@ Ensembl:
 
   ENS_VERSION=91
   SERVER=mysql-ensembl-mirror
-  mysql --batch --raw --skip-column-names $($SERVER details mysql) information_schema -e "select schema_name from SCHEMATA where (schema_name like '%core%' or schema_name like '%otherfeatures%' or schema_name like '%rnaseq%' or schema_name like '%cdna%' or schema_name like '%funcgen%%' or schema_name like '%variation%' or schema_name like '%compara%' or schema_name like '%ontology%' or schema_name like '%mart%') and ( schema_name like '%_${ENS_VERSION}_%'  or  schema_name like '%${ENS_VERSION}' ) and schema_name not like 'master_schema%'" > metadata_load.txt
+  mysql --batch --raw --skip-column-names $($SERVER details mysql) information_schema -e "SELECT schema_name from SCHEMATA where schema_name not in ('performance_schema','mysql','information_schema','PERCONA_SCHEMA') and schema_name not like 'master_schema%'" > metadata_load.txt
 
 Submit the jobs using Python REST db copy endpoint:
 ###################################################
@@ -56,10 +56,8 @@ For Ensembl:
 
 .. code-block:: bash
 
-  METADATA_SERVER=$(mysql-ens-meta-prod-1-ensprod details url) #e.g: mysql://ensprod:pass@mysql-ens-meta-prod-1:4483/
   DATABASE_SERVER=$(mysql-ens-general-prod-1 details url)
   ENDPOINT=http://ens-prod-1.ebi.ac.uk:8000/metadata
-  METADATA=ensembl_metadata
   ENS_VERSION=91
   RELEASE_DATE="2017-12-06"
   CURRENT_RELEASE=1
@@ -70,17 +68,15 @@ For Ensembl:
 
   cd $BASE_DIR/ensembl-prodinf-core 
   for db in $(cat metadata_load.txt); 
-  do ensembl_prodinf/metadata_client.py --action submit --uri ${ENDPOINT} --metadata_uri "${METADATA_SERVER}${METADATA}" --database_uri "${DATABASE_SERVER}${db}" --e_release ${ENS_VERSION} --release_date ${RELEASE_DATE} --current_release ${CURRENT_RELEASE} --email "${EMAIL}" --update_type "${UPDATE_TYPE}" --comment "${COMMENT}" --source "${SOURCE}";
+  do ensembl_prodinf/metadata_client.py --action submit --uri ${ENDPOINT} --database_uri "${DATABASE_SERVER}${db}" --e_release ${ENS_VERSION} --release_date ${RELEASE_DATE} --current_release ${CURRENT_RELEASE} --email "${EMAIL}" --update_type "${UPDATE_TYPE}" --comment "${COMMENT}" --source "${SOURCE}";
   done
 
 For EG:
 
 .. code-block:: bash
 
-  METADATA_SERVER=$(mysql-ens-meta-prod-1-ensprod details url) #e.g: mysql://ensprod:pass@mysql-ens-meta-prod-1:4483/
   DATABASE_SERVER=$(mysql-eg-staging-2 details url)
-  ENDPOINT=http://ens-prod-1.ebi.ac.uk:7000/metadata
-  METADATA=ensembl_metadata
+  ENDPOINT=http://eg-prod-01.ebi.ac.uk:7000/metadata
   ENS_VERSION=91
   RELEASE_DATE="2017-12-13"
   EG_VERSION=38
@@ -92,7 +88,7 @@ For EG:
 
   cd $BASE_DIR/ensembl-prodinf-core 
   for db in $(cat eg_metadata_load.txt); 
-  do ensembl_prodinf/metadata_client.py --action submit --uri ${ENDPOINT} --metadata_uri "${METADATA_SERVER}${METADATA}" --database_uri "${DATABASE_SERVER}${db}" --e_release ${ENS_VERSION} --release_date ${RELEASE_DATE} --current_release ${CURRENT_RELEASE} --eg_release ${EG_VERSION} --email "${EMAIL}" --update_type "${UPDATE_TYPE}" --comment "${COMMENT}" --source "${SOURCE}";
+  do ensembl_prodinf/metadata_client.py --action submit --uri ${ENDPOINT} --database_uri "${DATABASE_SERVER}${db}" --e_release ${ENS_VERSION} --release_date ${RELEASE_DATE} --current_release ${CURRENT_RELEASE} --eg_release ${EG_VERSION} --email "${EMAIL}" --update_type "${UPDATE_TYPE}" --comment "${COMMENT}" --source "${SOURCE}";
   done
 
 
