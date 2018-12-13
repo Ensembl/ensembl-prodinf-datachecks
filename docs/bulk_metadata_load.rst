@@ -62,13 +62,12 @@ For Ensembl:
   RELEASE_DATE="2017-12-06"
   CURRENT_RELEASE=1
   EMAIL=john.doe@ebi.ac.uk
-  UPDATE_TYPE="Other"
   COMMENT="Loading database for release 91"
   SOURCE="Pre release load"
 
   cd $BASE_DIR/ensembl-prodinf-core 
   for db in $(cat metadata_load.txt); 
-  do ensembl_prodinf/metadata_client.py --action submit --uri ${ENDPOINT} --database_uri "${DATABASE_SERVER}${db}" --e_release ${ENS_VERSION} --release_date ${RELEASE_DATE} --current_release ${CURRENT_RELEASE} --email "${EMAIL}" --update_type "${UPDATE_TYPE}" --comment "${COMMENT}" --source "${SOURCE}";
+  do ensembl_prodinf/metadata_client.py --action submit --uri ${ENDPOINT} --database_uri "${DATABASE_SERVER}${db}" --e_release ${ENS_VERSION} --release_date ${RELEASE_DATE} --current_release ${CURRENT_RELEASE} --email "${EMAIL}" --comment "${COMMENT}" --source "${SOURCE}";
   done
 
 For EG:
@@ -82,13 +81,12 @@ For EG:
   EG_VERSION=38
   CURRENT_RELEASE=1
   EMAIL=john.doe@ebi.ac.uk
-  UPDATE_TYPE="Other"
   COMMENT="Loading database for release 91"
   SOURCE="Pre release load"
 
   cd $BASE_DIR/ensembl-prodinf-core 
   for db in $(cat eg_metadata_load.txt); 
-  do ensembl_prodinf/metadata_client.py --action submit --uri ${ENDPOINT} --database_uri "${DATABASE_SERVER}${db}" --e_release ${ENS_VERSION} --release_date ${RELEASE_DATE} --current_release ${CURRENT_RELEASE} --eg_release ${EG_VERSION} --email "${EMAIL}" --update_type "${UPDATE_TYPE}" --comment "${COMMENT}" --source "${SOURCE}";
+  do ensembl_prodinf/metadata_client.py --action submit --uri ${ENDPOINT} --database_uri "${DATABASE_SERVER}${db}" --e_release ${ENS_VERSION} --release_date ${RELEASE_DATE} --current_release ${CURRENT_RELEASE} --eg_release ${EG_VERSION} --email "${EMAIL}" --comment "${COMMENT}" --source "${SOURCE}";
   done
 
 
@@ -104,7 +102,7 @@ The script accept the following arguments:
                           [-i JOB_ID] [-v] [-o OUTPUT_FILE] [-f INPUT_FILE]
                           [-m METADATA_URI] [-d DATABASE_URI] [-s E_RELEASE]
                           [-r RELEASE_DATE] [-c CURRENT_RELEASE]
-                          [-g EG_RELEASE] [-e EMAIL] [-t UPDATE_TYPE]
+                          [-g EG_RELEASE] [-e EMAIL]
                           [-n COMMENT] [-b SOURCE]
 
   Metadata load via a REST service
@@ -135,8 +133,6 @@ The script accept the following arguments:
                         EG release number
   -e EMAIL, --email EMAIL
                         Email where to send the report
-  -t UPDATE_TYPE, --update_type UPDATE_TYPE
-                        Update type, e.g: New assembly
   -n COMMENT, --comment COMMENT
                         Comment
   -b SOURCE, --source SOURCE

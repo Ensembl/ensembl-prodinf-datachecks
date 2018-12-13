@@ -15,7 +15,7 @@ class MetadataClient(RestClient):
             with output_file as f:
                 f.write(r.text)  
         
-    def submit_job(self, database_uri, e_release, eg_release, release_date, current_release, email, update_type, comment, source, email_notification):
+    def submit_job(self, database_uri, e_release, eg_release, release_date, current_release, email, comment, source, email_notification):
         assert_mysql_db_uri(database_uri)
 
         payload = {
@@ -25,7 +25,6 @@ class MetadataClient(RestClient):
             'release_date':release_date,
             'current_release':current_release,
             'email':email,
-            'update_type':update_type,
             'comment':comment,
             'source':source
             }
@@ -58,7 +57,6 @@ class MetadataClient(RestClient):
         if 'eg_release' in i:
             logging.info("EG release number: " + i['eg_release'])
             logging.info("Email of submitter: " + i['email'])
-            logging.info("Update_type: " + i['update_type'])
             logging.info("Comment: " + i['comment'])
             logging.info("Source: " + i['source'])
 
@@ -78,7 +76,6 @@ if __name__ == '__main__':
     parser.add_argument('-c', '--current_release', help='Is this the current release')
     parser.add_argument('-g', '--eg_release', help='EG release number')
     parser.add_argument('-e', '--email', help='Email where to send the report')
-    parser.add_argument('-t', '--update_type', help='Update type, e.g: New assembly')
     parser.add_argument('-n', '--comment', help='Comment')
     parser.add_argument('-b', '--source', help='Source of the database, eg: Handover, Release load')
     parser.add_argument('-m', '--email_notification', help='Get email notification of handover progress')
@@ -99,10 +96,9 @@ if __name__ == '__main__':
     client = MetadataClient(args.uri)
             
     if args.action == 'submit':
-
         if args.input_file == None and args.email_notification == None:
             logging.info("Submitting " + args.database_uri + " for metadata load")
-            job_id = client.submit_job( args.database_uri, args.e_release, args.eg_release, args.release_date, args.current_release, args.email, args.update_type, args.comment, args.source, None)
+            job_id = client.submit_job( args.database_uri, args.e_release, args.eg_release, args.release_date, args.current_release, args.email, args.comment, args.source, None)
             logging.info('Job submitted with ID '+str(job_id))
         elif args.input_file == None:
             logging.info("Submitting " + args.database_uri + " for metadata load")
