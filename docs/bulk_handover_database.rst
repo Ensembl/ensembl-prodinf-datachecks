@@ -66,12 +66,11 @@ For Ensembl:
   DATABASE_SERVER=$(mysql-ens-general-prod-1 details url)
   ENDPOINT=http://ens-prod-1.ebi.ac.uk:8000/handover
   EMAIL=john.doe@ebi.ac.uk
-  UPDATE_TYPE="new_assembly" # choices are "new_genome" , "new_genebuild" , "new_assembly" , "other"
   DESCRIPTION="handover new Leopard database"
 
   cd $BASE_DIR/ensembl-prodinf-core 
   for db in $(cat handover_databases.txt); 
-  do ensembl_prodinf/handover_client.py --action submit --uri ${ENDPOINT} --src_uri "${DATABASE_SERVER}${db}" --email "${EMAIL}" --type "${UPDATE_TYPE}" --description "${DESCRIPTION}";
+  do ensembl_prodinf/handover_client.py --action submit --uri ${ENDPOINT} --src_uri "${DATABASE_SERVER}${db}" --email "${EMAIL}" --description "${DESCRIPTION}";
   done
 
 For EG:
@@ -81,12 +80,11 @@ For EG:
   DATABASE_SERVER=$(mysql-ens-general-prod-1 details url)
   ENDPOINT=http://eg-prod-01.ebi.ac.uk:7000/handover
   EMAIL=john.doe@ebi.ac.uk
-  UPDATE_TYPE="new_assembly" # choices are "new_genome" , "new_genebuild" , "new_assembly" , "other"
   DESCRIPTION="handover new Leopard database"
 
   cd $BASE_DIR/ensembl-prodinf-core 
   for db in $(cat handover_databases.txt); 
-  do ensembl_prodinf/handover_client.py --action submit --uri ${ENDPOINT} --src_uri "${DATABASE_SERVER}${db}" --email "${EMAIL}" --type "${UPDATE_TYPE}" --description "${DESCRIPTION}";
+  do ensembl_prodinf/handover_client.py --action submit --uri ${ENDPOINT} --src_uri "${DATABASE_SERVER}${db}" --email "${EMAIL}" --description "${DESCRIPTION}";
   done
 
 
@@ -116,8 +114,6 @@ The script accept the following arguments:
                           URI of database to hand over
     -e EMAIL, --email EMAIL
                           Email address
-    -t {new_genome,new_genebuild,new_assembly,other}, --type {new_genome,new_genebuild,new_assembly,other}
-                          Update type
     -c DESCRIPTION, --description DESCRIPTION
                           Description
     -n EMAIL_NOTIFICATION, --email_notification EMAIL_NOTIFICATION
