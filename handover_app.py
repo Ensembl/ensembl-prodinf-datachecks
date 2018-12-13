@@ -82,9 +82,6 @@ def handovers():
           src_uri:
             type: string
             example: 'mysql://user@server:port/saccharomyces_cerevisiae_core_91_4'
-          type:
-            type: string
-            example: 'other'
           comment:
             type: string
             example: 'handover new Panda OF'
@@ -97,13 +94,13 @@ def handovers():
         schema:
           $ref: '#/definitions/handovers'
         examples:
-          {src_uri: "mysql://user@server:port/saccharomyces_cerevisiae_core_91_4", contact: "joe.blogg@ebi.ac.uk", type: "other", comment: "handover new Panda OF"}
+          {src_uri: "mysql://user@server:port/saccharomyces_cerevisiae_core_91_4", contact: "joe.blogg@ebi.ac.uk", comment: "handover new Panda OF"}
     """
     if json_pattern.match(request.headers['Content-Type']):
         logger.debug("Submitting handover request " + str(request.json))
         spec = request.json
-        if 'src_uri' not in spec or 'contact' not in spec or 'type' not in spec or 'comment' not in spec:
-            raise Exception("Handover specification incomplete - please specify src_uri, contact, type and comment")
+        if 'src_uri' not in spec or 'contact' not in spec or 'comment' not in spec:
+            raise Exception("Handover specification incomplete - please specify src_uri, contact and comment")
         ticket = handover_database(spec)
         logger.info(ticket)
         return jsonify(ticket);
@@ -157,7 +154,7 @@ def handover_result(handover_token):
         schema:
           $ref: '#/definitions/handovers'
         examples:
-          [{"comment": "handover new Tiger database", "contact": "maurel@ebi.ac.uk", "handover_token": "605f1191-7a13-11e8-aa7e-005056ab00f0", "id": "X1qcQWQBiZ0vMed2vaAt", "message": "Metadata load complete, Handover successful", "progress_total": 3, "report_time": "2018-06-27T15:19:08.459", "src_uri": "mysql://ensadmin:ensembl@mysql-ens-general-prod-1:4525/panthera_tigris_altaica_core_93_1", "tgt_uri": "mysql://ensadmin:ensembl@mysql-ens-general-dev-1:4484/panthera_tigris_altaica_core_93_1", "type": "new_assembly"} ]
+          [{"comment": "handover new Tiger database", "contact": "maurel@ebi.ac.uk", "handover_token": "605f1191-7a13-11e8-aa7e-005056ab00f0", "id": "X1qcQWQBiZ0vMed2vaAt", "message": "Metadata load complete, Handover successful", "progress_total": 3, "report_time": "2018-06-27T15:19:08.459", "src_uri": "mysql://ensadmin:ensembl@mysql-ens-general-prod-1:4525/panthera_tigris_altaica_core_93_1", "tgt_uri": "mysql://ensadmin:ensembl@mysql-ens-general-dev-1:4484/panthera_tigris_altaica_core_93_1"} ]
     """
     try:
         res = requests.get('http://' + es_host + ':' + es_port)
@@ -181,7 +178,6 @@ def handover_result(handover_token):
                 result['src_uri'] = doc['_source']['params']['src_uri']
                 result['tgt_uri'] = doc['_source']['params']['tgt_uri']
                 result['report_time'] = doc['_source']['report_time']
-                result['type'] = doc['_source']['params']['type']
                 handover_detail.append(result)
         else:
             res = es.search(index="reports", body={"query": {"bool": {
@@ -199,7 +195,6 @@ def handover_result(handover_token):
                 result['progress_complete'] = doc['_source']['params']['progress_complete']
                 result['progress_total'] = doc['_source']['params']['progress_total']
                 result['report_time'] = doc['_source']['report_time']
-                result['type'] = doc['_source']['params']['type']
                 handover_detail.append(result)
     except Exception:
         raise ValueError("Issue retrieving information for Handover token: " + str(handover_token))
@@ -247,7 +242,7 @@ def handover_results():
         schema:
           $ref: '#/definitions/handovers'
         examples:
-          [{"comment": "handover new Tiger database", "contact": "maurel@ebi.ac.uk", "handover_token": "605f1191-7a13-11e8-aa7e-005056ab00f0", "id": "QFqRQWQBiZ0vMed2vKDI", "message": "Handling {u'comment': u'handover new Tiger database', 'handover_token': '605f1191-7a13-11e8-aa7e-005056ab00f0', u'contact': u'maurel@ebi.ac.uk', u'src_uri': u'mysql://ensadmin:ensembl@mysql-ens-general-prod-1:4525/panthera_tigris_altaica_core_93_1', 'tgt_uri': 'mysql://ensadmin:ensembl@mysql-ens-general-dev-1:4484/panthera_tigris_altaica_core_93_1', u'type': u'new_assembly'}", "report_time": "2018-06-27T15:07:07.462", "src_uri": "mysql://ensadmin:ensembl@mysql-ens-general-prod-1:4525/panthera_tigris_altaica_core_93_1", "tgt_uri": "mysql://ensadmin:ensembl@mysql-ens-general-dev-1:4484/panthera_tigris_altaica_core_93_1", "type": "new_assembly"}, {"comment": "handover new Leopard database", "contact": "maurel@ebi.ac.uk", "handover_token": "5dcb1aca-7a13-11e8-b24e-005056ab00f0", "id": "P1qRQWQBiZ0vMed2rqBh", "message": "Handling {u'comment': u'handover new Leopard database', 'handover_token': '5dcb1aca-7a13-11e8-b24e-005056ab00f0', u'contact': u'maurel@ebi.ac.uk', u'src_uri': u'mysql://ensadmin:ensembl@mysql-ens-general-prod-1:4525/panthera_pardus_core_93_1', 'tgt_uri': 'mysql://ensadmin:ensembl@mysql-ens-general-dev-1:4484/panthera_pardus_core_93_1', u'type': u'new_assembly'}", "report_time": "2018-06-27T15:07:03.145", "src_uri": "mysql://ensadmin:ensembl@mysql-ens-general-prod-1:4525/panthera_pardus_core_93_1", "tgt_uri": "mysql://ensadmin:ensembl@mysql-ens-general-dev-1:4484/panthera_pardus_core_93_1", "type": "new_assembly"} ]
+          [{"comment": "handover new Tiger database", "contact": "maurel@ebi.ac.uk", "handover_token": "605f1191-7a13-11e8-aa7e-005056ab00f0", "id": "QFqRQWQBiZ0vMed2vKDI", "message": "Handling {u'comment': u'handover new Tiger database', 'handover_token': '605f1191-7a13-11e8-aa7e-005056ab00f0', u'contact': u'maurel@ebi.ac.uk', u'src_uri': u'mysql://ensadmin:ensembl@mysql-ens-general-prod-1:4525/panthera_tigris_altaica_core_93_1', 'tgt_uri': 'mysql://ensadmin:ensembl@mysql-ens-general-dev-1:4484/panthera_tigris_altaica_core_93_1'}", "report_time": "2018-06-27T15:07:07.462", "src_uri": "mysql://ensadmin:ensembl@mysql-ens-general-prod-1:4525/panthera_tigris_altaica_core_93_1", "tgt_uri": "mysql://ensadmin:ensembl@mysql-ens-general-dev-1:4484/panthera_tigris_altaica_core_93_1"}, {"comment": "handover new Leopard database", "contact": "maurel@ebi.ac.uk", "handover_token": "5dcb1aca-7a13-11e8-b24e-005056ab00f0", "id": "P1qRQWQBiZ0vMed2rqBh", "message": "Handling {u'comment': u'handover new Leopard database', 'handover_token': '5dcb1aca-7a13-11e8-b24e-005056ab00f0', u'contact': u'maurel@ebi.ac.uk', u'src_uri': u'mysql://ensadmin:ensembl@mysql-ens-general-prod-1:4525/panthera_pardus_core_93_1', 'tgt_uri': 'mysql://ensadmin:ensembl@mysql-ens-general-dev-1:4484/panthera_pardus_core_93_1'}", "report_time": "2018-06-27T15:07:03.145", "src_uri": "mysql://ensadmin:ensembl@mysql-ens-general-prod-1:4525/panthera_pardus_core_93_1", "tgt_uri": "mysql://ensadmin:ensembl@mysql-ens-general-dev-1:4484/panthera_pardus_core_93_1"} ]
     """
     release = request.args.get('release', str(app.config['RELEASE']))
     try:
@@ -286,7 +281,6 @@ def handover_results():
             result['src_uri'] = doc['_source']['params']['src_uri']
             result['tgt_uri'] = doc['_source']['params']['tgt_uri']
             result['report_time'] = doc['_source']['report_time']
-            result['type'] = doc['_source']['params']['type']
             list_handovers.append(result)
         return jsonify(list_handovers)
     except Exception:
