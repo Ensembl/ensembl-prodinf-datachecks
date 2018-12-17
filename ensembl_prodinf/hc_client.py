@@ -174,9 +174,9 @@ if __name__ == '__main__':
     args = parser.parse_args()
     
     if args.verbose == True:
-        logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s - %(message)s')
+        logging.basicConfig(level=logging.DEBUG, format='%(message)s')
     else:
-        logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s - %(message)s')
+        logging.basicConfig(level=logging.INFO, format='%(message)s')
     
     if args.uri.endswith('/') == False:
         args.uri = args.uri + '/'    
