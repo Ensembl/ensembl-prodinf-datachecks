@@ -31,6 +31,7 @@ import uuid
 import re
 import reporting
 import json
+import time
 
 pool = reporting.get_pool(cfg.report_server)
 hc_client = HcClient(cfg.hc_uri)
@@ -84,7 +85,7 @@ def handover_database(spec):
     if 'tgt_uri' not in spec:
         spec['tgt_uri'] = get_tgt_uri(src_url,staging_uri)
     spec['staging_uri'] = staging_uri
-    spec['progress_complete']=1
+    spec['progress_complete']=0
     get_logger().info("Handling " + str(spec))
     submit_hc(spec, groups, compara_uri, staging_uri)
     return spec['handover_token']
@@ -215,7 +216,7 @@ Please see %s
         return
     else:
         get_logger().info("HCs fine, starting copy")
-        spec['progress_complete']=2
+        spec['progress_complete']=1
         submit_copy(spec)
 
 def submit_copy(spec):
@@ -260,7 +261,7 @@ Please see %s
         spec['progress_complete']=2
     else:
         get_logger().info("Copying complete, submitting metadata job")
-        spec['progress_complete']=3
+        spec['progress_complete']=2
         submit_metadata_update(spec)
 
 def submit_metadata_update(spec):
@@ -308,6 +309,7 @@ Please see %s
                 if 'old_assembly_database_list' in details :
                     drop_old_assembly_databases(details['old_assembly_database_list'],spec['staging_uri'],spec['tgt_uri'])
         get_logger().info("Metadata load complete, Handover successful")
+        spec['progress_complete']=3
         #get_logger().info("Metadata load complete, submitting event")
         #submit_event(spec,result)
     return
@@ -326,7 +328,8 @@ def drop_old_assembly_databases(old_assembly_db_list,staging_uri,tgt_uri):
     #Check if the new database has the same name as the one on staging. In this case DO NOT drop it
     #This can happen if the assembly get renamed
     if tgt_url.database in old_assembly_db_list:
-        get_logger().info("The assembly has been updated but the new database " + str(tgt_url.database) +" is the same as old one ")
+        get_logger().info("The assembly has been updated but the new database " + str(tgt_url.database) +" is the same as old one")
+        time.sleep(1)
         return
     for database in old_assembly_db_list:
         db_uri = staging_uri + database
