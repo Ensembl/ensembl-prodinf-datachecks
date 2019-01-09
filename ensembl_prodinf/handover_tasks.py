@@ -31,7 +31,6 @@ import uuid
 import re
 import reporting
 import json
-import time
 
 pool = reporting.get_pool(cfg.report_server)
 hc_client = HcClient(cfg.hc_uri)
@@ -328,12 +327,11 @@ def drop_old_assembly_databases(old_assembly_db_list,staging_uri,tgt_uri):
     #Check if the new database has the same name as the one on staging. In this case DO NOT drop it
     #This can happen if the assembly get renamed
     if tgt_url.database in old_assembly_db_list:
-        get_logger().info("The assembly has been updated but the new database " + str(tgt_url.database) +" is the same as old one")
-        time.sleep(1)
-        return
-    for database in old_assembly_db_list:
-        db_uri = staging_uri + database
-        if database_exists(db_uri):
-            get_logger().info("Dropping " + str(db_uri))
-            drop_database(db_uri)
+        get_logger().debug("The assembly has been updated but the new database " + str(tgt_url.database) +" is the same as old one")
+    else:
+        for database in old_assembly_db_list:
+            db_uri = staging_uri + database
+            if database_exists(db_uri):
+                get_logger().info("Dropping " + str(db_uri))
+                drop_database(db_uri)
     return
