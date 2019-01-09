@@ -306,7 +306,7 @@ Please see %s
             for event in result['output']['events']:
                 details = json.loads(event['details'])
                 if 'old_assembly_database_list' in details :
-                    drop_old_assembly_databases(details['old_assembly_database_list'],spec['staging_uri'])
+                    drop_old_assembly_databases(details['old_assembly_database_list'],spec['staging_uri'],spec['tgt_uri'])
         get_logger().info("Metadata load complete, Handover successful")
         #get_logger().info("Metadata load complete, submitting event")
         #submit_event(spec,result)
@@ -320,8 +320,14 @@ def submit_event(spec,result):
         event_client.submit_job({"type":event['type'],"genome":event['genome']})
         get_logger().debug("Submitted event to event handler endpoint")
 
-def drop_old_assembly_databases(old_assembly_db_list,staging_uri):
+def drop_old_assembly_databases(old_assembly_db_list,staging_uri,tgt_uri):
     """Drop databases on a previous assembly from the staging MySQL server"""
+    tgt_url=make_url(tgt_uri)
+    #Check if the new database has the same name as the one on staging. In this case DO NOT drop it
+    #This can happen if the assembly get renamed
+    if tgt_url.database in old_assembly_db_list:
+        get_logger().info("The assembly has been updated but the new database " + str(tgt_url.database) +" is the same as old one ")
+        return
     for database in old_assembly_db_list:
         db_uri = staging_uri + database
         if database_exists(db_uri):
