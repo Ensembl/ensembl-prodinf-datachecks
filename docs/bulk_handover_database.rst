@@ -37,7 +37,8 @@ To get the list of databases for Fungi:
 .. code-block:: bash
 
   RELEASE=41
-  ./ensembl-production/scripts/process_division.sh EF mysql-eg-pan-prod ensembl_production $RELEASE > eg_handover_databases.txt
+  perl ensembl-metadata/misc_scripts/get_list_databases_for_division.pl $(mysql-ens-meta-prod-1 details script) -division fungi -release $RELEASE > fungi_handover.txt
+
 
 Ensembl:
 ========
@@ -45,7 +46,7 @@ Ensembl:
 .. code-block:: bash
 
   RELEASE=94
-  ./ensembl-production/scripts/process_division.sh EV mysql-ens-sta-1 ensembl_production_${RELEASE} $RELEASE > handover_databases.txt
+  perl ensembl-metadata/misc_scripts/get_list_databases_for_division.pl $(mysql-ens-meta-prod-1 details script) -division vertebrates -release $RELEASE > vertebrates_handover.txt
 
 Submit the jobs using Python REST db copy endpoint:
 ###################################################
@@ -69,7 +70,7 @@ For Ensembl:
   DESCRIPTION="handover new Leopard database"
 
   cd $BASE_DIR/ensembl-prodinf-core 
-  for db in $(cat handover_databases.txt); 
+  for db in $(cat vertebrates_handover.txt);
   do ensembl_prodinf/handover_client.py --action submit --uri ${ENDPOINT} --src_uri "${DATABASE_SERVER}${db}" --email "${EMAIL}" --description "${DESCRIPTION}";
   done
 
@@ -83,7 +84,7 @@ For EG:
   DESCRIPTION="handover new Leopard database"
 
   cd $BASE_DIR/ensembl-prodinf-core 
-  for db in $(cat handover_databases.txt); 
+  for db in $(cat fungi_handover.txt);
   do ensembl_prodinf/handover_client.py --action submit --uri ${ENDPOINT} --src_uri "${DATABASE_SERVER}${db}" --email "${EMAIL}" --description "${DESCRIPTION}";
   done
 
