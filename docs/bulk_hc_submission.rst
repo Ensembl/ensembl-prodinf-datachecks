@@ -36,7 +36,8 @@ To get the list of databases for Fungi:
 .. code-block:: bash
 
   RELEASE=38
-  ./ensembl-production/scripts/process_division.sh EF mysql-eg-pan-prod ensembl_production $RELEASE > fungi_db_hc.txt
+  perl ensembl-metadata/misc_scripts/get_list_databases_for_division.pl $(mysql-ens-meta-prod-1 details script) -division fungi -release $RELEASE > fungi_db_hc.txt
+
 
 
 Ensembl:
@@ -44,8 +45,8 @@ Ensembl:
 
 .. code-block:: bash
 
- RELEASE=91
-  ./ensembl-production/scripts/process_division.sh EV mysql-ens-sta-1 ensembl_production_${RELEASE} $RELEASE > db_hc.txt
+  RELEASE=91
+  perl ensembl-metadata/misc_scripts/get_list_databases_for_division.pl $(mysql-ens-meta-prod-1 details script) -division vertebrates -release $RELEASE > vertebrates_db_hc.txt
 
 Submit the jobs using REST endpoint:
 ####################################
@@ -73,7 +74,7 @@ To Submit the job via the REST enpoint for Ensembl
   TAG=my_hc_run
   
   cd $BASE_DIR/ensembl-prodinf-core 
-  for db in $(cat db_hc.txt)
+  for db in $(cat vertebrates_db_hc.txt);
   do python ensembl_prodinf/hc_client.py --uri $ENDPOINT --db_uri "${SERVER}${db}" --production_uri "${PRODUCTION}ensembl_production_${RELEASE}" --staging_uri $STAGING --live_uri $LIVE --compara_uri "${COMPARA_MASTER}ensembl_compara_master" --hc_groups $GROUP --data_files_path $DATA_FILE_PATH --tag $TAG  --action submit
   done
   
@@ -92,7 +93,7 @@ To Submit the job via the REST enpoint for EG
   TAG=my_hc_run
   
   cd $BASE_DIR/ensembl-prodinf-core 
-  for db in $(cat db_hc.txt)
+  for db in $(cat fungi_db_hc.txt);
   do python ensembl_prodinf/hc_client.py --uri $ENDPOINT --db_uri "${SERVER}${db}" --production_uri "${PRODUCTION}ensembl_production" --staging_uri $STAGING --live_uri $LIVE --compara_uri "${COMPARA_MASTER}ensembl_compara_master" --hc_groups $GROUP --data_files_path $DATA_FILE_PATH --tag $TAG  --action submit 
   done
   
