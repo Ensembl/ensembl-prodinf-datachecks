@@ -59,8 +59,8 @@ For virtualenv:
 
 .. code-block:: bash
 
-  mkdir -p vars/metadata_app-instance
-  cp metadata_config.py.instance_example vars/metadata_app-instance/metadata_config.py 
+  mkdir -p instance
+  cp metadata_config.py.instance_example instance/metadata_config.py 
 
 
 Otherwise:

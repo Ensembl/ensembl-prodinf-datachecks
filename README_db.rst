@@ -61,8 +61,9 @@ For virtualenv:
 
 .. code-block:: bash
 
-  mkdir -p vars/db_app-instance
-  cp db_config.py.instance_example vars/db_app-instance/db_config.py
+  mkdir -p instance
+  cp db_config.py.instance_example instance/db_config.py
+  cp server_uris.json.example server_uris.json
 
 Otherwise:
 
