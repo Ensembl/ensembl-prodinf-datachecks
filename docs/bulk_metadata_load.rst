@@ -22,22 +22,22 @@ Create file with list of databases to load, e.g: metadata_load.txt
 
 Or for all the database of a given division:
 
-EG:
+Non vertebrates:
 ===
 
 .. code-block:: bash
 
   EG_VERSION=38
-  SERVER=mysql-eg-staging-2
+  SERVER=mysql-ens-sta-3
   mysql --batch --raw --skip-column-names $($SERVER details mysql) information_schema -e "SELECT schema_name from SCHEMATA where schema_name not in ('performance_schema','mysql','information_schema','PERCONA_SCHEMA') and schema_name not like 'master_schema%'" > eg_metadata_load.txt
 
-Ensembl:
+Vertebrates:
 ========
 
 .. code-block:: bash
 
   ENS_VERSION=91
-  SERVER=mysql-ensembl-mirror
+  SERVER=mysql-ens-sta-1
   mysql --batch --raw --skip-column-names $($SERVER details mysql) information_schema -e "SELECT schema_name from SCHEMATA where schema_name not in ('performance_schema','mysql','information_schema','PERCONA_SCHEMA') and schema_name not like 'master_schema%'" > metadata_load.txt
 
 Submit the jobs using Python REST db copy endpoint:
@@ -56,7 +56,7 @@ For Ensembl:
 
 .. code-block:: bash
 
-  DATABASE_SERVER=$(mysql-ens-general-prod-1 details url)
+  DATABASE_SERVER=$(mysql-ens-sta-1 details url)
   ENDPOINT=http://ens-prod-1.ebi.ac.uk:8000/metadata
   ENS_VERSION=91
   RELEASE_DATE="2017-12-06"
@@ -70,11 +70,11 @@ For Ensembl:
   do ensembl_prodinf/metadata_client.py --action submit --uri ${ENDPOINT} --database_uri "${DATABASE_SERVER}${db}" --e_release ${ENS_VERSION} --release_date ${RELEASE_DATE} --current_release ${CURRENT_RELEASE} --email "${EMAIL}" --comment "${COMMENT}" --source "${SOURCE}";
   done
 
-For EG:
+For Non vertebrates:
 
 .. code-block:: bash
 
-  DATABASE_SERVER=$(mysql-eg-staging-2 details url)
+  DATABASE_SERVER=$(mysql-ens-sta-3 details url)
   ENDPOINT=http://eg-prod-01.ebi.ac.uk:7000/metadata
   ENS_VERSION=91
   RELEASE_DATE="2017-12-13"
@@ -130,7 +130,7 @@ The script accept the following arguments:
   -c CURRENT_RELEASE, --current_release CURRENT_RELEASE
                         Is this the current release
   -g EG_RELEASE, --eg_release EG_RELEASE
-                        EG release number
+                        non vertebrates release number
   -e EMAIL, --email EMAIL
                         Email where to send the report
   -n COMMENT, --comment COMMENT
@@ -141,7 +141,7 @@ The script accept the following arguments:
 Check job status
 ################
 
-You can check job status either on the production interface: `http://ens-prod-1.ebi.ac.uk:8000/#!/metadata_list` or `http://eg-prod-01.ebi.ac.uk:7000/#!/metadata_list` for EG
+You can check job status either on the production interface: `http://ens-prod-1.ebi.ac.uk:8000/#!/metadata_list` or `http://eg-prod-01.ebi.ac.uk:7000/#!/metadata_list` for non vertebrates
 
 or using the Python client:
 
