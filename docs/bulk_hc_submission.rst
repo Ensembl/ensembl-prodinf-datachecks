@@ -20,23 +20,24 @@ Create file with list of databases to healthcheck, e.g: ``db_hc.txt``
 
 Or for all the database of a given division:
 
-EG:
+Non vertebrates:
 ===
-Please find below the list of EG divisions short names:
+Please find below the list of non vertebrates divisions short names:
 
 * Bacteria - EB
 * Protists - EPr
 * Fungi	- EF
 * Metazoa - EM
 * Plants - EPl
-* Pan - EG
+* Pan - EP
 
 To get the list of databases for Fungi:
 
 .. code-block:: bash
 
   RELEASE=38
-  ./ensembl-production/scripts/process_division.sh EF mysql-eg-pan-prod ensembl_production $RELEASE > fungi_db_hc.txt
+  perl ensembl-metadata/misc_scripts/get_list_databases_for_division.pl $(mysql-ens-meta-prod-1 details script) -division fungi -release $RELEASE > fungi_db_hc.txt
+
 
 
 Ensembl:
@@ -44,8 +45,8 @@ Ensembl:
 
 .. code-block:: bash
 
- RELEASE=91
-  ./ensembl-production/scripts/process_division.sh EV mysql-ens-sta-1 ensembl_production_${RELEASE} $RELEASE > db_hc.txt
+  RELEASE=91
+  perl ensembl-metadata/misc_scripts/get_list_databases_for_division.pl $(mysql-ens-meta-prod-1 details script) -division vertebrates -release $RELEASE > vertebrates_db_hc.txt
 
 Submit the jobs using REST endpoint:
 ####################################
@@ -57,7 +58,7 @@ Clone the ensembl-prodinf-core repo:
   git clone https://github.com/Ensembl/ensembl-prodinf-core
   cd ensembl-prodinf-core
 
-To Submit the job via the REST enpoint for Ensembl
+To Submit the job via the REST enpoint for vertebrates
 
 .. code-block:: bash
 
@@ -73,26 +74,26 @@ To Submit the job via the REST enpoint for Ensembl
   TAG=my_hc_run
   
   cd $BASE_DIR/ensembl-prodinf-core 
-  for db in $(cat db_hc.txt)
+  for db in $(cat vertebrates_db_hc.txt);
   do python ensembl_prodinf/hc_client.py --uri $ENDPOINT --db_uri "${SERVER}${db}" --production_uri "${PRODUCTION}ensembl_production_${RELEASE}" --staging_uri $STAGING --live_uri $LIVE --compara_uri "${COMPARA_MASTER}ensembl_compara_master" --hc_groups $GROUP --data_files_path $DATA_FILE_PATH --tag $TAG  --action submit
   done
   
-To Submit the job via the REST enpoint for EG
+To Submit the job via the REST enpoint for non vertebrates
 
 .. code-block:: bash
 
-  SERVER=$(mysql-eg-staging-1 details url)
+  SERVER=$(mysql-ens-sta-3 details url)
   GROUP=EGCoreHandover
   COMPARA_MASTER=$(mysql-eg-pan-prod details url)
   LIVE=$(mysql-eg-publicsql details url)
-  STAGING=$(mysql-eg-staging-1 details url)
+  STAGING=$(mysql-ens-sta-3 details url)
   PRODUCTION=$(mysql-eg-pan-prod details url)
   ENDPOINT=http://ens-prod-1.ebi.ac.uk:7000/hc/
   DATA_FILE_PATH=/nfs/panda/ensembl/production/ensemblftp/data_files/
   TAG=my_hc_run
   
   cd $BASE_DIR/ensembl-prodinf-core 
-  for db in $(cat db_hc.txt)
+  for db in $(cat fungi_db_hc.txt);
   do python ensembl_prodinf/hc_client.py --uri $ENDPOINT --db_uri "${SERVER}${db}" --production_uri "${PRODUCTION}ensembl_production" --staging_uri $STAGING --live_uri $LIVE --compara_uri "${COMPARA_MASTER}ensembl_compara_master" --hc_groups $GROUP --data_files_path $DATA_FILE_PATH --tag $TAG  --action submit 
   done
   
@@ -161,7 +162,7 @@ The script accept the following arguments:
 Check job status
 ################
 
-You can check job status either on the production interface: `<http://ens-prod-1.ebi.ac.uk:8000/#!/hc_list>`_ or `<http://eg-prod-01.ebi.ac.uk:7000/#!/hc_list>`_ for EG
+You can check job status either on the production interface: `<http://ens-prod-1.ebi.ac.uk:8000/#!/hc_list>`_ or `<http://eg-prod-01.ebi.ac.uk:7000/#!/hc_list>`_ for non vertebrates
 
 or using the Python client:
 

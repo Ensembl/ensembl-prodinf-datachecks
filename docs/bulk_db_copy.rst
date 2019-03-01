@@ -38,7 +38,7 @@ To get the list of databases for Fungi:
   RELEASE=38
   perl ensembl-metadata/misc_scripts/get_list_databases_for_division.pl $(mysql-ens-meta-prod-1 details script) -division fungi -release $RELEASE > fungi_db_to_copy.txt
 
-2. Ensembl:
+2. Vertebrates:
 
 .. code-block:: bash
 
@@ -60,7 +60,7 @@ To submit the job via the REST enpoint
 
   SOURCE_SERVER=$(mysql-ens-vertannot-staging details url) #e.g: mysql://ensro@mysql-ens-vertannot-staging:4573/
   TARGET_SERVER=$(mysql-ens-general-prod-1-ensadmin details url)
-  ENDPOINT=http://ens-prod-1.ebi.ac.uk:8000/dbcopy/ #or http://eg-prod-01.ebi.ac.uk:7000/dbcopy/ for EG
+  ENDPOINT=http://ens-prod-1.ebi.ac.uk:8000/dbcopy/ #or http://eg-prod-01.ebi.ac.uk:7000/dbcopy/ for non vertebrates
 
   cd $BASE_DIR/ensembl-prodinf-core 
   for db in $(cat db_to_copy.txt); 
@@ -111,7 +111,7 @@ The script accept the following arguments:
 Check job status
 ################
 
-You can check job status either on the production interface: `<http://ens-prod-1.ebi.ac.uk:8000/#!/copy_list>`_ or `<http://eg-prod-01.ebi.ac.uk:7000/#!/copy_list>`_ for EG:
+You can check job status either on the production interface: `<http://ens-prod-1.ebi.ac.uk:8000/#!/copy_list>`_ or `<http://eg-prod-01.ebi.ac.uk:7000/#!/copy_list>`_ for non vertebrates:
 
 or using the Python client:
 
