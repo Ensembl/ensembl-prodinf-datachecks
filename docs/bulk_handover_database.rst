@@ -22,7 +22,7 @@ Create file with list of databases to handover, e.g: handover_databases.txt
 
 Or for all the database of a given division:
 
-EG:
+Non Vertebrates:
 ===
 
 * Bacteria - EB
@@ -30,7 +30,7 @@ EG:
 * Fungi	- EF
 * Metazoa - EM
 * Plants - EPl
-* Pan - EG
+* Pan - EP
 
 To get the list of databases for Fungi:
 
@@ -40,7 +40,7 @@ To get the list of databases for Fungi:
   perl ensembl-metadata/misc_scripts/get_list_databases_for_division.pl $(mysql-ens-meta-prod-1 details script) -division fungi -release $RELEASE > fungi_handover.txt
 
 
-Ensembl:
+Vertebrates:
 ========
 
 .. code-block:: bash
@@ -60,28 +60,28 @@ Clone the ensembl-prodinf-core repo:
 
 To Submit the job via the REST enpoint
 
-For Ensembl:
+For Vertebrates:
 
 .. code-block:: bash
 
   DATABASE_SERVER=$(mysql-ens-general-prod-1 details url)
   ENDPOINT=http://ens-prod-1.ebi.ac.uk:8000/handover
   EMAIL=john.doe@ebi.ac.uk
-  DESCRIPTION="handover new Leopard database"
+  DESCRIPTION="handover new databases"
 
   cd $BASE_DIR/ensembl-prodinf-core 
   for db in $(cat vertebrates_handover.txt);
   do ensembl_prodinf/handover_client.py --action submit --uri ${ENDPOINT} --src_uri "${DATABASE_SERVER}${db}" --email "${EMAIL}" --description "${DESCRIPTION}";
   done
 
-For EG:
+For Fungi:
 
 .. code-block:: bash
 
   DATABASE_SERVER=$(mysql-ens-general-prod-1 details url)
   ENDPOINT=http://eg-prod-01.ebi.ac.uk:7000/handover
   EMAIL=john.doe@ebi.ac.uk
-  DESCRIPTION="handover new Leopard database"
+  DESCRIPTION="handover new Fungi databases"
 
   cd $BASE_DIR/ensembl-prodinf-core 
   for db in $(cat fungi_handover.txt);
@@ -123,7 +123,7 @@ The script accept the following arguments:
 Check job status
 ################
 
-You can check job status either on the production interface: `http://ens-prod-1.ebi.ac.uk:8000/#!/database_handover_list` or `http://eg-prod-01.ebi.ac.uk:7000/#!/database_handover_list` for EG
+You can check job status either on the production interface: `http://ens-prod-1.ebi.ac.uk:8000/#!/database_handover_list` or `http://eg-prod-01.ebi.ac.uk:7000/#!/database_handover_list` for non vertebrates
 
 or using the Python client:
 
