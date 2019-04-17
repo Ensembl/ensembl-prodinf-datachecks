@@ -46,7 +46,7 @@ Ensembl:
 .. code-block:: bash
 
   RELEASE=91
-  perl ensembl-metadata/misc_scripts/get_list_databases_for_division.pl $(mysql-ens-meta-prod-1 details script) -division EnsemblVertebrates -release $RELEASE > vertebrates_db_hc.txt
+  perl ensembl-metadata/misc_scripts/get_list_databases_for_division.pl $(mysql-ens-meta-prod-1 details script) -division vertebrates -release $RELEASE > vertebrates_db_hc.txt
 
 Submit the jobs using REST endpoint:
 ####################################
