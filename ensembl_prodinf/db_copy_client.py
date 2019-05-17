@@ -11,7 +11,7 @@ class DbCopyClient(RestClient):
     Client for submitting database copy jobs to the db copy REST API
     """
 
-    def submit_job(self, source_db_uri, target_db_uri, only_tables, skip_tables, update, drop, email):
+    def submit_job(self, source_db_uri, target_db_uri, only_tables, skip_tables, update, drop, convert_innodb, email):
         """
         Submit a new job
         Arguments:
@@ -21,16 +21,17 @@ class DbCopyClient(RestClient):
           skip_tables : list of tables to skip from the copy
           update : set to True to run an incremental update
           drop : set to True to drop the schema first
+          convert_innodb : Convert innoDB tables to MyISAM
           email : optional address for job completion email
         """
         assert_mysql_db_uri(source_db_uri)
         assert_mysql_db_uri(target_db_uri)
         
         if only_tables:
-            if (not re.search(r"^([^ ]+){1}$", only_tables) or not re.search(r"^([^ ]+){1}(,){1}([^ ]+){1}$", only_tables)):
+            if (not re.search(r"^([^ ]+){1}$", only_tables) and not re.search(r"^([^ ]+){1}(,){1}([^ ]+){1}$", only_tables)):
                 raise ValueError("List of tables need to be comma separated, eg: table1,table2,table3")
         if skip_tables:
-            if (not re.search(r"^([^ ]+){1}$", skip_tables) or not re.search(r"^([^ ]+){1}(,){1}([^ ]+){1}$", skip_tables)):
+            if (not re.search(r"^([^ ]+){1}$", skip_tables) and not re.search(r"^([^ ]+){1}(,){1}([^ ]+){1}$", skip_tables)):
                 raise ValueError("List of tables need to be comma separated, eg: table1,table2,table3")
     
         logging.info("Submitting job")
@@ -41,6 +42,7 @@ class DbCopyClient(RestClient):
             'skip_tables':skip_tables,
             'update':update,
             'drop':drop,
+            'convert_innodb':convert_innodb,
             'email':email
         }
         return super(DbCopyClient, self).submit_job(payload)
@@ -95,6 +97,8 @@ class DbCopyClient(RestClient):
             logging.info("Incremental database update using rsync checksum set to: " + i['update'])
         if 'drop' in i:
             logging.info("Drop database on Target server before copy set to: " + i['drop'])
+        if 'convert_innodb' in i:
+            logging.info("Convert InnoDB tables to MyISAM set to: " + i['convert_innodb'])
         if 'email' in i:
             logging.info("email: " + i['email'])
 
@@ -114,6 +118,7 @@ if __name__ == '__main__':
     parser.add_argument('-n', '--skip_tables', help='List of tables to skip')
     parser.add_argument('-p', '--update', help='Incremental database update using rsync checksum')
     parser.add_argument('-d', '--drop', help='Drop database on Target server before copy')
+    parser.add_argument('-c', '--convert_innodb', help='Convert InnoDB tables to MyISAM after copy')
     parser.add_argument('-e', '--email', help='Email where to send the report')
 
 
@@ -133,13 +138,13 @@ if __name__ == '__main__':
 
         if args.input_file == None:
             logging.info("Submitting " + args.source_db_uri + "->" + args.target_db_uri)
-            job_id = client.submit_job(args.source_db_uri, args.target_db_uri, args.only_tables, args.skip_tables, args.update, args.drop, args.email)
+            job_id = client.submit_job(args.source_db_uri, args.target_db_uri, args.only_tables, args.skip_tables, args.update, args.drop, args.convert_innodb, args.email)
             logging.info('Job submitted with ID '+str(job_id))
         else:
             for line in args.input_file:
                 uris = line.split()
                 logging.info("Submitting " + uris[0] + "->" + uris[1])
-                job_id = client.submit_job(uris[0], uris[1], args.only_tables, args.skip_tables, args.update, args.drop, args.email)
+                job_id = client.submit_job(uris[0], uris[1], args.only_tables, args.skip_tables, args.update, args.drop, args.convert_innodb, args.email)
                 logging.info('Job submitted with ID '+str(job_id))
     
     elif args.action == 'retrieve':
