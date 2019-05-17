@@ -506,16 +506,19 @@ def submit():
           drop:
             type: integer
             example: 0
+          convert_innodb:
+            type: integer
+            example: 0
           email:
             type: string
             example: 'undefined'
     responses:
       200:
-        description: submit of an healthcheck job
+        description: submit of a copy job
         schema:
           $ref: '#/definitions/submit'
         examples:
-          {source_db_uri: "mysql://user@server:port/saccharomyces_cerevisiae_core_91_4", target_db_uri: "mysql://user:password@server:port/saccharomyces_cerevisiae_core_91_4", only_tables: undefined, skip_tables: undefined, update: undefined, drop: 1, email: undefined }
+          {source_db_uri: "mysql://user@server:port/saccharomyces_cerevisiae_core_91_4", target_db_uri: "mysql://user:password@server:port/saccharomyces_cerevisiae_core_91_4", only_tables: undefined, skip_tables: undefined, update: undefined, drop: 1, convert_innodb: 0, email: undefined }
     """
     if json_pattern.match(request.headers['Content-Type']):
         logger.debug("Submitting Database copy " + str(request.json))
