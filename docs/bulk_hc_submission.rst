@@ -67,7 +67,7 @@ To Submit the job via the REST enpoint for vertebrates
   COMPARA_MASTER=$(mysql-ens-compara-prod-1 details url)
   LIVE=$(mysql-ens-mirror-1 details url)
   STAGING=$(mysql-ens-sta-1 details url)
-  PRODUCTION=$(mysql-meta-prod-1 details url)
+  PRODUCTION=$(mysql-ens-meta-prod-1 details url)
   ENDPOINT=http://ens-prod-1.ebi.ac.uk:8000/hc/
   DATA_FILE_PATH=/nfs/panda/ensembl/production/ensemblftp/data_files/
   RELEASE=91
@@ -87,7 +87,7 @@ To Submit the job via the REST enpoint for non vertebrates
   COMPARA_MASTER=$(mysql-eg-pan-prod details url)
   LIVE=$(mysql-ens-mirror-3 details url)
   STAGING=$(mysql-ens-sta-3 details url)
-  PRODUCTION=$(mysql-meta-prod-1 details url)
+  PRODUCTION=$(mysql-ens-meta-prod-1 details url)
   ENDPOINT=http://ens-prod-1.ebi.ac.uk:7000/hc/
   DATA_FILE_PATH=/nfs/panda/ensembl/production/ensemblftp/data_files/
   TAG=my_hc_run
