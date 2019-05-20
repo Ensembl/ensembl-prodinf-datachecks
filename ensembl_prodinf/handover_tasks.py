@@ -221,7 +221,7 @@ Please see %s
 def submit_copy(spec):
     """Submit the source database for copying to the target. Returns a celery job identifier"""    
     try:
-        copy_job_id = db_copy_client.submit_job(spec['src_uri'], spec['tgt_uri'], None, None, False, True, None)
+        copy_job_id = db_copy_client.submit_job(spec['src_uri'], spec['tgt_uri'], None, None, False, True, True, None)
     except Exception as e:
         get_logger().error("Handover failed, cannot submit copy job")
         raise ValueError("Handover failed, cannot submit copy job {}".format(e))
