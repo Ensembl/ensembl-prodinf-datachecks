@@ -138,6 +138,9 @@ def hc_groups(db_type,db_prefix,uri):
         elif db_prefix == "plants":
             compara_uri=cfg.compara_plants_uri + 'ensembl_compara_master_' + db_prefix
             compara_handover_group=cfg.compara_handover_group
+        elif db_prefix == "metazoa":
+            compara_uri=cfg.compara_metazoa_uri + 'ensembl_compara_master_' + db_prefix
+            compara_handover_group=cfg.compara_handover_group
         elif check_grch37(uri,'homo_sapiens'):
             compara_uri=cfg.compara_uri + 'ensembl_compara_master_grch37'
             compara_handover_group=cfg.compara_handover_group
