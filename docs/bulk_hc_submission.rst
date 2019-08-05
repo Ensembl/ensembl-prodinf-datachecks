@@ -88,7 +88,7 @@ To Submit the job via the REST enpoint for non vertebrates
   LIVE=$(mysql-ens-mirror-3 details url)
   STAGING=$(mysql-ens-sta-3 details url)
   PRODUCTION=$(mysql-ens-meta-prod-1 details url)
-  ENDPOINT=http://ens-prod-1.ebi.ac.uk:7000/hc/
+  ENDPOINT=http://eg-prod-01.ebi.ac.uk:7000/hc/
   DATA_FILE_PATH=/nfs/panda/ensembl/production/ensemblftp/data_files/
   TAG=my_hc_run
   RELEASE=91
