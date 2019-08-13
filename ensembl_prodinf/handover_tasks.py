@@ -304,12 +304,12 @@ Please see %s
         send_email(to_address=spec['contact'], subject='Metadata load failed, please see: '+cfg.meta_uri+ 'jobs/' + str(metadata_job_id) + '?format=failures', body=msg, smtp_server=cfg.smtp_server)
         return
     else:
-        #Cleaning up old assembly databases
+        #Cleaning up old assembly or old genebuild databases for Wormbase when database suffix has changed
         if 'events' in result['output'] and result['output']['events']:
             for event in result['output']['events']:
                 details = json.loads(event['details'])
-                if 'old_assembly_database_list' in details :
-                    drop_old_assembly_databases(details['old_assembly_database_list'],spec['staging_uri'],spec['tgt_uri'])
+                if 'current_database_list' in details :
+                    drop_current_databases(details['current_database_list'],spec['staging_uri'],spec['tgt_uri'])
         get_logger().info("Metadata load complete, Handover successful")
         spec['progress_complete']=3
         #get_logger().info("Metadata load complete, submitting event")
@@ -324,15 +324,15 @@ def submit_event(spec,result):
         event_client.submit_job({"type":event['type'],"genome":event['genome']})
         get_logger().debug("Submitted event to event handler endpoint")
 
-def drop_old_assembly_databases(old_assembly_db_list,staging_uri,tgt_uri):
-    """Drop databases on a previous assembly from the staging MySQL server"""
+def drop_current_databases(current_db_list,staging_uri,tgt_uri):
+    """Drop databases on a previous assembly or previous genebuild (e.g: Wormbase) from the staging MySQL server"""
     tgt_url=make_url(tgt_uri)
     #Check if the new database has the same name as the one on staging. In this case DO NOT drop it
-    #This can happen if the assembly get renamed
-    if tgt_url.database in old_assembly_db_list:
-        get_logger().debug("The assembly has been updated but the new database " + str(tgt_url.database) +" is the same as old one")
+    #This can happen if the assembly get renamed or genebuild version has changed for Wormbase
+    if tgt_url.database in current_db_list:
+        get_logger().debug("The assembly or genebuild has been updated but the new database " + str(tgt_url.database) +" is the same as old one")
     else:
-        for database in old_assembly_db_list:
+        for database in current_db_list:
             db_uri = staging_uri + database
             if database_exists(db_uri):
                 get_logger().info("Dropping " + str(db_uri))
