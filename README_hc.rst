@@ -20,6 +20,14 @@ Note that currently the service runs the Java healthchecks from `<https://github
 Installation
 ============
 
+First clone this repo
+
+.. code-block:: bash
+
+  git clone https://github.com/Ensembl/ensembl-prodinf-srv
+  cd ensembl-prodinf-srv
+
+
 To install Python requirements using pip:
 
 .. code-block:: bash
@@ -32,7 +40,7 @@ You can also install ``ensembl_prodinf`` from git or by adding an existing insta
 
 .. code-block:: bash
 
-  PYTHONPATH=dir/ensembl-prodinf/ensembl-prodinf-core
+  PYTHONPATH=[install_dir]/ensembl-prodinf/ensembl-prodinf-core
 
 Hive Setup
 ==========

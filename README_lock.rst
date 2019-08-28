@@ -13,6 +13,13 @@ The locking app itself is a simple flask app (see `lock_app.py <lock_app.py>`_) 
 Installation
 ============
 
+First clone this repo
+
+.. code-block:: bash
+
+  git clone https://github.com/Ensembl/ensembl-prodinf-srv
+  cd ensembl-prodinf-srv
+
 To install Python requirements using pip:
 
 .. code-block:: bash
@@ -23,7 +30,7 @@ This will install ``ensembl_prodinf`` from git - alternatively to reference an e
 
 .. code-block:: bash
 
-  PYTHONPATH=dir/ensembl-prodinf/ensembl-prodinf-core
+  PYTHONPATH=[install_dir]/ensembl-prodinf/ensembl-prodinf-core
 
 
 Database Setup
