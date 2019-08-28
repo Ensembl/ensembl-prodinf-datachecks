@@ -12,6 +12,13 @@ Tasks are submitted to Celery by a client (e.g. a flask REST endpoint) invoking 
 Installation
 ============
 
+First clone this repo
+
+.. code-block:: bash
+
+  git clone https://github.com/Ensembl/ensembl-prodinf-srv
+  cd ensembl-prodinf-srv
+
 Requirements for the Celery email worker service are in `celery_requirements.txt <../celery_requirements.txt>`_ which can be installed using ``pip```:
 
 .. code-block:: bash
@@ -22,7 +29,7 @@ This will install ``ensembl_prodinf`` from git - alternatively to reference an e
 
 .. code-block:: bash
 
-  PYTHONPATH=dir/ensembl-prodinf/ensembl-prodinf-core
+  PYTHONPATH=[install_dir]/ensembl-prodinf/ensembl-prodinf-core
 
 The default backend is RabbitMQ. This can be installed as per https://www.rabbitmq.com/.
 
