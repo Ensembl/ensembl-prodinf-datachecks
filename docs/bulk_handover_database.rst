@@ -132,4 +132,11 @@ or using the Python client:
   ensembl_prodinf/handover_client.py --action list --uri http://ens-prod-1.ebi.ac.uk:8000/handover
   ensembl_prodinf/handover_client.py --action list --uri http://eg-prod-01.ebi.ac.uk:7000/handover
   
-  
+If you have handed over many databases, you can get a summary of your handover:
+
+.. code-block:: bash
+
+  ensembl_prodinf/handover_client.py --action summary --uri http://ens-prod-1.ebi.ac.uk:8000/handover -e john.doe@ebi.ac.uk
+  ensembl_prodinf/handover_client.py --action summary --uri http://eg-prod-01.ebi.ac.uk:7000/handover -e john.doe@ebi.ac.uk
+
+If a database was handed over multiple times, you will only see the latest one.
