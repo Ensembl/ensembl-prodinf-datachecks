@@ -75,23 +75,23 @@ class DatacheckClient(RestClient):
     """
     jobs = super(DatacheckClient, self).list_jobs()
     if pattern is None:
-		pattern = '.*'
+        pattern = '.*'
     tag_pattern = re.compile(pattern)
     output = []
     for job in jobs:
       if 'tag' in job['input']:
-		  tag = job['input']['tag']
+          tag = job['input']['tag']
       else:
-		  tag = ''
+          tag = ''
       if tag_pattern.search(tag):
-		  if 'output' in job:
-			if failure_only == True:
-				if job['output']['failed_total'] > 0:
-					output.append(job)
-			else:
-				output.append(job)
-		  else:
-			output.append(job)
+          if 'output' in job:
+            if failure_only == True:
+                if job['output']['failed_total'] > 0:
+                    output.append(job)
+            else:
+                output.append(job)
+          else:
+            output.append(job)
 
     if output_file is None:
       print(json.dumps(output, indent=2))
@@ -134,10 +134,10 @@ class DatacheckClient(RestClient):
       logging.info("Database name: " + i['database'])
     if 'species' in i:
       for species in i['species']:
-		logging.info("Species name: " + species)
+        logging.info("Species name: " + species)
     if 'division' in i:
       for division in i['division']:
-		logging.info("Division name: " + division)
+        logging.info("Division name: " + division)
     if 'db_type' in i:
       logging.info("Database type: " + i['db_type'])
     if 'release' in i:
@@ -150,7 +150,7 @@ class DatacheckClient(RestClient):
         logging.info("Datacheck group: " + group)
     if 'datacheck_types' in i:
       for datacheck_type in i['datacheck_types']:
-		logging.info("Datacheck type: " + datacheck_type)
+        logging.info("Datacheck type: " + datacheck_type)
     if 'config_profile' in i:
       logging.info("Config profile: " + i['config_profile'])
     if 'email' in i:
