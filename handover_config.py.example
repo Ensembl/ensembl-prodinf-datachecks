@@ -5,6 +5,7 @@ Created on 11 Dec 2017
 '''
 import os
 hc_uri = os.environ.get("HC_URI", "http://127.0.0.1:5001/")
+dc_uri = os.environ.get("HC_URI", "http://127.0.0.1:5006/")
 hc_web_uri = os.environ.get("HC_WEB_URI", "http://127.0.0.1:9000/#!/hc_result/")
 copy_uri = os.environ.get("COPY_URI", "http://127.0.0.1:5002/")
 copy_web_uri = os.environ.get("COPY_WEB_URI", "http://127.0.0.1:9000/#!/copy_result/")

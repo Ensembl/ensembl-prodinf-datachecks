@@ -37,8 +37,8 @@ class RestClient(object):
   Most methods are stubs for overriding or decoration by classes that extend this for specific services
   """
 
-  jobs = '{}jobs'
-  jobs_id = '{}jobs/{}'
+  jobs = '{}/datacheck/jobs'
+  jobs_id = '{}/datacheck/jobs/{}'
 
   def __init__(self, uri):
     assert_http_uri(uri)

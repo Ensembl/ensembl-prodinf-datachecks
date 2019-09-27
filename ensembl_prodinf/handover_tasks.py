@@ -22,10 +22,12 @@ from hc_client import HcClient
 from db_copy_client import DbCopyClient
 from metadata_client import MetadataClient
 from event_client import EventClient
+from ensembl.datacheck.client import DatacheckClient
 from sqlalchemy_utils.functions import database_exists, drop_database
 from sqlalchemy.engine.url import make_url
 from .utils import send_email
 from .models.compara import check_grch37
+from .models.core import get_division
 import handover_config as cfg
 import uuid
 import re
@@ -37,6 +39,7 @@ hc_client = HcClient(cfg.hc_uri)
 db_copy_client = DbCopyClient(cfg.copy_uri)
 metadata_client = MetadataClient(cfg.meta_uri)
 event_client = EventClient(cfg.event_uri)
+dc_client = DatacheckClient(cfg.dc_uri)
 
 db_types_list = [i for i in cfg.allowed_database_types.split(",")]
 species_pattern = re.compile("(.*[a-z0-9])_(core|rnaseq|cdna|otherfeatures|variation|funcgen)_?[0-9]*?_([0-9]*)_([0-9a-z]*)")
@@ -86,7 +89,8 @@ def handover_database(spec):
     spec['staging_uri'] = staging_uri
     spec['progress_complete']=0
     get_logger().info("Handling " + str(spec))
-    submit_hc(spec, groups, compara_uri, staging_uri)
+    submit_dc(spec, src_url, db_type, db_prefix, release, staging_uri, compara_uri)
+    #submit_hc(spec, groups, compara_uri, staging_uri)
     return spec['handover_token']
 
 def get_tgt_uri(src_url,staging_uri):
@@ -181,6 +185,28 @@ def submit_hc(spec, groups, compara_uri, staging_uri):
     get_logger().debug("Submitted DB for checking as " + str(task_id))
     return task_id
 
+def submit_dc(spec, src_url, db_type, db_prefix, release, staging_uri, compara_uri):
+    """Submit the source database for healthchecking. Returns a celery job identifier"""
+    try:
+        server_url = 'mysql://'+str(src_url.username)+'@'+str(src_url.host)+':'+str(src_url.port)+"/"
+        if db_type == 'compara':
+            get_logger().debug("Submitting DC for "+src_url.database+ " on server: "+server_url)
+            dc_job_id = dc_client.submit_job(server_url, src_url.database, None, None, None, release, None, None, 'critical', db_prefix, None, spec['handover_token'])
+        else:
+            get_logger().debug("src_uri: "+spec['src_uri']+" dbtype "+db_type+" server_url "+server_url)
+            division = get_division(spec['src_uri'],db_type)
+            get_logger().debug("division: "+division)
+            get_logger().debug("Submitting DC for "+src_url.database+ " on server: "+server_url)
+            dc_job_id = dc_client.submit_job(server_url, src_url.database, None, None, None, release, None, None, 'critical', division, None, spec['handover_token'])
+    except Exception as e:
+    #    get_logger().debug("Cannot submit dc job")
+        get_logger().error("Handover failed, Cannot submit dc job")
+        raise ValueError("Handover failed, Cannot submit dc job {}".format(e))
+    spec['dc_job_id'] = dc_job_id
+    task_id = process_datachecked_db.delay(dc_job_id, spec)
+    get_logger().debug("Submitted DB for checking as " + str(task_id))
+    return task_id
+
 @app.task(bind=True)
 def process_checked_db(self, hc_job_id, spec):
     """ Task to wait until HCs finish and then respond e.g.
@@ -218,6 +244,46 @@ Please see %s
         return
     else:
         get_logger().info("HCs fine, starting copy")
+        spec['progress_complete']=1
+        submit_copy(spec)
+
+@app.task(bind=True)
+def process_datachecked_db(self, dc_job_id, spec):
+    """ Task to wait until DCs finish and then respond e.g.
+    * submit copy if DC succeed
+    * send error email if not
+    """
+    reporting.set_logger_context(get_logger(), spec['src_uri'], spec)
+    # allow infinite retries
+    self.max_retries = None
+    get_logger().info("DC in progress, please see: " +cfg.dc_uri + "/datacheck/jobs/" + str(dc_job_id))
+    try:
+        result = dc_client.retrieve_job(dc_job_id)
+    except Exception as e:
+        get_logger().error("Handover failed, cannot retrieve dc job")
+        raise ValueError("Handover failed, cannot retrieve dc job {}".format(e))
+    if result['status'] in ['incomplete', 'running', 'submitted']:
+        get_logger().debug("HC Job incomplete, checking again later")
+        raise self.retry()
+    # check results
+    if result['status'] == 'failed':
+        get_logger().info("DCs failed to run, please see: "+cfg.dc_uri + "/datacheck/jobs/" + str(dc_job_id))
+        msg = """
+Running datachecks on %s failed to execute.
+Please see %s
+""" % (spec['src_uri'], cfg.dc_uri + "/datacheck/jobs/" + str(dc_job_id))
+        send_email(to_address=spec['contact'], subject='DC failed to run', body=msg, smtp_server=cfg.smtp_server)
+        return
+    elif result['output']['failed_total'] > 0:
+        get_logger().info("DCs found problems, please see: "+cfg.dc_uri + "/datacheck/jobs/" + str(dc_job_id))
+        msg = """
+Running datachecks on %s completed but found failures.
+Please see %s
+""" % (spec['src_uri'], cfg.dc_uri + "/datacheck/jobs/" + str(dc_job_id))
+        send_email(to_address=spec['contact'], subject='DC ran but failed', body=msg, smtp_server=cfg.smtp_server)
+        return
+    else:
+        get_logger().info("DCs fine, starting copy")
         spec['progress_complete']=1
         submit_copy(spec)
 
