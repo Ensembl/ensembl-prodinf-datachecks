@@ -205,7 +205,7 @@ def submit_dc(spec, src_url, db_type, db_prefix, release, staging_uri, compara_u
         get_logger().debug("Cannot submit dc job {}".format(e))
         #get_logger().error("Handover failed, Cannot submit dc job")
         #raise ValueError("Handover failed, Cannot submit dc job {}".format(e))
-    spec['dc_job_id'] = dc_job_id
+    #spec['dc_job_id'] = dc_job_id
     #task_id = process_datachecked_db.delay(dc_job_id, spec)
     #get_logger().debug("Submitted DB for checking as " + str(task_id))
     #return task_id
