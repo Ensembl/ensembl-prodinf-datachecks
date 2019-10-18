@@ -11,7 +11,7 @@ class DbCopyClient(RestClient):
     Client for submitting database copy jobs to the db copy REST API
     """
 
-    def submit_job(self, source_db_uri, target_db_uri, only_tables, skip_tables, update, drop, convert_innodb, email):
+    def submit_job(self, source_db_uri, target_db_uri, only_tables, skip_tables, update, drop, convert_innodb, skip_optimize, email):
         """
         Submit a new job
         Arguments:
@@ -22,6 +22,7 @@ class DbCopyClient(RestClient):
           update : set to True to run an incremental update
           drop : set to True to drop the schema first
           convert_innodb : Convert innoDB tables to MyISAM
+          skip_optimize: Skip the database optimization step after the copy. Useful for very large databases
           email : optional address for job completion email
         """
         assert_mysql_db_uri(source_db_uri)
@@ -43,6 +44,7 @@ class DbCopyClient(RestClient):
             'update':update,
             'drop':drop,
             'convert_innodb':convert_innodb,
+            'skip_optimize':skip_optimize,
             'email':email
         }
         return super(DbCopyClient, self).submit_job(payload)
@@ -99,6 +101,8 @@ class DbCopyClient(RestClient):
             logging.info("Drop database on Target server before copy set to: " + i['drop'])
         if 'convert_innodb' in i:
             logging.info("Convert InnoDB tables to MyISAM set to: " + i['convert_innodb'])
+        if 'skip_optimize' in i:
+            logging.info("Skip optimize set to: " + i['skip_optimize'])
         if 'email' in i:
             logging.info("email: " + i['email'])
 
@@ -119,6 +123,7 @@ if __name__ == '__main__':
     parser.add_argument('-p', '--update', help='Incremental database update using rsync checksum')
     parser.add_argument('-d', '--drop', help='Drop database on Target server before copy')
     parser.add_argument('-c', '--convert_innodb', help='Convert InnoDB tables to MyISAM after copy')
+    parser.add_argument('-k', '--skip_optimize', help='Skip the database optimization step after the copy. Useful for very large databases')
     parser.add_argument('-e', '--email', help='Email where to send the report')
 
 
@@ -138,13 +143,13 @@ if __name__ == '__main__':
 
         if args.input_file == None:
             logging.info("Submitting " + args.source_db_uri + "->" + args.target_db_uri)
-            job_id = client.submit_job(args.source_db_uri, args.target_db_uri, args.only_tables, args.skip_tables, args.update, args.drop, args.convert_innodb, args.email)
+            job_id = client.submit_job(args.source_db_uri, args.target_db_uri, args.only_tables, args.skip_tables, args.update, args.drop, args.convert_innodb, args.skip_optimize, args.email)
             logging.info('Job submitted with ID '+str(job_id))
         else:
             for line in args.input_file:
                 uris = line.split()
                 logging.info("Submitting " + uris[0] + "->" + uris[1])
-                job_id = client.submit_job(uris[0], uris[1], args.only_tables, args.skip_tables, args.update, args.drop, args.convert_innodb, args.email)
+                job_id = client.submit_job(uris[0], uris[1], args.only_tables, args.skip_tables, args.update, args.drop, args.convert_innodb, args.skip_optimize, args.email)
                 logging.info('Job submitted with ID '+str(job_id))
     
     elif args.action == 'retrieve':
