@@ -85,3 +85,11 @@ class DatacheckSubmissionForm(Form):
   datacheck     = FormField(DatacheckForm, description='Datachecks')
   configuration = FormField(ConfigurationForm, description='Configuration')
   submit        = SubmitField('Submit')
+
+class GIFTsSubmissionForm(Form):
+  release         = StringField('Release', validators=[InputRequired()])
+  email           = StringField('Email', validators=[Email(), InputRequired()])
+  tag             = StringField('Tag')
+  update_ensembl  = SubmitField('Update Ensembl')
+  process_mapping = SubmitField('Process Mapping')
+  publish_mapping = SubmitField('Publish Mapping')
