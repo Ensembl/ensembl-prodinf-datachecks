@@ -56,7 +56,7 @@ def update_ensembl(payload=None):
 
   if request.is_json:
     results = {"job_id": job.job_id}
-    return jsonify(results), 201
+    return jsonify(results)
   else:
     return redirect('/gifts/update_ensembl/' + str(job.job_id))
 
@@ -101,7 +101,7 @@ def process_mapping(payload=None):
 
   if request.is_json:
     results = {"job_id": job.job_id}
-    return jsonify(results), 201
+    return jsonify(results)
   else:
     return redirect('/gifts/process_mapping/jobs/' + str(job.job_id))
 
@@ -146,7 +146,7 @@ def publish_mapping(payload=None):
 
   if request.is_json:
     results = {"job_id": job.job_id}
-    return jsonify(results), 201
+    return jsonify(results)
   else:
     return redirect('/gifts/publish_mapping/jobs/' + str(job.job_id))
 
