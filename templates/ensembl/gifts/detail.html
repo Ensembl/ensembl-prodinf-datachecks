@@ -1,0 +1,25 @@
+
+{% extends 'ensembl/base.html' %}
+
+{% block title %}
+  GIFTs Submission Details
+{% endblock %}
+
+{% block styles %}
+  {{ super() }}
+  <link rel="stylesheet" href="{{ url_for('static', filename='ensembl.css') }}">
+  <link rel="shortcut icon" href="{{ url_for('static', filename='img/production.png') }}">
+{% endblock styles %}
+
+  <div class="container">
+    <h2><img src="{{ url_for('static', filename='img/production.png') }}" /> GIFTs Submission Details</h2>
+  </div>
+
+  <div class="container">
+    [Details here about specific job]
+  </div>
+
+{% block scripts %}
+  {{ super() }}
+  <script src="{{ url_for('static', filename='ensembl.js') }}"></script>
+{% endblock scripts %}
