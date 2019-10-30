@@ -17,7 +17,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 Base = declarative_base()
 
-__all__ = ['CoreInstance','get_division']
+__all__ = ['CoreInstance', 'get_division']
 
 class Meta(Base):
     __tablename__ = 'meta'
@@ -57,7 +57,7 @@ class CoreInstance:
             self.__division = self.__get_meta_value('species.division')
         return self.__division
 
-def get_division(uri,db_type):
+def get_division(uri, db_type):
     if db_type == "variation" or db_type == "funcgen":
         uri = uri.replace("_variation_", "_core_").replace("_funcgen_","_core_")
     inst = CoreInstance(uri)

@@ -1,12 +1,13 @@
 #!/usr/bin/env python
+
 import argparse
 import logging
 import requests
 import sys
 import re
 
-from rest_client import RestClient
-from server_utils import assert_mysql_uri, assert_mysql_db_uri
+from .rest_client import RestClient
+from .server_utils import assert_mysql_uri, assert_mysql_db_uri
 
 class MetadataClient(RestClient):
 

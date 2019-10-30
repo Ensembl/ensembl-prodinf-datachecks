@@ -17,7 +17,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 Base = declarative_base()
 
-__all__ = ['ComparaInstance' ,'check_grch37']
+__all__ = ['ComparaInstance', 'check_grch37']
 
 class GenomeDb(Base):
     __tablename__ = 'genome_db'
@@ -50,7 +50,7 @@ class ComparaInstance:
 
     def is_GRCh37(self, species):
         gen_db = self.get_compara_species_assembly(species)
-        if (gen_db):
+        if gen_db:
             return gen_db.assembly == 'GRCh37'
         else:
             return 0

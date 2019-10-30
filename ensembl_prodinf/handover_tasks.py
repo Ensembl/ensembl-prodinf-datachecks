@@ -18,10 +18,10 @@ The data flow is:
 '''
 from ensembl_prodinf.handover_celery_app import app
 
-from hc_client import HcClient
-from db_copy_client import DbCopyClient
-from metadata_client import MetadataClient
-from event_client import EventClient
+from .hc_client import HcClient
+from .db_copy_client import DbCopyClient
+from .metadata_client import MetadataClient
+from .event_client import EventClient
 from ensembl.datacheck.client import DatacheckClient
 from sqlalchemy_utils.functions import database_exists, drop_database
 from sqlalchemy.engine.url import make_url

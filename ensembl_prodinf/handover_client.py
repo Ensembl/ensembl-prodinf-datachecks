@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+
 import argparse
 import logging
 import requests
@@ -8,18 +9,18 @@ from sqlalchemy.engine.url import make_url
 import re
 
 class HandoverClient(object):
-    
+
     """
     Client for submitting databases for handover
     """
-    
+
     handovers = '{}handovers'
     handover_token = '{}handovers/{}'
-    
+
     def __init__(self, uri):
         assert_http_uri(uri)
         self.uri = uri
-    
+
     def submit_handover(self, spec):
         """
         Arguments:
@@ -101,17 +102,17 @@ if __name__ == '__main__':
     parser.add_argument('-t', '--handover_token', help='Handover token')
 
     args = parser.parse_args()
-    
+
     if args.verbose == True:
         logging.basicConfig(level=logging.DEBUG, format='%(message)s')
     else:
         logging.basicConfig(level=logging.INFO, format='%(message)s')
-    
+
     if args.uri.endswith('/') == False:
-        args.uri = args.uri + '/'    
+        args.uri = args.uri + '/'
 
     client = HandoverClient(args.uri)
-            
+
     if args.action == 'submit':
 
         spec = {

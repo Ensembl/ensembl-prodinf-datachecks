@@ -1,10 +1,10 @@
 # Utilities for interacting with databases
 from sqlalchemy import create_engine, text
-from server_utils import get_file_sizes
+from .server_utils import get_file_sizes
 from sqlalchemy.engine.url import make_url
 
 def list_databases(db_uri, query):
-    """ 
+    """
     List databases on a specified MySQL server
     Arguments:
       db_uri : URI of MySQL server e.g. mysql://user@host:3306/
@@ -20,9 +20,9 @@ def list_databases(db_uri, query):
         s = text("select schema_name from information_schema.schemata where schema_name rlike :q")
     with engine.connect() as con:
         return [str(r[0]) for r in con.execute(s, {"q":query}).fetchall()]
-    
+
 def get_database_sizes(db_uri, query, dir_name):
-    """ 
+    """
     List sizes of databases on a specified MySQL server
     Arguments:
       db_uri : URI of MySQL server e.g. mysql://user@host:3306/ (file system must be accessible)

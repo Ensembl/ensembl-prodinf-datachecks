@@ -26,7 +26,7 @@ def send_email(**kwargs):
     msg = MIMEText(kwargs['body'])
     msg['Subject'] = kwargs['subject']
     msg['From'] = from_address
-    msg['To'] = kwargs['to_address']    
+    msg['To'] = kwargs['to_address']
     s = SMTP(kwargs.get('smtp_server','localhost'))
     s.sendmail(from_address, [kwargs['to_address']], msg.as_string())
     s.quit()
@@ -34,14 +34,12 @@ def send_email(**kwargs):
 def dict_to_perl_string(input_dict):
     """Transform the supplied dict into a string representation of a Perl hash"""
     pairs = []
-    for k,v in sorted(filter(lambda (k,v): v != None, input_dict.items())):
+    for k,v in sorted(filter(lambda k_v: k_v[1] != None, input_dict.items())):
         k = str(k)
         t = type(v).__name__
         if t == 'str':
             pairs.append("\"%s\" => \"%s\"" % (k,escape_perl_string(v)))
-        elif t == 'unicode':
-            pairs.append("\"%s\" => \"%s\"" % (k,escape_perl_string(str(v))))
-        elif (t == 'int' or t == 'long') :
+        elif (t == 'int') :
             pairs.append("\"%s\" => %d" % (k,v))
         elif t == 'float':
             pairs.append("\"%s\" => %f" % (k,v))
@@ -62,10 +60,8 @@ def list_to_perl_string(input_list):
     for v in input_list:
         t = type(v).__name__
         if t == 'str':
-            elems.append("\"%s\"" % escape_perl_string(v))                                                                                                                                                                                                                    
-        elif t == 'unicode':
-            elems.append("\"%s\"" % escape_perl_string(str(v)))                                                                                                                                                                                                               
-        elif(t == 'int' or t == 'long'):
+            elems.append("\"%s\"" % escape_perl_string(v))
+        elif(t == 'int'):
             elems.append("%d" % v)
         elif t == 'float':
             elems.append("%f" % v)
@@ -75,7 +71,7 @@ def list_to_perl_string(input_list):
             elems.append("%s" % dict_to_perl_string(v))
         else:
             raise Exception("Unsupported type "+str(t))
-    return "[%s]" % ", ".join(elems)  
+    return "[%s]" % ", ".join(elems)
 
 def escape_perl_string(v):
     """Escape characters with special meaning in perl"""

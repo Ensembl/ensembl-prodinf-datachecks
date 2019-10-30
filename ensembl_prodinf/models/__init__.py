@@ -1,2 +1,2 @@
-from compara import *
-from core import *
+from .compara import *
+from .core import *

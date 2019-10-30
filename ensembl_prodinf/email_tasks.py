@@ -1,7 +1,7 @@
 from ensembl_prodinf.email_celery_app import app
 from .utils import send_email
 import json
-import urllib2
+from urllib.request import urlopen
 
 smtp_server = app.conf['smtp_server']
 from_email_address = app.conf['from_email_address']
@@ -18,13 +18,13 @@ def email_when_complete(self, url, address):
     """
     # allow infinite retries 
     self.max_retries = None
-    result = json.load(urllib2.urlopen(url))
+    result = json.load(urlopen(url))
     if (result['status'] == 'incomplete') or (result['status'] == 'running') or (result['status'] == 'submitted'):
         # job incomplete so retry task after waiting
         raise self.retry(countdown=retry_wait)
     else:
         # job complete so send email and complete task
-        send_email(smtp_server=smtp_server,from_email_address=from_email_address, to_address=address, subject=result['subject'], body=result['body'])
+        send_email(smtp_server=smtp_server, from_email_address=from_email_address, to_address=address, subject=result['subject'], body=result['body'])
         return result
 
 @app.task(bind=True)
@@ -36,6 +36,9 @@ def email(self, address, subject, body):
       subject
       body
     """
-    send_email(smtp_server, from_email_address, address, subject, body)
-    return
+    send_email(smtp_server=smtp_server,
+               from_email_address=from_email_address,
+               address=address,
+               subject=subject,
+               body=body)
 

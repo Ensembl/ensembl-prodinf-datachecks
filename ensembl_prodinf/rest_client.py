@@ -1,9 +1,10 @@
 #!/usr/bin/env python
+
 import logging
 import requests
 import argparse
 import time
-from server_utils import assert_http_uri
+from .server_utils import assert_http_uri
 from requests.exceptions import HTTPError
 
 
