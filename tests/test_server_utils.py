@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from ensembl_prodinf import get_status
+from ensembl_prodinf.server_utils import get_status
 
 import unittest
 import logging
@@ -8,7 +8,7 @@ import logging
 logging.basicConfig()
 
 class ServerTest(unittest.TestCase):
-    
+
     def test_status(self):
         status = get_status()
         logging.info(status)
@@ -40,5 +40,3 @@ class ServerTest(unittest.TestCase):
         self.assertTrue(status["disk_used_pct"]>=0)
         self.assertTrue(status["disk_used_pct"]<=100)
 
-
-        

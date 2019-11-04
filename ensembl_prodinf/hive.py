@@ -6,7 +6,8 @@ from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, func
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 
-from .utils import dict_to_perl_string, perl_string_to_python
+from ensembl_prodinf.utils import dict_to_perl_string, perl_string_to_python
+
 
 __all__ = [ 'Result', 'LogMessage', 'Job', 'HiveInstance', 'Analysis' ]
 

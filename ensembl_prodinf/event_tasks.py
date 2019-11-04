@@ -5,7 +5,7 @@ from ensembl_prodinf.event_celery_app import app
 from ensembl_prodinf.event_client import EventClient
 
 import event_config as cfg
-import reporting
+from ensembl_prodinf import reporting
 import json
 
 event_client = EventClient(cfg.event_uri)

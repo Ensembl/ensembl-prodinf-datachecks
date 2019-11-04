@@ -18,20 +18,20 @@ The data flow is:
 '''
 from ensembl_prodinf.handover_celery_app import app
 
-from .hc_client import HcClient
-from .db_copy_client import DbCopyClient
-from .metadata_client import MetadataClient
-from .event_client import EventClient
+from ensembl_prodinf.hc_client import HcClient
+from ensembl_prodinf.db_copy_client import DbCopyClient
+from ensembl_prodinf.metadata_client import MetadataClient
+from ensembl_prodinf.event_client import EventClient
 from ensembl.datacheck.client import DatacheckClient
 from sqlalchemy_utils.functions import database_exists, drop_database
 from sqlalchemy.engine.url import make_url
-from .utils import send_email
-from .models.compara import check_grch37
-from .models.core import get_division
+from ensembl_prodinf.utils import send_email
+from ensembl_prodinf.models.compara import check_grch37
+from ensembl_prodinf.models.core import get_division
 import handover_config as cfg
 import uuid
 import re
-import reporting
+from ensembl_prodinf import reporting
 import json
 
 pool = reporting.get_pool(cfg.report_server)

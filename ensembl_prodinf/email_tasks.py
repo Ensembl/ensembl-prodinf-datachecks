@@ -1,5 +1,5 @@
 from ensembl_prodinf.email_celery_app import app
-from .utils import send_email
+from ensembl_prodinf.utils import send_email
 import json
 from urllib.request import urlopen
 
