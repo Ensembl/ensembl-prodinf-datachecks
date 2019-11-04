@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from setuptools import setup, find_packages
+from setuptools import setup, find_namespace_packages
 
 with open('requirements.txt') as f:
     requirements = f.read().splitlines()
@@ -20,6 +20,5 @@ setup(
     author_email='dstaines@ebi.ac.uk',
     url='https://github.com/radome/ensembl-prodinf-core',
     license=license,
-    packages=find_packages(exclude=('tests', 'docs'))
+    packages=find_namespace_packages(exclude=('tests', 'docs'))
 )
-
