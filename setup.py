@@ -18,7 +18,7 @@ setup(
     long_description=readme,
     author='Dan Staines',
     author_email='dstaines@ebi.ac.uk',
-    url='https://github.com/Ensembl/ensembl-prodinf-core',
+    url='https://github.com/radome/ensembl-prodinf-core',
     license=license,
     packages=find_packages(exclude=('tests', 'docs'))
 )
