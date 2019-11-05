@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from setuptools import setup, find_namespace_packages
+from setuptools import setup, PEP420PackageFinder  # import find_namespace_packages when upgrading to python > 3.7
 
 with open('requirements.txt') as f:
     requirements = f.read().splitlines()
@@ -20,5 +20,5 @@ setup(
     author_email='dstaines@ebi.ac.uk',
     url='https://github.com/radome/ensembl-prodinf-core',
     license=license,
-    packages=find_namespace_packages(exclude=('tests', 'docs'))
+    packages=PEP420PackageFinder.find(exclude=('tests', 'docs'))
 )
