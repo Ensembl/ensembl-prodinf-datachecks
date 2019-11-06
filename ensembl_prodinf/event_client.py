@@ -4,7 +4,7 @@ import argparse
 import logging
 import requests
 import json
-from .rest_client import RestClient
+from ensembl_prodinf.rest_client import RestClient
 
 class EventClient(RestClient):
 

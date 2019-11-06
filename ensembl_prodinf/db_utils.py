@@ -1,6 +1,6 @@
 # Utilities for interacting with databases
 from sqlalchemy import create_engine, text
-from .server_utils import get_file_sizes
+from ensembl_prodinf.server_utils import get_file_sizes
 from sqlalchemy.engine.url import make_url
 
 def list_databases(db_uri, query):
