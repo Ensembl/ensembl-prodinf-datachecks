@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 # sample documentation build configuration file, created by
 # sphinx-quickstart on Mon Apr 16 21:22:43 2012.
 #
@@ -40,8 +38,8 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'ensembl_prodinf'
-copyright = u'2017 EMBL-EBI'
+project = 'ensembl_prodinf'
+copyright = '2017 EMBL-EBI'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -184,7 +182,7 @@ latex_elements = {
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
   ('index', 'ensembl-core-prodinf.tex', u'Ensembl Production Infrastructre Documentation',
-   u'Dan Staines', 'manual'),
+   'Dan Staines', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -214,7 +212,7 @@ latex_documents = [
 # (source start file, name, description, authors, manual section).
 man_pages = [
     ('index', 'ensembl_prodinf', u'Ensembl Production Infrastructure Documentation',
-     [u'Dan Staines'], 1)
+     ['Dan Staines'], 1)
 ]
 
 # If true, show URL addresses after external links.
@@ -228,7 +226,7 @@ man_pages = [
 #  dir menu entry, description, category)
 texinfo_documents = [
   ('index', 'ensembl_prodinf', u'Ensembl Production Infrastructure Documentation',
-   u'Dan Staines', 'ensembl_prodinf', 'Core libraries used by Ensembl Production infrastructure services.',
+   'Dan Staines', 'ensembl_prodinf', 'Core libraries used by Ensembl Production infrastructure services.',
    'Miscellaneous'),
 ]
 

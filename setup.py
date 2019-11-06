@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 from setuptools import setup, PEP420PackageFinder  # import find_namespace_packages when upgrading to python > 3.7
 
 with open('requirements.txt') as f:

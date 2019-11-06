@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 from ensembl_prodinf.hive import HiveInstance
 
 from shutil import copy2

@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 from ensembl_prodinf.server_utils import get_status
 
 import unittest
