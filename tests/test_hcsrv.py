@@ -41,11 +41,11 @@ class HcSrvTest(unittest.TestCase):
                                  data=json.dumps(input),
                                  content_type='application/json')
         self.assertEquals(201, response.status_code)
-        results = json.loads(str(response.data))
+        results = json.loads(response.data.decode('utf-8'))
         self.assertTrue(results.get('job_id'))
         response2 = self.app.get("/jobs/" + str(results.get('job_id')));
         self.assertEquals(200, response2.status_code)
-        results2 = json.loads(str(esponse2.data))
+        results2 = json.loads(response2.data.decode('utf-8'))
         self.assertEquals(results2.get('id'), results.get('job_id'))
         self.assertEquals(results2.get('status'), 'submitted')
 
@@ -54,7 +54,7 @@ class HcSrvTest(unittest.TestCase):
     def test_results(self):
         response = self.app.get("/jobs/1")
         self.assertEquals(200, response.status_code)
-        results = json.loads(str(response.data))
+        results = json.loads(response.data.decode('utf-8'))
         print(results)
         self.assertEquals(results.get('id'), 1)
         self.assertEquals(results.get('status'), 'complete')
@@ -67,7 +67,7 @@ class HcSrvTest(unittest.TestCase):
     def test_results_email(self):
         response = self.app.get("/jobs/1?format=email")
         self.assertEquals(200, response.status_code)
-        results = json.loads(str(response.data))
+        results = json.loads(response.data.decode('utf-8'))
         print(results)
         self.assertEquals(results.get('status'), 'complete')
         self.assertTrue(results.get('body'))
@@ -78,7 +78,7 @@ class HcSrvTest(unittest.TestCase):
     def test_jobs(self):
         response = self.app.get("/jobs");
         self.assertEquals(200, response.status_code)
-        results = json.loads(str(response.data));
+        results = json.loads(response.data.decode('utf-8'));
         print(results)
 
     """Remove test database file"""
