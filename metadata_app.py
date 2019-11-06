@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+
 import logging
 import os
 import re
@@ -8,7 +9,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 
 import app_logging
-from ensembl_prodinf import HiveInstance
+from ensembl_prodinf.hive import HiveInstance
 from ensembl_prodinf.email_tasks import email_when_complete
 
 logger = logging.getLogger(__name__)

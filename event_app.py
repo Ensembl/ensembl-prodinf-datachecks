@@ -6,25 +6,27 @@ import json
 from flasgger import Swagger
 
 from ensembl_prodinf import reporting
-from ensembl_prodinf import HiveInstance
+from ensembl_prodinf.hive import HiveInstance
 from ensembl_prodinf.event_tasks import process_result
 import event_config
 
 pool = reporting.get_pool(event_config.report_server)
-     
-def get_logger():    
+
+def get_logger():
     return reporting.get_logger(pool, event_config.report_exchange, 'event_handler', None, {})
 
 app = Flask(__name__, instance_relative_config=True)
-print app.config
+
+print(app.config)
+
 app.config.from_object('event_config')
 app.config.from_pyfile('event_config.py')
 swagger = Swagger(app)
 
 class EventNotFoundError(Exception):
-    """Exception showing event not found"""        
+    """Exception showing event not found"""
 
-print event_config.event_lookup
+print(event_config.event_lookup)
 event_lookup = json.loads(open(event_config.event_lookup).read())
 
 
@@ -32,7 +34,7 @@ def get_processes_for_event(event):
     event_type = event['type']
     if event_type not in event_lookup.keys():
         raise EventNotFoundError("Event type " + str(event_type) + " not known")
-    return event_lookup[event_type]    
+    return event_lookup[event_type]
 
 
 class ProcessNotFoundError(Exception):
@@ -50,7 +52,7 @@ def get_analysis(process):
 hives = {}
 
 
-def get_hive(process):    
+def get_hive(process):
     if process not in hives.keys():
         if process not in process_lookup.keys():
             raise ProcessNotFoundError("Process " + str(process) + " not known")
@@ -165,7 +167,7 @@ def job(process, job_id):
         description: Result of an event job
         schema:
           $ref: '#/definitions/job_id'
-    """    
+    """
     output_format = request.args.get('format')
     if output_format == 'email':
         email = request.args.get('email')
@@ -176,8 +178,8 @@ def job(process, job_id):
         return results(process, job_id)
     else:
         raise Exception("Format "+output_format+" not known")
-        
-def results(process, job_id):    
+
+def results(process, job_id):
     get_logger().info("Retrieving job from " + process + " with ID " + str(job_id))
     return jsonify(get_hive(process).get_result_for_job_id(job_id))
 
@@ -238,7 +240,7 @@ def delete_job(process, job_id):
           $ref: '#/definitions/job_id'
         examples:
           id: 1
-    """    
+    """
     hive = get_hive(process)
     job = hive.get_job_by_id(job_id)
     hive.delete_job(job)
@@ -286,7 +288,7 @@ def jobs(process):
         description: Retrieve all the jobs results from the database
         schema:
           $ref: '#/definitions/job_id'
-    """ 
+    """
     get_logger().info("Retrieving jobs")
     return jsonify(get_hive(process).get_all_results(get_analysis(process)))
 
@@ -313,8 +315,8 @@ def events():
     responses:
       200:
         description: Retrieve all the events
-    """     
-    return jsonify(event_lookup.keys()) 
+    """
+    return jsonify(event_lookup.keys())
 
 @app.route('/processes')
 def processes():
@@ -338,13 +340,13 @@ def processes():
     responses:
       200:
         description: Retrieve all the processes
-    """     
-    return jsonify(process_lookup.keys()) 
+    """
+    return jsonify(process_lookup.keys())
 
 @app.errorhandler(Exception)
 def handle_error(e):
     code = 500
     if isinstance(e, ValueError):
         code = 400
-    logger.exception(str(e))
+    get_logger().exception(str(e))
     return jsonify(error=str(e)), code

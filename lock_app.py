@@ -1,7 +1,8 @@
 #!/usr/bin/env python
+
 import logging
 import re
-from _mysql import IntegrityError
+from sqlalchemy.exc import IntegrityError
 
 from flasgger import Swagger
 from flask import Flask, request, jsonify

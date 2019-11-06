@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+
 import json
 import logging
 import re
@@ -9,7 +10,7 @@ from flask_cors import CORS
 
 
 import app_logging
-from ensembl_prodinf import HiveInstance
+from ensembl_prodinf.hive import HiveInstance
 from ensembl_prodinf.email_tasks import email_when_complete
 
 logger = logging.getLogger(__name__)
@@ -275,7 +276,7 @@ def job_email(email, job_id):
         results['subject'] = 'Healthchecks for %s - %s' % (results['output']['db_name'], results['output']['status'])
         results['body'] = 'Please see URL for more details: %s%s\n\n' % (results['input']['result_url'], job_id)
         results['body'] += "Results for %s:\n" % (results['output']['db_uri'])
-        for (test, result) in results['output']['results'].iteritems():
+        for (test, result) in results['output']['results'].items():
             results['body'] += "* %s : %s\n" % (test, result['status'])
             if result['messages'] != None:
                 for msg in result['messages']:
@@ -285,7 +286,7 @@ def job_email(email, job_id):
         results['subject'] = 'Healthcheck job failed'
         results['body'] = 'Please see URL for more details: %s%s\n\n' % (results['input']['result_url'], job_id)
         results['body'] += 'Healthcheck job failed with following message:\n'
-        for (jobid, msg) in failures.iteritems():
+        for (jobid, msg) in failures.items():
             results['body'] += "* Job ID %s : %s\n" % (jobid, msg)
     results['output'] = None
     return jsonify(results)

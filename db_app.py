@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+
 import json
 import logging
 import os
@@ -11,7 +12,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 
 import app_logging
-from ensembl_prodinf import HiveInstance
+from ensembl_prodinf.hive import HiveInstance
 from ensembl_prodinf.db_utils import list_databases, get_database_sizes
 from ensembl_prodinf.email_tasks import email_when_complete
 from ensembl_prodinf.server_utils import get_status, get_load
@@ -26,7 +27,9 @@ app.config['SWAGGER'] = {
     'title': 'Database copy REST endpoints',
     'uiversion': 2
 }
-print app.config
+
+print(app.config)
+
 swagger = Swagger(app)
 app.servers = None
 app.logger.addHandler(app_logging.file_handler(__name__))
@@ -445,7 +448,7 @@ def list_servers_endpoint(user):
         logger.debug("Finding servers matching " + query + " for " + user)
         user_urls = get_servers()[user] or []
         urls = filter(lambda x: query in x, user_urls)
-        return jsonify(urls)
+        return jsonify(list(urls))
     else:
         raise ValueError("User " + user + " not found")
 
