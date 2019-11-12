@@ -1,30 +1,15 @@
 
-{% extends "ensembl/datacheck/base_submission.html" %}
+{% extends "ensembl/submit.html" %}
 
-{% block styles %}
-  <link rel="stylesheet" href="{{ url_for('static', filename='tagsinput.css') }}">
-  {{ super() }}
-{% endblock styles %}
+{% set title = 'Datacheck Submission' %}
 
-{% block datacheck_submission %}
+{% block submit -%}
 
-<p>
-{% with messages = get_flashed_messages() %}
-  {% if messages %}
-    <ul>
-    {% for message in messages %}
-      <li>{{ message }}</li>
-    {% endfor %}
-    </ul>
-  {% endif %}
-{% endwith %}
-</p>
-
-<form action="" method="post" enctype="multipart/form-data" autocomplete="off">
+  <form action="" method="post" enctype="multipart/form-data" autocomplete="off">
     {{ form.csrf }}
 
-    <fieldset class="border rounded p-2">
-      <legend class="w-auto">&nbsp;{{ form.server.description }}&nbsp;</legend>
+    <fieldset class="border rounded p-2 border-purple">
+      <legend class="w-auto fg-purple">&nbsp;{{ form.server.description }}&nbsp;</legend>
 
       <div class="form-group row">
         {{ form.server.server_url.label( class='col-sm-2 col-form-label' ) }}
@@ -95,7 +80,7 @@
 
   </form>
 
-{% endblock %}
+{%- endblock submit %}
 
 {% block scripts %}
   {{ super() }}

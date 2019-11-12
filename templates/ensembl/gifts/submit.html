@@ -1,53 +1,41 @@
 
-{% extends 'ensembl/base.html' %}
+{% extends 'ensembl/submit.html' %}
 
-{% block title %}
-  GIFTs Submission
-{% endblock %}
+{% set title = 'GIFTs Submission' %}
+{% set shortcut_icon = 'img/gifts.png' %}
 
-{% block styles %}
-  {{ super() }}
-  <link rel="stylesheet" href="{{ url_for('static', filename='ensembl.css') }}">
-  <link rel="shortcut icon" href="{{ url_for('static', filename='img/production.png') }}">
-{% endblock styles %}
+{% block submit -%}
 
-  <div class="container">
-    <h2><img src="{{ url_for('static', filename='img/production.png') }}" /> GIFTs Submission</h2>
-  </div>
-
-  <div class="container">
     <form action="" method="post" enctype="multipart/form-data" autocomplete="off">
       {{ form.csrf }}
 
-      <fieldset class="border rounded p-2">
-        <legend class="w-auto">&nbsp;What would you like to do today?&nbsp;</legend>
+      <fieldset class="border rounded p-2 border-green">
+        <legend class="w-auto fg-green">&nbsp;What would you like to do today?&nbsp;</legend>
 
         <div class="form-group row">
-          {{ form.release.label( class='col-sm-1 col-form-label' ) }}
-          <div class="col-sm-5">{{ form.release( class='form-control' ) }}</div>
+          {{ form.release.label( class='col-sm-2 col-form-label' ) }}
+          <div class="col-sm-1">{{ form.release( class='form-control' ) }}</div>
         </div>
 
         <div class="form-group row">
-          {{ form.email.label( class='col-sm-3 col-form-label' ) }}
-          <div class="col-sm-5">{{ form.email( class='form-control' ) }}</div>
+          {{ form.email.label( class='col-sm-2 col-form-label' ) }}
+          <div class="col-sm-3">{{ form.email( class='form-control' ) }}</div>
         </div>
 
         <div class="form-group row">
-          {{ form.tag.label( class='col-sm-3 col-form-label' ) }}
-          <div class="col-sm-5">{{ form.tag( class='form-control' ) }}</div>
+          {{ form.tag.label( class='col-sm-2 col-form-label' ) }}
+          <div class="col-sm-3">{{ form.tag( class='form-control' ) }}</div>
         </div>
 
         <div class="form-group row">
-          <div class="col-sm-12">{{ form.update_ensembl( class='btn bg-purple' ) }}</div>
-          <div class="col-sm-12">{{ form.process_mapping( class='btn bg-purple' ) }}</div>
-          <div class="col-sm-12">{{ form.publish_mapping( class='btn bg-purple' ) }}</div>
+          <div class="col-sm-6">
+            {{ form.update_ensembl( class='btn bg-green' ) }}
+            {{ form.process_mapping( class='btn bg-green' ) }}
+            {{ form.publish_mapping( class='btn bg-green' ) }}
+          </div>
         </div>
 
       </fieldset>
     </form>
-  </div>
 
-{% block scripts %}
-  {{ super() }}
-  <script src="{{ url_for('static', filename='ensembl.js') }}"></script>
-{% endblock scripts %}
+{%- endblock submit %}
