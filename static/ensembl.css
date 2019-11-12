@@ -11,12 +11,7 @@ fieldset {
   margin-bottom: 10px;
 }
 
-fieldset.border {
-  border-color: rgba(128, 0, 102, 1)!important;
-}
-
 legend {
-  color: rgba(128, 0, 102, 1);
   margin-bottom: 0;
 }
 
@@ -58,14 +53,30 @@ select.select-align-right > option {
   text-align: right;
 }
 
+.fg-purple {
+  color: rgba(128, 0, 102, 1);
+}
+
 .bg-purple {
   background-color: rgba(128, 0, 102, 1);
   color: white;
 }
 
-.bg-light-purple {
-  background-color: rgba(128, 0, 102, 0.66);
+.border-purple {
+  border-color: rgba(128, 0, 102, 1)!important;
+}
+
+.fg-green {
+  color: rgba(0, 102, 0, 1);
+}
+
+.bg-green {
+  background-color: rgba(0, 102, 0, 1);
   color: white;
+}
+
+.border-green {
+  border-color: rgba(0, 102, 0, 1)!important;
 }
 
 .top_link {
