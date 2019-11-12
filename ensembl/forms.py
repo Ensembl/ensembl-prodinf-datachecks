@@ -87,7 +87,7 @@ class DatacheckSubmissionForm(Form):
   submit        = SubmitField('Submit')
 
 class GIFTsSubmissionForm(Form):
-  release         = StringField('Release', validators=[InputRequired()])
+  release         = StringField('Ensembl Release', validators=[InputRequired()])
   email           = StringField('Email', validators=[Email(), InputRequired()])
   tag             = StringField('Tag')
   update_ensembl  = SubmitField('Update Ensembl')

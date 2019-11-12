@@ -1,5 +1,5 @@
 import os
-from flask import Flask, flash, json, jsonify, redirect, render_template, request
+from flask import Flask, flash, json, jsonify, redirect, render_template, request, url_for
 from flask_bootstrap import Bootstrap
 from flask_cors import CORS
 from flasgger import Swagger
@@ -47,7 +47,6 @@ def index():
 @app.route('/gifts/update_ensembl/jobs', methods=['POST'])
 def update_ensembl(payload=None):
   # call /gifts/update_ensembl/status to check that there are no active jobs before proceeding
-
   if payload is None:
     payload = request.json
 
@@ -58,7 +57,7 @@ def update_ensembl(payload=None):
     results = {"job_id": job.job_id}
     return jsonify(results)
   else:
-    return redirect('/gifts/update_ensembl/' + str(job.job_id))
+    return redirect(url_for('update_ensembl_result', job_id = str(job.job_id)))
 
 @app.route('/gifts/update_ensembl', methods=['GET'])
 @app.route('/gifts/update_ensembl/jobs', methods=['GET'])
@@ -75,7 +74,7 @@ def update_ensembl_list():
 @app.route('/gifts/update_ensembl/jobs/<int:job_id>', methods=['GET'])
 def update_ensembl_result(job_id):
   job = get_hive('update_ensembl').get_result_for_job_id(job_id, progress=False)
-
+  print(job)
   if request.is_json:
     return jsonify(job)
   else:
@@ -193,7 +192,6 @@ def display_form():
 def submit_form():
   # Here we convert the form fields into a 'payload' dictionary
   # that is the required input format for the hive submission.
-
   form = GIFTsSubmissionForm(request.form)
 
   payload = {
@@ -202,11 +200,11 @@ def submit_form():
     'tag': form.tag.data
   }
 
-  if form.update_ensembl:
+  if form.update_ensembl.data:
     update_ensembl(payload)
-  elif form.process_mapping:
+  elif form.process_mapping.data:
     process_mapping(payload)
-  elif form.publish_mapping:
+  elif form.publish_mapping.data:
     publish_mapping(payload)
 
 @app.route('/gifts/ping', methods=['GET'])
