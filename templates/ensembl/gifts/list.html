@@ -1,25 +1,6 @@
 
-{% extends 'ensembl/base.html' %}
+{% extends 'ensembl/detail.html' %}
 
-{% block title %}
-  GIFTs Submissions
-{% endblock %}
+{% set title = 'GIFTs Job List' %}
+{% set shortcut_icon = 'img/gifts.png' %}
 
-{% block styles %}
-  {{ super() }}
-  <link rel="stylesheet" href="{{ url_for('static', filename='ensembl.css') }}">
-  <link rel="shortcut icon" href="{{ url_for('static', filename='img/production.png') }}">
-{% endblock styles %}
-
-  <div class="container">
-    <h2><img src="{{ url_for('static', filename='img/production.png') }}" /> GIFTs Submissions</h2>
-  </div>
-
-  <div class="container">
-    [Table here with info on running jobs.]
-  </div>
-
-{% block scripts %}
-  {{ super() }}
-  <script src="{{ url_for('static', filename='ensembl.js') }}"></script>
-{% endblock scripts %}
