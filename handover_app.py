@@ -10,7 +10,7 @@ from flask_cors import CORS
 
 import app_logging
 from ensembl_prodinf.handover_tasks import handover_database
-from ensembl_prodinf.exceptions import BadRequestError
+from ensembl_prodinf.exceptions import HTTPRequestError
 
 
 logger = logging.getLogger(__name__)
@@ -102,12 +102,12 @@ def handovers():
         logger.debug("Submitting handover request " + str(request.json))
         spec = request.json
         if 'src_uri' not in spec or 'contact' not in spec or 'comment' not in spec:
-            raise BadRequestError("Handover specification incomplete - please specify src_uri, contact and comment")
+            raise HTTPRequestError("Handover specification incomplete - please specify src_uri, contact and comment")
         ticket = handover_database(spec)
         logger.info(ticket)
         return jsonify(ticket);
     else:
-        raise BadRequestError("Could not handle input of type {}".format(request.headers['Content-Type']))
+        raise HTTPRequestError("Could not handle input of type {}".format(request.headers['Content-Type']))
 
 
 @app.route('/handovers/<string:handover_token>', methods=['GET'])
@@ -194,7 +194,7 @@ def handover_result(handover_token):
             result['report_time'] = doc['_source']['report_time']
             handover_detail.append(result)
     if len(handover_detail) == 0:
-        raise BadRequestError("Handover token {} not found".format(handover_token), status_code=404)
+        raise HTTPRequestError("Handover token {} not found".format(handover_token), 404)
     else:
         return jsonify(handover_detail)
 
@@ -334,8 +334,8 @@ def delete_handover(handover_token):
             "query": {"bool": {"must": [{"term": {"params.handover_token.keyword": str(handover_token)}}]}}})
         return jsonify(str(handover_token))
     except NotFoundError as e:
-        raise BadRequestError('Error while looking for handover token: {} - {}:{}'.format(
-            handover_token, e.error, e.info['error']['reason']), status_code=404)
+        raise HTTPRequestError('Error while looking for handover token: {} - {}:{}'.format(
+            handover_token, e.error, e.info['error']['reason']), 404)
 
 
 @app.errorhandler(TransportError)
@@ -345,7 +345,7 @@ def handle_elastisearch_error(e):
     return jsonify(error=message), e.status_code
 
 
-@app.errorhandler(BadRequestError)
+@app.errorhandler(HTTPRequestError)
 def handle_bad_request_error(e):
     logger.error(str(e))
     return jsonify(error=str(e)), e.status_code

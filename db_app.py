@@ -16,7 +16,7 @@ from ensembl_prodinf.hive import HiveInstance
 from ensembl_prodinf.db_utils import list_databases, get_database_sizes
 from ensembl_prodinf.email_tasks import email_when_complete
 from ensembl_prodinf.server_utils import get_status, get_load
-from ensembl_prodinf.exceptions import BadRequestError
+from ensembl_prodinf.exceptions import HTTPRequestError
 
 
 logger = logging.getLogger(__name__)
@@ -150,7 +150,7 @@ def list_databases_endpoint():
     try:
         db_list = list_databases(db_uri, query)
     except ValueError as e:
-        raise BadRequestError(str(e))
+        raise HTTPRequestError(str(e))
     return jsonify(db_list)
 
 
@@ -241,7 +241,7 @@ def database_sizes_endpoint():
     try:
         db_sizes = get_database_sizes(db_uri, query, dir_name)
     except ValueError as e:
-        raise BadRequestError(str(e))
+        raise HTTPRequestError(str(e))
     return jsonify(db_sizes)
 
 
@@ -325,7 +325,11 @@ def get_status_endpoint(host):
     if (dir_name is None):
         dir_name = '/instances'
     logger.debug("Finding status of " + host + " (dir " + dir_name + ")")
-    return jsonify(get_status(host=host, dir_name=dir_name))
+    try:
+        status = get_status(host=host, dir_name=dir_name)
+    except OSError as e:
+        raise HTTPRequestError(str(e))
+    return jsonify(status)
 
 
 @app.route('/hosts/<host>/load', methods=['GET'])
@@ -383,7 +387,11 @@ def get_load_endpoint(host):
           load_5m: 0.03
     """
     logger.debug("Finding load of " + host)
-    return jsonify(get_load(host=host))
+    try:
+        load = get_load(host=host)
+    except OSError as e:
+        raise HTTPRequestError(str(e))
+    return jsonify(load)
 
 
 @app.route('/servers/<user>', methods=['GET'])
@@ -453,14 +461,14 @@ def list_servers_endpoint(user):
     """
     query = request.args.get('query')
     if query is None:
-        raise BadRequestError("Query not specified")
+        raise HTTPRequestError("Query not specified")
     if user in get_servers():
         logger.debug("Finding servers matching " + query + " for " + user)
         user_urls = get_servers()[user] or []
         urls = filter(lambda x: query in x, user_urls)
         return jsonify(list(urls))
     else:
-        raise BadRequestError("User " + user + " not found", 404)
+        raise HTTPRequestError("User " + user + " not found", 404)
 
 
 @app.route('/jobs', methods=['POST'])
@@ -535,7 +543,10 @@ def submit():
     """
     if json_pattern.match(request.headers['Content-Type']):
         logger.debug("Submitting Database copy " + str(request.json))
-        job = get_hive().create_job(app.analysis, request.json)
+        try:
+            job = get_hive().create_job(app.analysis, request.json)
+        except ValueError as e:
+            raise HTTPRequestError(str(e))
         results = {"job_id": job.job_id};
         email = request.json.get('email')
         if email != None and email != '':
@@ -546,7 +557,7 @@ def submit():
         return jsonify(results);
     else:
         logger.error("Could not handle input of type " + request.headers['Content-Type'])
-        raise BadRequestError("Could not handle input of type " + request.headers['Content-Type'])
+        raise HTTPRequestError("Could not handle input of type " + request.headers['Content-Type'])
 
 
 @app.route('/jobs/<int:job_id>', methods=['GET'])
@@ -622,35 +633,45 @@ def jobs(job_id):
         return failure(job_id)
     elif fmt is None:
         logger.info("Retrieving job with ID " + str(job_id))
-        return jsonify(get_hive().get_result_for_job_id(job_id))
+        try:
+            job_results = get_hive().get_result_for_job_id(job_id)
+        except ValueError as e:
+            raise HTTPRequestError(str(e), 404)
+        return jsonify(job_results)
     else:
-        raise BadRequestError("Format " + str(fmt) + " not known")
+        raise HTTPRequestError("Format " + str(fmt) + " not known")
 
 
 def failure(job_id):
     logger.info("Retrieving failure for job with ID " + str(job_id))
-    failure = get_hive().get_job_failure_msg_by_id(job_id)
+    try:
+        failure = get_hive().get_job_failure_msg_by_id(job_id)
+    except ValueError as e:
+        raise HTTPRequestError(str(e), 404)
     return jsonify({"msg": failure.msg})
 
 
 def job_email(email, job_id):
     logger.info("Retrieving job with ID " + str(job_id) + " for " + str(email))
-    job = get_hive().get_job_by_id(job_id)
-    results = get_hive().get_result_for_job_id(job_id)
-    if results['status'] == 'complete':
-        results['subject'] = 'Copy database from %s to %s successful' % (
-        results['output']['source_db_uri'], results['output']['target_db_uri'])
-        results['body'] = 'Copy from %s to %s is successful\n' % (
-        results['output']['source_db_uri'], results['output']['target_db_uri'])
-        results['body'] += 'Copy took %s' % (results['output']['runtime'])
-    elif results['status'] == 'failed':
-        failure = get_hive().get_job_failure_msg_by_id(job_id)
-        results['subject'] = 'Copy database from %s to %s failed' % (
-        results['input']['source_db_uri'], results['input']['target_db_uri'])
-        results['body'] = 'Copy failed with following message:\n'
-        results['body'] += '%s\n\n' % (failure.msg)
-        results['body'] += 'Please see URL for more details: %s%s \n' % (results['input']['result_url'], job_id)
-    results['output'] = None
+    try:
+        job = get_hive().get_job_by_id(job_id)
+        results = get_hive().get_result_for_job_id(job_id)
+        if results['status'] == 'complete':
+            results['subject'] = 'Copy database from %s to %s successful' % (
+            results['output']['source_db_uri'], results['output']['target_db_uri'])
+            results['body'] = 'Copy from %s to %s is successful\n' % (
+            results['output']['source_db_uri'], results['output']['target_db_uri'])
+            results['body'] += 'Copy took %s' % (results['output']['runtime'])
+        elif results['status'] == 'failed':
+            failure = get_hive().get_job_failure_msg_by_id(job_id)
+            results['subject'] = 'Copy database from %s to %s failed' % (
+            results['input']['source_db_uri'], results['input']['target_db_uri'])
+            results['body'] = 'Copy failed with following message:\n'
+            results['body'] += '%s\n\n' % (failure.msg)
+            results['body'] += 'Please see URL for more details: %s%s \n' % (results['input']['result_url'], job_id)
+        results['output'] = None
+    except ValueError as e:
+        raise HTTPRequestError(str(e), 404)
     return jsonify(results)
 
 
@@ -711,10 +732,13 @@ def delete(job_id):
         examples:
           id: 1
     """
-    if 'kill' in request.args.keys() and request.args['kill'] == 1:
-        kill_job(job_id)
-    job = get_hive().get_job_by_id(job_id)
-    hive.delete_job(job)
+    try:
+        if 'kill' in request.args.keys() and request.args['kill'] == 1:
+            kill_job(job_id)
+        job = get_hive().get_job_by_id(job_id)
+        hive.delete_job(job)
+    except ValueError as e:
+        raise HTTPRequestError(str(e), 404)
     return jsonify({"id": job_id})
 
 
@@ -730,7 +754,7 @@ def kill_job(job_id):
     # Check if the process that we killed is alive.
     if (is_running(int(process_id.process_id))):
         logger.error("Wasn't able to kill the process: " + str(process_id.process_id))
-        raise BadRequestError("Wasn't able to kill the process: " + str(process_id.process_id))
+        raise HTTPRequestError("Wasn't able to kill the process: " + str(process_id.process_id))
     else:
         return jsonify({"process_id": process_id.process_id})
 
@@ -802,7 +826,7 @@ def list_jobs():
     return jsonify(get_hive().get_all_results(app.analysis))
 
 
-@app.errorhandler(BadRequestError)
+@app.errorhandler(HTTPRequestError)
 def handle_bad_request_error(e):
     logger.error(str(e))
     return jsonify(error=str(e)), e.status_code

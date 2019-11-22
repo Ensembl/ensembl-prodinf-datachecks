@@ -9,6 +9,7 @@ from flasgger import Swagger
 from ensembl_prodinf import reporting
 from ensembl_prodinf.hive import HiveInstance
 from ensembl_prodinf.event_tasks import process_result
+from ensembl_prodinf.exceptions import HTTPRequestError
 import event_config
 
 pool = reporting.get_pool(event_config.report_server)
@@ -106,7 +107,10 @@ def submit_job():
             get_logger().debug("Submitting process " + str(process))
             hive = get_hive(process)
             analysis = get_analysis(process)
-            job = hive.create_job(analysis, {'event':event})
+            try:
+                job = hive.create_job(analysis, {'event': event})
+            except ValueError as e:
+                raise HTTPRequestError(str(e), 404)
             event_task = process_result.delay(event, process, job.job_id)
             results['processes'].append({
                 "process":process,
@@ -115,7 +119,7 @@ def submit_job():
             })
         return jsonify(results);
     else:
-        raise Exception("Could not handle input of type " + request.headers['Content-Type'])
+        raise HTTPRequestError("Could not handle input of type " + request.headers['Content-Type'])
 
 
 @app.route('/jobs/<string:process>/<int:job_id>', methods=['GET'])
@@ -175,16 +179,21 @@ def job(process, job_id):
     if output_format == 'email':
         email = request.args.get('email')
         if email == None:
-            raise Exception("Email not specified")
+            raise HTTPRequestError("Email not specified")
         return results_email(request.args.get('email'), process, job_id)
     elif output_format == None:
         return results(process, job_id)
     else:
-        raise Exception("Format "+output_format+" not known")
+        raise HTTPRequestError("Format {} not known".format(output_format))
+
 
 def results(process, job_id):
     get_logger().info("Retrieving job from " + process + " with ID " + str(job_id))
-    return jsonify(get_hive(process).get_result_for_job_id(job_id))
+    try:
+        job_result = get_hive(process).get_result_for_job_id(job_id)
+    except ValueError as e:
+        raise HTTPRequestError(str(e), 404)
+    return jsonify(job_result)
 
 
 @app.route('/jobs/<string:process>/<int:job_id>', methods=['DELETE'])
@@ -246,17 +255,25 @@ def delete_job(process, job_id):
     """
     hive = get_hive(process)
     job = hive.get_job_by_id(job_id)
-    hive.delete_job(job)
+    try:
+        hive.delete_job(job)
+    except ValueError as e:
+        raise HTTPRequestError(str(e), 404)
     return jsonify({"id":job_id, "process": process})
+
 
 def results_email(email, process, job_id):
     get_logger().info("Retrieving job with ID " + str(job_id) + " for " + str(email))
     hive = get_hive(process)
-    job = hive.get_job_by_id(job_id)
-    results = hive.get_result_for_job_id(job_id)
+    try:
+        job = hive.get_job_by_id(job_id)
+        results = hive.get_result_for_job_id(job_id)
+    except ValueError as e:
+        raise HTTPRequestError(str(e), 404)
     # TODO
     results['email'] = email
     return jsonify(results)
+
 
 @app.route('/jobs/<string:process>', methods=['GET'])
 def jobs(process):
@@ -321,6 +338,7 @@ def events():
     """
     return jsonify(list(event_lookup.keys()))
 
+
 @app.route('/processes')
 def processes():
     """
@@ -346,10 +364,21 @@ def processes():
     """
     return jsonify(list(process_lookup.keys()))
 
-@app.errorhandler(Exception)
-def handle_error(e):
-    code = 500
-    if isinstance(e, ValueError):
-        code = 400
-    get_logger().exception(str(e))
-    return jsonify(error=str(e)), code
+
+@app.errorhandler(HTTPRequestError)
+def handle_bad_request_error(e):
+    get_logger().error(str(e))
+    return jsonify(error=str(e)), e.status_code
+
+
+@app.errorhandler(EventNotFoundError)
+def handle_event_not_found_error(e):
+    get_logger().error(str(e))
+    return jsonify(error=str(e)), 404
+
+
+@app.errorhandler(ProcessNotFoundError)
+def handle_process_not_found_error(e):
+    get_logger().error(str(e))
+    return jsonify(error=str(e)), 404
+

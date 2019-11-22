@@ -12,6 +12,8 @@ from flask_cors import CORS
 import app_logging
 from ensembl_prodinf.hive import HiveInstance
 from ensembl_prodinf.email_tasks import email_when_complete
+from ensembl_prodinf.exceptions import HTTPRequestError
+
 
 logger = logging.getLogger(__name__)
 
@@ -160,7 +162,10 @@ def submit_job():
     """
     if json_pattern.match(request.headers['Content-Type']):
         logger.debug("Submitting HC " + str(request.json))
-        job = get_hive().create_job(app.analysis, request.json)
+        try:
+            job = get_hive().create_job(app.analysis, request.json)
+        except ValueError as e:
+            raise HTTPRequestError(str(e), 404)
         results = {"job_id": job.job_id};
         email = request.json.get('email')
         if email is not None and email != '':
@@ -171,7 +176,7 @@ def submit_job():
         return jsonify(results), 201
     else:
         logger.error("Could not handle input of type " + request.headers['Content-Type'])
-        raise ValueError("Could not handle input of type " + request.headers['Content-Type'])
+        raise HTTPRequestError("Could not handle input of type " + request.headers['Content-Type'])
 
 
 @app.route('/jobs/<int:job_id>', methods=['GET'])
@@ -263,38 +268,49 @@ def job_result(job_id):
         return job_failures(job_id)
     elif fmt is None:
         logger.info("Retrieving job with ID " + str(job_id))
-        return jsonify(get_hive().get_result_for_job_id(job_id))
+        try:
+            job_result = get_hive().get_result_for_job_id(job_id)
+        except ValueError as e:
+            raise HTTPRequestError(str(e), 404)
+        return jsonify(job_result)
     else:
-        raise Exception("Format " + fmt + " not valid")
+        raise HTTPRequestError("Format " + fmt + " not valid")
 
 
 def job_email(email, job_id):
     logger.info("Retrieving job with ID " + str(job_id) + " for " + str(email))
-    job = get_hive().get_job_by_id(job_id)
-    results = get_hive().get_result_for_job_id(job_id)
-    if results['status'] == 'complete':
-        results['subject'] = 'Healthchecks for %s - %s' % (results['output']['db_name'], results['output']['status'])
-        results['body'] = 'Please see URL for more details: %s%s\n\n' % (results['input']['result_url'], job_id)
-        results['body'] += "Results for %s:\n" % (results['output']['db_uri'])
-        for (test, result) in results['output']['results'].items():
-            results['body'] += "* %s : %s\n" % (test, result['status'])
-            if result['messages'] != None:
-                for msg in result['messages']:
-                    results['body'] += "** %s\n" % (msg)
-    elif results['status'] == 'failed':
-        failures = get_hive().get_jobs_failure_msg(job_id)
-        results['subject'] = 'Healthcheck job failed'
-        results['body'] = 'Please see URL for more details: %s%s\n\n' % (results['input']['result_url'], job_id)
-        results['body'] += 'Healthcheck job failed with following message:\n'
-        for (jobid, msg) in failures.items():
-            results['body'] += "* Job ID %s : %s\n" % (jobid, msg)
+    try:
+        job = get_hive().get_job_by_id(job_id)
+        results = get_hive().get_result_for_job_id(job_id)
+        if results['status'] == 'complete':
+            results['subject'] = 'Healthchecks for %s - %s' % (results['output']['db_name'], results['output']['status'])
+            results['body'] = 'Please see URL for more details: %s%s\n\n' % (results['input']['result_url'], job_id)
+            results['body'] += "Results for %s:\n" % (results['output']['db_uri'])
+            for (test, result) in results['output']['results'].items():
+                results['body'] += "* %s : %s\n" % (test, result['status'])
+                if result['messages'] != None:
+                    for msg in result['messages']:
+                        results['body'] += "** %s\n" % (msg)
+        elif results['status'] == 'failed':
+            failures = get_hive().get_jobs_failure_msg(job_id)
+            results['subject'] = 'Healthcheck job failed'
+            results['body'] = 'Please see URL for more details: %s%s\n\n' % (results['input']['result_url'], job_id)
+            results['body'] += 'Healthcheck job failed with following message:\n'
+            for (jobid, msg) in failures.items():
+                results['body'] += "* Job ID %s : %s\n" % (jobid, msg)
+    except ValueError as e:
+        raise HTTPRequestError(str(e), 404)
     results['output'] = None
     return jsonify(results)
 
 
 def job_failures(job_id):
     logger.info("Retrieving failure for job with ID " + str(job_id))
-    return jsonify(get_hive().get_jobs_failure_msg(job_id))
+    try:
+        job_failures_msg = get_hive().get_jobs_failure_msg(job_id)
+    except ValueError as e:
+        raise HTTPRequestError(str(e), 404)
+    return jsonify(job_failures_msg)
 
 
 @app.route('/jobs/<int:job_id>', methods=['DELETE'])
@@ -350,8 +366,11 @@ def delete_job(job_id):
           id: 1
     """
     hive = get_hive()
-    job = get_hive().get_job_by_id(job_id)
-    hive.delete_job(job)
+    try:
+        job = get_hive().get_job_by_id(job_id)
+        hive.delete_job(job)
+    except ValueError as e:
+        raise HTTPRequestError(str(e), 404)
     return jsonify({"id": job_id})
 
 
@@ -567,13 +586,10 @@ def healthchecks_endpoint():
     return jsonify({"tests": request.url + "/tests", "groups": request.url + "/groups"})
 
 
-@app.errorhandler(Exception)
-def handle_error(e):
-    code = 500
-    if isinstance(e, ValueError):
-        code = 400
-    logger.exception(str(e))
-    return jsonify(error=str(e)), code
+@app.errorhandler(HTTPRequestError)
+def handle_bad_request_error(e):
+    logger.error(str(e))
+    return jsonify(error=str(e)), e.status_code
 
 
 if __name__ == "__main__":

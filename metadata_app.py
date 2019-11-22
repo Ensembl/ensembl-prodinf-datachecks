@@ -11,6 +11,8 @@ from flask_cors import CORS
 import app_logging
 from ensembl_prodinf.hive import HiveInstance
 from ensembl_prodinf.email_tasks import email_when_complete
+from ensembl_prodinf.exceptions import HTTPRequestError
+
 
 logger = logging.getLogger(__name__)
 
@@ -51,6 +53,7 @@ def info():
     app.config['SWAGGER'] = {'title': 'Metadata updater REST endpoints', 'uiversion': 2}
     return jsonify(app.config['SWAGGER'])
 
+
 @app.route('/jobs', methods=['POST'])
 def submit_job():
     """
@@ -85,7 +88,7 @@ def submit_job():
         title: Database copy job
         description: A job to process a database and add it to the metadata database from a source MySQL server to a target MySQL server.
         type: object
-        required: 
+        required:
           -metadata_uri
           -database_uri
           -update_type
@@ -134,7 +137,10 @@ def submit_job():
     if json_pattern.match(request.headers['Content-Type']):
         request.json["metadata_uri"] = app.config["METADATA_URI"]
         logger.debug("Submitting metadata job " + str(request.json))
-        job = get_hive().create_job(app.analysis, request.json)
+        try:
+            job = get_hive().create_job(app.analysis, request.json)
+        except ValueError as e:
+            raise HTTPRequestError(str(e), 404)
         results = {"job_id": job.job_id};
         email = request.json.get('email')
         email_notification = request.json.get('email_notification')
@@ -146,7 +152,7 @@ def submit_job():
         return jsonify(results);
     else:
         logger.error("Could not handle input of type " + request.headers['Content-Type'])
-        raise ValueError("Could not handle input of type " + request.headers['Content-Type'])
+        raise HTTPRequestError("Could not handle input of type " + request.headers['Content-Type'])
 
 
 @app.route('/jobs/<int:job_id>', methods=['GET'])
@@ -173,7 +179,7 @@ def job_result(job_id):
         in: query
         type: string
         required: false
-        description: Email address to use in report 
+        description: Email address to use in report
     operationId: jobs
     consumes:
       - application/json
@@ -209,14 +215,14 @@ def job_result(job_id):
         schema:
           $ref: '#/definitions/job_id'
         examples:
-          id: 1 
-          input: 
-            metadata_uri: mysql://user:password@server:port/ensembl_metadata 
-            database_uri: mysql://user:password@server:port/saccharomyces_cerevisiae_core_91_4 
+          id: 1
+          input:
+            metadata_uri: mysql://user:password@server:port/ensembl_metadata
+            database_uri: mysql://user:password@server:port/saccharomyces_cerevisiae_core_91_4
             timestamp: 1515494114.263158
-          output: 
-            runtime: 31 seconds 
-            metadata_uri: mysql://user:password@server:port/ensembl_metadata 
+          output:
+            runtime: 31 seconds
+            metadata_uri: mysql://user:password@server:port/ensembl_metadata
             database_uri: mysql://user:password@server:port/saccharomyces_cerevisiae_core_91_4
           status: complete
     """
@@ -229,24 +235,31 @@ def job_result(job_id):
         return failure(job_id)
     elif fmt is None:
         logger.info("Retrieving job with ID " + str(job_id))
-        return jsonify(get_hive().get_result_for_job_id(job_id, child=True))
+        try:
+            job_result = get_hive().get_result_for_job_id(job_id, child=True)
+        except ValueError as e:
+            raise HTTPRequestError(str(e), 404)
+        return jsonify(job_result)
     else:
-        raise Exception("Format " + fmt + " not valid")
+        raise HTTPRequestError("Format " + fmt + " not valid")
 
 
 def job_email(email, job_id):
     logger.info("Retrieving job with ID " + str(job_id) + " for " + str(email))
-    job = get_hive().get_job_by_id(job_id)
-    results = get_hive().get_result_for_job_id(job_id, child=True)
-    if results['status'] == 'complete':
-        results['subject'] = 'Metadata load for database %s is successful' % (results['output']['database_uri'])
-        results['body'] = "Metadata load for database %s is successful\n" % (results['output']['database_uri'])
-        results['body'] += "Load took %s" % (results['output']['runtime'])
-    elif results['status'] == 'failed':
-        failure = get_hive().get_job_failure_msg_by_id(job_id, child=True)
-        results['subject'] = 'Metadata load for %s failed' % (results['input']['database_uri'])
-        results['body'] = 'Metadata load failed with following message:\n'
-        results['body'] += '%s' % (failure.msg)
+    try:
+        job = get_hive().get_job_by_id(job_id)
+        results = get_hive().get_result_for_job_id(job_id, child=True)
+        if results['status'] == 'complete':
+            results['subject'] = 'Metadata load for database %s is successful' % (results['output']['database_uri'])
+            results['body'] = "Metadata load for database %s is successful\n" % (results['output']['database_uri'])
+            results['body'] += "Load took %s" % (results['output']['runtime'])
+        elif results['status'] == 'failed':
+            failure = get_hive().get_job_failure_msg_by_id(job_id, child=True)
+            results['subject'] = 'Metadata load for %s failed' % (results['input']['database_uri'])
+            results['body'] = 'Metadata load failed with following message:\n'
+            results['body'] += '%s' % (failure.msg)
+    except ValueError as e:
+        raise HTTPRequestError(str(e), 404)
     results['output'] = None
     return jsonify(results)
 
@@ -303,7 +316,10 @@ def failure(job_id):
           msg: 'Missing table meta in database'
     """
     logger.info("Retrieving failure for job with ID " + str(job_id))
-    failure = get_hive().get_job_failure_msg_by_id(job_id, child=True)
+    try:
+        failure = get_hive().get_job_failure_msg_by_id(job_id, child=True)
+    except ValueError as e:
+        raise HTTPRequestError(str(e), 404)
     return jsonify({"msg": failure.msg})
 
 
@@ -360,8 +376,11 @@ def delete_job(job_id):
           id: 1
     """
     hive = get_hive()
-    job = get_hive().get_job_by_id(job_id)
-    hive.delete_job(job, child=True)
+    try:
+        job = get_hive().get_job_by_id(job_id)
+        hive.delete_job(job, child=True)
+    except ValueError as e:
+        raise HTTPRequestError(str(e), 404)
     return jsonify({"id": job_id})
 
 
@@ -393,35 +412,35 @@ def jobs():
         schema:
           $ref: '#/definitions/job_id'
         examples:
-          id: 1 
-          input: 
-            metadata_uri: mysql://user@server:port/ensembl_metadata 
-            database_uri: mysql://user:password@server:port/saccharomyces_cerevisiae_core_91_4 
-            timestamp: 1515494114.263158  
-          output: 
-            runtime: 31 seconds 
+          id: 1
+          input:
             metadata_uri: mysql://user@server:port/ensembl_metadata
-            database_uri: mysql://user:password@server:port/saccharomyces_cerevisiae_core_91_4     
-          status: complete
-          id: 2 
-          input: 
-            email: john.doe@ebi.ac.uk 
-            metadata_uri: mysql://user@server:port/ensembl_metadata 
-            database_uri: mysql://user:password@server:port/saccharomyces_cerevisiae_core_91_4 
-            timestamp: 1515494178.544427  
-          output: 
-            runtime: 31 seconds 
-            metadata_uri: mysql://user@server:port/ensembl_metadata  
-            database_uri: mysql://user:password@server:port/saccharomyces_cerevisiae_core_91_4  
-          status: complete
-          id: 3 
-          input: 
-            email: john.doe@ebi.ac.uk 
+            database_uri: mysql://user:password@server:port/saccharomyces_cerevisiae_core_91_4
+            timestamp: 1515494114.263158
+          output:
+            runtime: 31 seconds
             metadata_uri: mysql://user@server:port/ensembl_metadata
-            database_uri: mysql://user:password@server:port/saccharomyces_cerevisiae_core_91_4 
-            timestamp: 1515602446.492586  
-          progress: 
-            complete: 0 
+            database_uri: mysql://user:password@server:port/saccharomyces_cerevisiae_core_91_4
+          status: complete
+          id: 2
+          input:
+            email: john.doe@ebi.ac.uk
+            metadata_uri: mysql://user@server:port/ensembl_metadata
+            database_uri: mysql://user:password@server:port/saccharomyces_cerevisiae_core_91_4
+            timestamp: 1515494178.544427
+          output:
+            runtime: 31 seconds
+            metadata_uri: mysql://user@server:port/ensembl_metadata
+            database_uri: mysql://user:password@server:port/saccharomyces_cerevisiae_core_91_4
+          status: complete
+          id: 3
+          input:
+            email: john.doe@ebi.ac.uk
+            metadata_uri: mysql://user@server:port/ensembl_metadata
+            database_uri: mysql://user:password@server:port/saccharomyces_cerevisiae_core_91_4
+            timestamp: 1515602446.492586
+          progress:
+            complete: 0
             total: 1
           status: failed
     """
@@ -429,13 +448,10 @@ def jobs():
     return jsonify(get_hive().get_all_results(app.analysis, child=True))
 
 
-@app.errorhandler(Exception)
-def handle_error(e):
-    code = 500
-    if isinstance(e, ValueError):
-        code = 400
-    logger.exception(str(e))
-    return jsonify(error=str(e)), code
+@app.errorhandler(HTTPRequestError)
+def handle_bad_request_error(e):
+    logger.error(str(e))
+    return jsonify(error=str(e)), e.status_code
 
 
 if __name__ == "__main__":
