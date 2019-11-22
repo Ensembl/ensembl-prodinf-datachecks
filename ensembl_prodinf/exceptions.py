@@ -8,11 +8,15 @@ class APIException(Exception):
         self.payload = payload
         Exception.__init__(self, self.message, self.status_code)
 
+    def __str__(self):
+        return self.message
+
     def to_dict(self):
         rv = dict(self.payload or ())
         rv['message'] = self.message
         return rv
 
 
-class BadRequestError(APIException):
+class HTTPRequestError(APIException):
     pass
+
