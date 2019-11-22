@@ -4,12 +4,12 @@
 <html {% block html_attribs %}{% endblock html_attribs %}>
 
 {%- block html %}
-  {% set default_icon_image = 'img/production.png' %}
-  {% set default_title = 'Ensembl Production Services' %}
+  {% set icon_image = 'img/production.png' %}
+  {% set title = 'Ensembl Production Services' %}
 
   <head>
     {%- block head %}
-    <title>{{title|default_title}}</title>
+    <title>{{title}}</title>
 
       {%- block metas %}
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -19,7 +19,7 @@
       <!-- Bootstrap -->
       {{ bootstrap.load_css(version='4.3.0') }}
       <link rel="stylesheet" href="{{ url_for('static', filename='ensembl.css') }}">
-      <link rel="shortcut icon" href="{{ url_for('static', filename='{{icon_image|default_icon_image}}') }}">
+      <link rel="shortcut icon" href="{{ url_for('static', filename=icon_image) }}">
       {%- endblock styles %}
     {%- endblock head %}
   </head>
@@ -30,7 +30,7 @@
       <a id="top"></a>
 
       <div class="container">
-        <h2><img src="{{ url_for('static', filename='{{icon_image|default_icon_image}}') }}" /> {{title|default_title}}</h2>
+        <h2><img src="{{ url_for('static', filename=icon_image) }}" /> {{title}}</h2>
       </div>
       {%- endblock heading %}
 
