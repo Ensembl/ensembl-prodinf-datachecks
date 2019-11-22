@@ -16,6 +16,8 @@ from ensembl_prodinf.hive import HiveInstance
 from ensembl_prodinf.db_utils import list_databases, get_database_sizes
 from ensembl_prodinf.email_tasks import email_when_complete
 from ensembl_prodinf.server_utils import get_status, get_load
+from ensembl_prodinf.exceptions import BadRequestError
+
 
 logger = logging.getLogger(__name__)
 
@@ -145,7 +147,11 @@ def list_databases_endpoint():
     db_uri = request.args.get('db_uri')
     query = request.args.get('query')
     logger.debug("Finding dbs matching " + query + " on " + db_uri)
-    return jsonify(list_databases(db_uri, query))
+    try:
+        db_list = list_databases(db_uri, query)
+    except ValueError as e:
+        raise BadRequestError(str(e))
+    return jsonify(db_list)
 
 
 @app.route('/databases/sizes', methods=['GET'])
@@ -232,7 +238,11 @@ def database_sizes_endpoint():
     if (dir_name is None):
         dir_name = '/instances'
     logger.debug("Finding sizes of dbs matching " + str(query) + " on " + db_uri)
-    return jsonify(get_database_sizes(db_uri, query, dir_name))
+    try:
+        db_sizes = get_database_sizes(db_uri, query, dir_name)
+    except ValueError as e:
+        raise BadRequestError(str(e))
+    return jsonify(db_sizes)
 
 
 @app.route('/hosts/<host>', methods=['GET'])
@@ -296,19 +306,19 @@ def get_status_endpoint(host):
         schema:
           $ref: '#/definitions/host'
         examples:
-          dir: /instances 
-          disk_available_g: 1504 
-          disk_total_g: 6048 
-          disk_used_g: 4258 
-          disk_used_pct: 70.4 
-          host: server_name 
-          load_15m: 0.05 
-          load_1m: 0.0 
-          load_5m: 0.01 
-          memory_available_m: 270 
-          memory_total_m: 48394 
-          memory_used_m: 23624 
-          memory_used_pct: 48.8 
+          dir: /instances
+          disk_available_g: 1504
+          disk_total_g: 6048
+          disk_used_g: 4258
+          disk_used_pct: 70.4
+          host: server_name
+          load_15m: 0.05
+          load_1m: 0.0
+          load_5m: 0.01
+          memory_available_m: 270
+          memory_total_m: 48394
+          memory_used_m: 23624
+          memory_used_pct: 48.8
           n_cpus: 16
     """
     dir_name = request.args.get('dir_name')
@@ -368,8 +378,8 @@ def get_load_endpoint(host):
         schema:
           $ref: '#/definitions/host'
         examples:
-          load_15m: 0.05 
-          load_1m: 0.05 
+          load_15m: 0.05
+          load_1m: 0.05
           load_5m: 0.03
     """
     logger.debug("Finding load of " + host)
@@ -443,14 +453,14 @@ def list_servers_endpoint(user):
     """
     query = request.args.get('query')
     if query is None:
-        raise ValueError("Query not specified")
+        raise BadRequestError("Query not specified")
     if user in get_servers():
         logger.debug("Finding servers matching " + query + " for " + user)
         user_urls = get_servers()[user] or []
         urls = filter(lambda x: query in x, user_urls)
         return jsonify(list(urls))
     else:
-        raise ValueError("User " + user + " not found")
+        raise BadRequestError("User " + user + " not found", 404)
 
 
 @app.route('/jobs', methods=['POST'])
@@ -487,7 +497,7 @@ def submit():
         title: Database copy job
         description: A job to copy a database from a source MySQL server to a target MySQL server.
         type: object
-        required: 
+        required:
           -source_db_uri
           -target_db_uri
         properties:
@@ -536,7 +546,7 @@ def submit():
         return jsonify(results);
     else:
         logger.error("Could not handle input of type " + request.headers['Content-Type'])
-        raise ValueError("Could not handle input of type " + request.headers['Content-Type'])
+        raise BadRequestError("Could not handle input of type " + request.headers['Content-Type'])
 
 
 @app.route('/jobs/<int:job_id>', methods=['GET'])
@@ -593,15 +603,15 @@ def jobs(job_id):
         schema:
           $ref: '#/definitions/job_id'
         examples:
-          id: 1 
-          input: 
-            drop: 1 
-            source_db_uri: mysql://user@server:port/saccharomyces_cerevisiae_core_91_4 
-            target_db_uri: mysql://user:password@server:port/saccharomyces_cerevisiae_core_91_4 
+          id: 1
+          input:
+            drop: 1
+            source_db_uri: mysql://user@server:port/saccharomyces_cerevisiae_core_91_4
+            target_db_uri: mysql://user:password@server:port/saccharomyces_cerevisiae_core_91_4
             timestamp: 1515494114.263158
-          output: 
-            runtime: 31 seconds 
-            source_db_uri: mysql://user@server:port/saccharomyces_cerevisiae_core_91_4 
+          output:
+            runtime: 31 seconds
+            source_db_uri: mysql://user@server:port/saccharomyces_cerevisiae_core_91_4
             target_db_uri: mysql://user:password@server:port/saccharomyces_cerevisiae_core_91_4
           status: complete
     """
@@ -614,7 +624,7 @@ def jobs(job_id):
         logger.info("Retrieving job with ID " + str(job_id))
         return jsonify(get_hive().get_result_for_job_id(job_id))
     else:
-        raise ValueError("Format " + str(fmt) + " not known")
+        raise BadRequestError("Format " + str(fmt) + " not known")
 
 
 def failure(job_id):
@@ -720,7 +730,7 @@ def kill_job(job_id):
     # Check if the process that we killed is alive.
     if (is_running(int(process_id.process_id))):
         logger.error("Wasn't able to kill the process: " + str(process_id.process_id))
-        raise ValueError("Wasn't able to kill the process: " + str(process_id.process_id))
+        raise BadRequestError("Wasn't able to kill the process: " + str(process_id.process_id))
     else:
         return jsonify({"process_id": process_id.process_id})
 
@@ -753,38 +763,38 @@ def list_jobs():
         schema:
           $ref: '#/definitions/job_id'
         examples:
-          id: 1 
-          input: 
-            drop: 1 
-            source_db_uri: mysql://user@server:port/saccharomyces_cerevisiae_core_91_4 
-            target_db_uri: mysql://user:password@server:port/saccharomyces_cerevisiae_core_91_4 
-            timestamp: 1515494114.263158  
-          output: 
-            runtime: 31 seconds 
-            source_db_uri: mysql://user@server:port/saccharomyces_cerevisiae_core_91_4 
-            target_db_uri: mysql://user:password@server:port/saccharomyces_cerevisiae_core_91_4     
+          id: 1
+          input:
+            drop: 1
+            source_db_uri: mysql://user@server:port/saccharomyces_cerevisiae_core_91_4
+            target_db_uri: mysql://user:password@server:port/saccharomyces_cerevisiae_core_91_4
+            timestamp: 1515494114.263158
+          output:
+            runtime: 31 seconds
+            source_db_uri: mysql://user@server:port/saccharomyces_cerevisiae_core_91_4
+            target_db_uri: mysql://user:password@server:port/saccharomyces_cerevisiae_core_91_4
           status: complete
-          id: 2 
-          input: 
-            drop: 1 
-            email: john.doe@ebi.ac.uk 
-            source_db_uri: mysql://user@server:port/saccharomyces_cerevisiae_core_91_4 
-            target_db_uri: mysql://user:password@server:port/saccharomyces_cerevisiae_core_91_4 
-            timestamp: 1515494178.544427  
-          output: 
-            runtime: 31 seconds 
-            source_db_uri: mysql://user@server:port/saccharomyces_cerevisiae_core_91_4 
-            target_db_uri: mysql://user:password@server:port/saccharomyces_cerevisiae_core_91_4  
+          id: 2
+          input:
+            drop: 1
+            email: john.doe@ebi.ac.uk
+            source_db_uri: mysql://user@server:port/saccharomyces_cerevisiae_core_91_4
+            target_db_uri: mysql://user:password@server:port/saccharomyces_cerevisiae_core_91_4
+            timestamp: 1515494178.544427
+          output:
+            runtime: 31 seconds
+            source_db_uri: mysql://user@server:port/saccharomyces_cerevisiae_core_91_4
+            target_db_uri: mysql://user:password@server:port/saccharomyces_cerevisiae_core_91_4
           status: complete
-          id: 3 
-          input: 
-            drop: 1 
-            email: john.doe@ebi.ac.uk 
-            source_db_uri: mysql://user@server:port/saccharomyces_cerevisiae_core_91_4 
-            target_db_uri: mysql://user:password@server:port/saccharomyces_cerevisiae_core_91_4 
-            timestamp: 1515602446.492586  
-          progress: 
-            complete: 0 
+          id: 3
+          input:
+            drop: 1
+            email: john.doe@ebi.ac.uk
+            source_db_uri: mysql://user@server:port/saccharomyces_cerevisiae_core_91_4
+            target_db_uri: mysql://user:password@server:port/saccharomyces_cerevisiae_core_91_4
+            timestamp: 1515602446.492586
+          progress:
+            complete: 0
             total: 1
           status: failed
     """
@@ -792,13 +802,10 @@ def list_jobs():
     return jsonify(get_hive().get_all_results(app.analysis))
 
 
-@app.errorhandler(Exception)
-def handle_error(e):
-    code = 500
-    if isinstance(e, ValueError):
-        code = 400
-    logger.exception(str(e))
-    return jsonify(error=str(e)), code
+@app.errorhandler(BadRequestError)
+def handle_bad_request_error(e):
+    logger.error(str(e))
+    return jsonify(error=str(e)), e.status_code
 
 
 if __name__ == "__main__":
