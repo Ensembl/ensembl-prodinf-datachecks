@@ -26,6 +26,7 @@ swagger = Swagger(app)
 
 class EventNotFoundError(Exception):
     """Exception showing event not found"""
+    pass
 
 print(event_config.event_lookup)
 event_lookup = json.loads(open(event_config.event_lookup).read())
@@ -40,6 +41,7 @@ def get_processes_for_event(event):
 
 class ProcessNotFoundError(Exception):
     """Exception showing process not found"""
+    pass
 
 
 process_lookup = json.loads(open(event_config.process_lookup).read())
