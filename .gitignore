@@ -107,3 +107,6 @@ ENV/
 **/logs
 !**/logs/.gitkeep
 .idea
+
+# ensembl-prodinf
+instance/
