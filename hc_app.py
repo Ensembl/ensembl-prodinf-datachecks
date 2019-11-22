@@ -110,7 +110,7 @@ def submit_job():
         title: Healthcheck job
         description: A job to run multiple healthchecks or healthchecks groups on a given database URI.
         type: object
-        required: 
+        required:
           -db_uri
           -compara_uri
           -live_uri
@@ -198,7 +198,7 @@ def job_result(job_id):
         in: query
         type: string
         required: false
-        description: Email address to use in report       
+        description: Email address to use in report
     operationId: jobs
     consumes:
       - application/json
@@ -383,8 +383,8 @@ def jobs():
         schema:
           $ref: '#/definitions/job_id'
         examples:
-          id: 1 
-          input: 
+          id: 1
+          input:
             compara_uri: mysql://user@server:port/ensembl_compara_master
             data_files_path: /nfs/panda/ensembl/production/ensemblftp/data_files/
             db_uri: mysql://user@server:port/ailuropoda_melanoleuca_core_91_1
@@ -393,7 +393,7 @@ def jobs():
             production_uri: mysql://user@server:port/ensembl_production_91
             staging_uri: mysql://user@server:port/
             timestamp: 1515494166.015124
-          output: 
+          output:
             db_name: ailuropoda_melanoleuca_core_91_1
             db_uri: mysql://user@server:port/ailuropoda_melanoleuca_core_91_1
             results:
@@ -402,8 +402,8 @@ def jobs():
                 status: failed
             status: failed
           status: complete
-          id: 4 
-          input: 
+          id: 4
+          input:
             compara_uri: mysql://user@server:port/ensembl_compara_master
             data_files_path: /nfs/panda/ensembl/production/ensemblftp/data_files/
             db_uri: mysql://user@server:port/ailuropoda_melanoleuca_core_91_1
@@ -413,7 +413,7 @@ def jobs():
             production_uri: mysql://user@server:port/ensembl_production_91
             staging_uri: mysql://user@server:port/
             timestamp: 1515494256.239413
-          output: 
+          output:
             db_name: ailuropoda_melanoleuca_core_91_1
             db_uri: mysql://user@server:port/ailuropoda_melanoleuca_core_91_1
             results:
@@ -425,15 +425,15 @@ def jobs():
           body: 'Results for mysql://user@server:port/ailuropoda_melanoleuca_core_91_1: * org.ensembl.healthcheck.testcase.eg_core.GeneSource : failed ** PROBLEM: Found 23262 genes with source Ensembl which should be replaced with an appropriate GOA compatible name for the original source'
           id: 4
           input:
-            compara_uri: mysql://user@server:port/ensembl_compara_master 
-            data_files_path: /nfs/panda/ensembl/production/ensemblftp/data_files/ 
+            compara_uri: mysql://user@server:port/ensembl_compara_master
+            data_files_path: /nfs/panda/ensembl/production/ensemblftp/data_files/
             db_uri: mysql://user@server:port/ailuropoda_melanoleuca_core_91_1
             email: john.doe@ebi.ac.uk
             hc_names: ['org.ensembl.healthcheck.testcase.eg_core.GeneSource']
             live_uri: mysql://user@server:port/
             production_uri: mysql://user@server:port/ensembl_production_91
             staging_uri: mysql://user@server:port/
-            timestamp: 1515494256.239413 
+            timestamp: 1515494256.239413
           output: null
           status: complete
           subject: 'Healthchecks for ailuropoda_melanoleuca_core_91_1 - failed'
