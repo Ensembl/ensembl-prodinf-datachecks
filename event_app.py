@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import re
@@ -96,7 +97,7 @@ def submit_job():
     """
     if json_pattern.match(request.headers['Content-Type']):
         event = request.json
-        results = {"processes":[], "event":event}
+        results = {"processes": [], "event": event}
         # convert event to processes
         processes = get_processes_for_event(event)
         for process in processes:
@@ -316,7 +317,7 @@ def events():
       200:
         description: Retrieve all the events
     """
-    return jsonify(event_lookup.keys())
+    return jsonify(list(event_lookup.keys()))
 
 @app.route('/processes')
 def processes():
@@ -341,7 +342,7 @@ def processes():
       200:
         description: Retrieve all the processes
     """
-    return jsonify(process_lookup.keys())
+    return jsonify(list(process_lookup.keys()))
 
 @app.errorhandler(Exception)
 def handle_error(e):
