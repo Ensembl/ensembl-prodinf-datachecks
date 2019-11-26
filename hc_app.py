@@ -518,7 +518,7 @@ def list_healthchecks_tests_endpoint():
         return jsonify(get_hc_list())
     logger.debug("Finding healthchecks tests matching " + query)
     hc_list = filter(lambda x: str(query).lower() in x.lower(), get_hc_list())
-    return jsonify(hc_list)
+    return jsonify(list(hc_list))
 
 
 @app.route('/healthchecks/groups', methods=['GET'])
@@ -578,7 +578,7 @@ def list_healthchecks_groups_endpoint():
         return jsonify(get_hc_groups())
     logger.debug("Finding healthchecks groups matching " + query)
     hc_groups = filter(lambda x: str(query).lower() in x.lower(), get_hc_groups())
-    return jsonify(hc_groups)
+    return jsonify(list(hc_groups))
 
 
 @app.route('/healthchecks', methods=['GET'])
