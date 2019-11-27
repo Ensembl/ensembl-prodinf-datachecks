@@ -12,18 +12,23 @@ from ensembl_prodinf.event_tasks import process_result
 from ensembl_prodinf.exceptions import HTTPRequestError
 import event_config
 
+
 pool = reporting.get_pool(event_config.report_server)
+
 
 def get_logger():
     return reporting.get_logger(pool, event_config.report_exchange, 'event_handler', None, {})
 
+
 app = Flask(__name__, instance_relative_config=True)
+app.config.from_object('event_config')
+app.config.from_pyfile('event_config.py')
+app.config['SWAGGER'] = {'title': 'Event App'}
+
+swagger = Swagger(app)
 
 print(app.config)
 
-app.config.from_object('event_config')
-app.config.from_pyfile('event_config.py')
-swagger = Swagger(app)
 
 class EventNotFoundError(Exception):
     """Exception showing event not found"""

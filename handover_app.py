@@ -20,6 +20,7 @@ app.config.from_object('handover_config')
 app.config.from_pyfile('handover_config.py')
 app.logger.addHandler(app_logging.file_handler(__name__))
 app.logger.addHandler(app_logging.default_handler())
+app.config['SWAGGER'] = {'title': 'Handover App'}
 
 swagger = Swagger(app)
 cors = CORS(app)

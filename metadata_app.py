@@ -22,6 +22,7 @@ app.config.from_pyfile('metadata_config.py', silent=True)
 app.analysis = app.config["HIVE_ANALYSIS"]
 app.logger.addHandler(app_logging.file_handler(__name__))
 app.logger.addHandler(app_logging.default_handler())
+app.config['SWAGGER'] = {'title': 'Metadata App'}
 
 swagger = Swagger(app)
 
