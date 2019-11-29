@@ -213,7 +213,7 @@ def job_submit(payload = None):
 @app.route('/datacheck/jobs', methods=['GET'])
 def job_list():
   jobs = get_hive().get_all_results(app.analysis)
-  
+
   # Handle case where submission is marked as complete,
   # but where output has not been created.
   for job in jobs:
