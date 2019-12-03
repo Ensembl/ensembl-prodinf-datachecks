@@ -23,7 +23,6 @@ app.config['SWAGGER'] = {
     'uiversion': 2
 }
 app.config.from_object('hc_config')
-app.config.from_pyfile('hc_config.py', silent=True)
 app.analysis = app.config["HIVE_ANALYSIS"]
 
 app.logger.addHandler(app_logging.file_handler(__name__))

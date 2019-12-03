@@ -1,7 +1,0 @@
-# edit as required and copy to instance/hc_config.py
-HIVE_URI='mysql://myuser:mypass@myhost:3306/standalone_hc_hive'
-DEBUG = True
-HOST = '0.0.0.0'
-PORT = 5001
-HC_LIST_FILE = 'hc_list.json'
-HC_GROUPS_FILE = 'hc_groups.json'

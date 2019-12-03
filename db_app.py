@@ -23,7 +23,6 @@ logger = logging.getLogger(__name__)
 
 app = Flask(__name__, instance_relative_config=True)
 app.config.from_object('db_config')
-app.config.from_pyfile('db_config.py', silent=True)
 app.analysis = app.config["HIVE_ANALYSIS"]
 app.config['SWAGGER'] = {
     'title': 'Database copy REST endpoints',

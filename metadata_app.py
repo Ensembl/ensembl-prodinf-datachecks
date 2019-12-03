@@ -18,7 +18,6 @@ logger = logging.getLogger(__name__)
 
 app = Flask(__name__, instance_relative_config=True)
 app.config.from_object('metadata_config')
-app.config.from_pyfile('metadata_config.py', silent=True)
 app.analysis = app.config["HIVE_ANALYSIS"]
 app.logger.addHandler(app_logging.file_handler(__name__))
 app.logger.addHandler(app_logging.default_handler())

@@ -1,5 +1,0 @@
-HIVE_URI='mysql://myuser:mypass@myhost:3306/metadata_updater'
-DEBUG = True
-HOST = '0.0.0.0'
-PORT = 5003
-METADATA_URI='mysql://myuser:mypass@myhost:3306/ensembl_metadata'

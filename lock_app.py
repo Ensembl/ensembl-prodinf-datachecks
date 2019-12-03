@@ -93,7 +93,6 @@ app.config['SWAGGER'] = {
 }
 
 app.config.from_object('lock_config')
-app.config.from_pyfile('lock_config.py', silent=True)
 app.logger.addHandler(app_logging.file_handler(__name__))
 app.logger.addHandler(app_logging.default_handler())
 
