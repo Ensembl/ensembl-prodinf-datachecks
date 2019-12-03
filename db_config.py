@@ -3,7 +3,10 @@ from ensembl_prodinf.config import load_yaml
 
 
 config_file_path = os.environ.get('DBCOPY_CONFIG_PATH')
-file_config = load_yaml(config_file_path)
+if config_file_path:
+    file_config = load_yaml(config_file_path)
+else:
+    file_config = {}
 
 DEBUG = os.environ.get("DEBUG", file_config.get('debug', 'False'))
 if DEBUG.lower() in ("f", "false"):
