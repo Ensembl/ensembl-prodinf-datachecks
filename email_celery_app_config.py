@@ -3,7 +3,7 @@ import getpass
 from ensembl_prodinf.config import load_yaml
 
 
-config_file_path = os.environ.get('EMAIL_CONFIG_PATH')
+config_file_path = os.environ.get('EMAIL_CELERY_CONFIG_PATH')
 if config_file_path:
     file_config = load_yaml(config_file_path)
 else:
