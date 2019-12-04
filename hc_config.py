@@ -9,7 +9,7 @@ else:
     file_config = {}
 
 
-DEBUG = os.environ.get("DEBUG", file_config.get('debug', 'false'))
+DEBUG = str(os.environ.get("DEBUG", file_config.get('debug', 'false')))
 if DEBUG.lower() in ("f", "false"):
     DEBUG = False
 elif DEBUG.lower() in ("t", "true"):
