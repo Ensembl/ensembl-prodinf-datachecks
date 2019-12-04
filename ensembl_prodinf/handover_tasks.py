@@ -1,5 +1,5 @@
 '''
-Tasks and entrypoint need to accept and sequentially process a database. 
+Tasks and entrypoint need to accept and sequentially process a database.
 The data flow is:
 1. handover_database (standard function)
 - checks existence of database
@@ -28,7 +28,7 @@ from sqlalchemy.engine.url import make_url
 from ensembl_prodinf.utils import send_email
 from ensembl_prodinf.models.compara import check_grch37
 from ensembl_prodinf.models.core import get_division
-import handover_config as cfg
+from ensembl_prodinf import handover_config as cfg
 import uuid
 import re
 from ensembl_prodinf import reporting
@@ -46,13 +46,13 @@ species_pattern = re.compile("(.*[a-z0-9])_(core|rnaseq|cdna|otherfeatures|varia
 compara_pattern = re.compile(".*[a-z]_(compara)_?([a-z]*)?_?([a-z]*)?_?[0-9]*?_[0-9].*")
 ancestral_pattern = re.compile("(.*[a-z])_(ancestral)_[0-9]*")
 
-def get_logger():    
+def get_logger():
     return reporting.get_logger(pool, cfg.report_exchange, 'handover', None, {})
-                
-def handover_database(spec):    
-    """ Method to accept a new database for incorporation into the system 
+
+def handover_database(spec):
+    """ Method to accept a new database for incorporation into the system
     Argument is a dict with the following keys:
-    * src_uri - URI to database to handover (required) 
+    * src_uri - URI to database to handover (required)
     * tgt_uri - URI to copy database to (optional - generated from staging and src_uri if not set)
     * contact - email address of submitter (required)
     * comment - additional information about submission (required)
@@ -64,8 +64,8 @@ def handover_database(spec):
     * progress_total - Total number of task to do
     * progress_complete - Total number of task completed
     """
-    # TODO verify dict    
-    reporting.set_logger_context(get_logger(), spec['src_uri'], spec)    
+    # TODO verify dict
+    reporting.set_logger_context(get_logger(), spec['src_uri'], spec)
     # create unique identifier
     spec['handover_token'] = str(uuid.uuid1())
     spec['progress_total']=3
@@ -97,8 +97,8 @@ def get_tgt_uri(src_url,staging_uri):
     """Create target URI from staging details and name of source database"""
     return str(staging_uri) + str(src_url.database)
 
-    
-def check_db(uri):    
+
+def check_db(uri):
     """Check if source database exists"""
     if not database_exists(uri):
         get_logger().error("Handover failed, " + uri + " does not exist")
@@ -217,8 +217,8 @@ def process_checked_db(self, hc_job_id, spec):
     * submit copy if HCs succeed
     * send error email if not
     """
-    reporting.set_logger_context(get_logger(), spec['src_uri'], spec)    
-    # allow infinite retries 
+    reporting.set_logger_context(get_logger(), spec['src_uri'], spec)
+    # allow infinite retries
     self.max_retries = None
     get_logger().info("HCs in progress, please see: " +cfg.hc_web_uri + str(hc_job_id))
     try:
@@ -237,7 +237,7 @@ Running healthchecks on %s failed to execute.
 Please see %s
 """ % (spec['src_uri'], cfg.hc_web_uri + str(hc_job_id))
         send_email(to_address=spec['contact'], subject='HC failed to run', body=msg, smtp_server=cfg.smtp_server)
-        return 
+        return
     elif result['output']['status'] == 'failed':
         get_logger().info("HCs found problems, please see: "+cfg.hc_web_uri + str(hc_job_id))
         msg = """
@@ -292,24 +292,24 @@ Please see %s
         submit_copy(spec)
 
 def submit_copy(spec):
-    """Submit the source database for copying to the target. Returns a celery job identifier"""    
+    """Submit the source database for copying to the target. Returns a celery job identifier"""
     try:
         copy_job_id = db_copy_client.submit_job(spec['src_uri'], spec['tgt_uri'], None, None, False, True, True, None)
     except Exception as e:
         get_logger().error("Handover failed, cannot submit copy job")
         raise ValueError("Handover failed, cannot submit copy job {}".format(e))
     spec['copy_job_id'] = copy_job_id
-    task_id = process_copied_db.delay(copy_job_id, spec)    
+    task_id = process_copied_db.delay(copy_job_id, spec)
     get_logger().debug("Submitted DB for copying as " + str(task_id))
     return task_id
 
-@app.task(bind=True)    
+@app.task(bind=True)
 def process_copied_db(self, copy_job_id, spec):
     """Wait for copy to complete and then respond accordingly:
     * if success, submit to metadata database
     * if failure, flag error using email"""
-    reporting.set_logger_context(get_logger(), spec['src_uri'], spec)    
-    # allow infinite retries     
+    reporting.set_logger_context(get_logger(), spec['src_uri'], spec)
+    # allow infinite retries
     self.max_retries = None
     get_logger().info("Copying in progress, please see: " +cfg.copy_web_uri + str(copy_job_id))
     try:
@@ -348,7 +348,7 @@ def submit_metadata_update(spec):
     get_logger().debug("Submitted DB for metadata loading " + str(task_id))
     return task_id
 
-@app.task(bind=True)    
+@app.task(bind=True)
 def process_db_metadata(self, metadata_job_id, spec):
     """Wait for metadata update to complete and then respond accordingly:
     * if success, submit event to event handler for further processing
