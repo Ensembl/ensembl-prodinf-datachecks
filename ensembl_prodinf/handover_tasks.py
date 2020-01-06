@@ -80,7 +80,7 @@ def handover_database(spec):
     #Get database hc group and compara_uri
     (groups,compara_uri) = hc_groups(db_type,db_prefix,spec['src_uri'])
     #Check to which staging server the database need to be copied to
-    (spec,staging_uri) = check_staging_server(spec,db_type,db_prefix,assembly)
+    (spec,staging_uri,live_uri) = check_staging_server(spec,db_type,db_prefix,assembly)
     #setting compara url to default value for species databases. This value is only used by Compara healthchecks
     if compara_uri is None:
         compara_uri=cfg.compara_uri + 'ensembl_compara_master'
@@ -90,7 +90,7 @@ def handover_database(spec):
     spec['progress_complete']=0
     get_logger().info("Handling " + str(spec))
     submit_dc(spec, src_url, db_type, db_prefix, release, staging_uri, compara_uri)
-    submit_hc(spec, groups, compara_uri, staging_uri)
+    submit_hc(spec, groups, compara_uri, staging_uri, live_uri)
     return spec['handover_token']
 
 def get_tgt_uri(src_url,staging_uri):
@@ -146,7 +146,7 @@ def hc_groups(db_type,db_prefix,uri):
             compara_uri=cfg.compara_metazoa_uri + 'ensembl_compara_master_' + db_prefix
             compara_handover_group=cfg.compara_handover_group
         elif check_grch37(uri,'homo_sapiens'):
-            compara_uri=cfg.compara_uri + 'ensembl_compara_master_grch37'
+            compara_uri=cfg.compara_grch37_uri + 'ensembl_compara_master_grch37'
             compara_handover_group=cfg.compara_handover_group
         elif db_prefix:
             compara_uri=cfg.compara_uri + db_prefix + '_compara_master'
@@ -160,23 +160,27 @@ def check_staging_server(spec,db_type,db_prefix,assembly):
     """Find which staging server should be use. secondary_staging for GRCh37 and Bacteria, staging for the rest"""
     if 'bacteria' in db_prefix:
         staging_uri = cfg.secondary_staging_uri
+        live_uri = cfg.secondary_live_uri
     elif db_prefix == 'homo_sapiens' and assembly == '37':
         staging_uri = cfg.secondary_staging_uri
+        live_uri = cfg.secondary_live_uri
         spec['GRCh37']=1
         spec['progress_total']=2
     elif db_type == 'compara' and check_grch37(spec['src_uri'],'homo_sapiens'):
         staging_uri = cfg.secondary_staging_uri
+        live_uri = cfg.secondary_live_uri
         spec['GRCh37']=1
         spec['progress_total']=2
     else:
         staging_uri = cfg.staging_uri
-    return spec,staging_uri
+        live_uri = cfg.live_uri
+    return spec,staging_uri,live_uri
 
 
-def submit_hc(spec, groups, compara_uri, staging_uri):
+def submit_hc(spec, groups, compara_uri, staging_uri, live_uri):
     """Submit the source database for healthchecking. Returns a celery job identifier"""
     try:
-        hc_job_id = hc_client.submit_job(spec['src_uri'], cfg.production_uri, compara_uri, staging_uri, cfg.live_uri, None, groups, cfg.data_files_path, None, spec['handover_token'])
+        hc_job_id = hc_client.submit_job(spec['src_uri'], cfg.production_uri, compara_uri, staging_uri, live_uri, None, groups, cfg.data_files_path, None, spec['handover_token'])
     except Exception as e:
         get_logger().error("Handover failed, Cannot submit hc job")
         raise ValueError("Handover failed, Cannot submit hc job {}".format(e))
@@ -294,7 +298,7 @@ Please see %s
 def submit_copy(spec):
     """Submit the source database for copying to the target. Returns a celery job identifier"""
     try:
-        copy_job_id = db_copy_client.submit_job(spec['src_uri'], spec['tgt_uri'], None, None, False, True, True, None)
+        copy_job_id = db_copy_client.submit_job(spec['src_uri'], spec['tgt_uri'], None, None, False, True, True, None, None)
     except Exception as e:
         get_logger().error("Handover failed, cannot submit copy job")
         raise ValueError("Handover failed, cannot submit copy job {}".format(e))
