@@ -20,4 +20,10 @@ from_email_address = os.environ.get("FROM_EMAIL_ADDRESS",
 retry_wait = int(os.environ.get("RETRY_WAIT",
                                 file_config.get('retry_wait', 60)))
 
-task_routes = {'ensembl_prodinf.handover_tasks.*': {'queue': 'handover'}}
+task_routes = {
+    os.environ.get("ROUTING_KEY",
+                   file_config.get('routing_key', 'ensembl_prodinf.handover_tasks.*')): {
+                       'queue': os.environ.get("QUEUE",
+                                               file_config.get('queue', 'handover'))}
+
+    }
