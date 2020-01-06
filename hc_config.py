@@ -18,6 +18,7 @@ elif DEBUG.lower() in ("t", "true"):
 
 HIVE_ANALYSIS = os.environ.get("HIVE_ANALYSIS",
                                file_config.get('hive_analysis', 'RunStandaloneHealthcheckFactory'))
+HIVE_URI = os.environ.get("HIVE_URI", file_config.get('hive_uri'))
 HC_LIST_FILE = os.environ.get("HC_LIST_FILE",
                               file_config.get('hc_list_file', './hc_list.json'))
 HC_GROUPS_FILE = os.environ.get("HC_GROUPS_FILE",
