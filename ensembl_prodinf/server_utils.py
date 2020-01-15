@@ -20,20 +20,20 @@ def assert_http_uri(uri):
 def assert_mysql_uri(uri):
     """Check supplied URI matches MySQL server"""
     parsed_uri = urlparse(uri)
-    valid_netloc = re.match(db_netloc_re, parsed_uri.netloc)
+    valid_netloc = db_netloc_re.match(parsed_uri.netloc)
     if not (parsed_uri.scheme == 'mysql' and valid_netloc and len(parsed_uri.path) == 1):
         raise ValueError("MySQL URL doesn't match pattern: mysql://user(:pass)@server:port/")
 
 def assert_mysql_db_uri(uri):
     """Check supplied URI matches MySQL database"""
     parsed_uri = urlparse(uri)
-    valid_netloc = re.match(db_netloc_re, parsed_uri.netloc)
+    valid_netloc = db_netloc_re.match(parsed_uri.netloc)
     if not (parsed_uri.scheme == 'mysql' and valid_netloc and len(parsed_uri.path) > 2):
         raise ValueError("MySQL database URL doesn't match pattern: mysql://user(:pass)@server:port/prod_db_name")
 
 def assert_email(email):
     """Check supplied string is an email address"""
-    if not re.match(email_re, email):
+    if not email_re.match(email):
         raise ValueError("Email doesn't match pattern: user@domain")
 
 def get_load(host=None):
