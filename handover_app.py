@@ -252,10 +252,27 @@ def handover_results():
     try:
         logger.info("Retrieving all handover report")
         es = Elasticsearch([{'host': es_host, 'port': es_port}])
-        res = es.search(index="reports", body={"query": {"bool": {
-            "must": [{"query_string": {"fields": ["message"], "query": "Handling*", "analyze_wildcard": "true"}},
-            {"query_string": {"fields": ["params.tgt_uri"], "query": "*_"+release+"*", "analyze_wildcard": "true"}}]}},
-            "size": 1000, "sort": [{"report_time": {"order": "desc"}}]})
+        res = es.search(index="reports", body={
+            "query": {
+                "bool": {
+                    "must": [{
+                        "query_string": {
+                            "fields": ["message"],
+                            "query": "Handling*",
+                            "analyze_wildcard": "true"}
+                    },
+                    {
+                        "query_string": {
+                            "fields": ["params.tgt_uri"],
+                            "query": "/.*_{}(_[0-9]+)?/".format(release)}
+                    }]
+                }
+            },
+            "size": 1000,
+            "sort": [{
+                "report_time": {"order": "desc"}
+            }]
+        })
         list_handovers = []
         for doc in res['hits']['hits']:
             result = {"id": doc['_id']}
