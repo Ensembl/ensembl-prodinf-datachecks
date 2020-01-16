@@ -44,6 +44,9 @@ secondary_staging_uri = os.environ.get("SECONDARY_STAGING_URI",
 live_uri = os.environ.get("LIVE_URI",
                           file_config.get('live_uri',
                                           "mysql://user@127.0.0.1:3306/"))
+secondary_live_uri = os.environ.get("SECONDARY_LIVE_URI",
+                          file_config.get('secondary_live_uri',
+                                          "mysql://user@127.0.0.1:3306/"))
 production_uri = os.environ.get("PRODUCTION_URI",
                                 file_config.get('production_uri',
                                                 "mysql://user@127.0.0.1:3306/ensembl_production"))
@@ -55,6 +58,9 @@ compara_plants_uri = os.environ.get("COMPARA_PLANTS_URI",
                                                     "mysql://user@127.0.0.1:3306/"))
 compara_metazoa_uri = os.environ.get("COMPARA_METAZOA_URI",
                                      file_config.get('compara_metazoa_uri',
+                                                     "mysql://user@127.0.0.1:3306/"))
+compara_grch37_uri = os.environ.get("COMPARA_GRCH37_URI",
+                                     file_config.get('compara_grch37_uri',
                                                      "mysql://user@127.0.0.1:3306/"))
 core_handover_group = os.environ.get("CORE_HANDOVER_GROUP",
                                      file_config.get('core_handover_group',
