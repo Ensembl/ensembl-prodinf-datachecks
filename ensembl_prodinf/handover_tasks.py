@@ -118,7 +118,7 @@ def parse_db_infos(database):
     elif compara_pattern.match(database):
         m = compara_pattern.match(database)
         division = m.group('division')
-        db_prefix = division if division else 'compara'
+        db_prefix = division if division else ''
         return db_prefix, 'compara', None, None
     elif ancestral_pattern.match(database):
         return 'ensembl', 'ancestral', None, None

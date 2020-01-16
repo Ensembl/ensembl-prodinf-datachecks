@@ -80,7 +80,7 @@ class ParseDbInfosTest(unittest.TestCase):
             ('plants', 'compara', None, None),
             ('protists', 'compara', None, None),
             ('bacteria', 'compara', None, None),
-            ('compara', 'compara', None, None)
+            ('', 'compara', None, None)
         )
         for parsed_name, database_name in zip(parsed_names, names):
             self.assertEqual(parsed_name, ht.parse_db_infos(database_name))
