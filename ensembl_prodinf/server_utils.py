@@ -1,10 +1,11 @@
 import re
 import subprocess
+from urllib.parse import urlparse
 
-http_uri_regex = r"^(http){1}(s){0,1}(://){1}(.+){1}(:){1}(\d+){1}(/){1}(.+){0,1}$"
-uri_regex = r"^(mysql://){1}(.+){1}(:.+){0,1}(@){1}(.+){1}(:){1}(\d+){1}(/){1}$"
-db_uri_regex = r"^(mysql://){1}(.+){1}(:.+){0,1}(@){1}(.+){1}(:){1}(\d+){1}(/){1}(.+){1}$"
-email_regex = r"^(.+){1}(@){1}(.+){1}$"
+
+db_netloc_re = re.compile(r'^.+@.+:\d+$')
+email_re = re.compile(r'^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$')
+
 
 """
 Utilities for dealing with REST and database servers
@@ -12,22 +13,27 @@ Utilities for dealing with REST and database servers
 
 def assert_http_uri(uri):
     """Check supplied URI matches http"""
-    if not re.search(http_uri_regex, uri):
-        raise ValueError("Endpoint URL doesn't match pattern: http://server_name:port/")
+    parsed_uri = urlparse(uri)
+    if not (parsed_uri.scheme.startswith('http') and parsed_uri.netloc and parsed_uri.path):
+        raise ValueError("Endpoint URL doesn't match pattern: http(s)://server-name(:port)/")
 
 def assert_mysql_uri(uri):
     """Check supplied URI matches MySQL server"""
-    if not re.search(uri_regex, uri):
+    parsed_uri = urlparse(uri)
+    valid_netloc = db_netloc_re.match(parsed_uri.netloc)
+    if not (parsed_uri.scheme == 'mysql' and valid_netloc and len(parsed_uri.path) == 1):
         raise ValueError("MySQL URL doesn't match pattern: mysql://user(:pass)@server:port/")
 
 def assert_mysql_db_uri(uri):
     """Check supplied URI matches MySQL database"""
-    if not re.search(db_uri_regex, uri):
+    parsed_uri = urlparse(uri)
+    valid_netloc = db_netloc_re.match(parsed_uri.netloc)
+    if not (parsed_uri.scheme == 'mysql' and valid_netloc and len(parsed_uri.path) > 2):
         raise ValueError("MySQL database URL doesn't match pattern: mysql://user(:pass)@server:port/prod_db_name")
 
 def assert_email(email):
     """Check supplied string is an email address"""
-    if not re.search(email_regex, email):
+    if not email_re.match(email):
         raise ValueError("Email doesn't match pattern: user@domain")
 
 def get_load(host=None):

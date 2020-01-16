@@ -42,9 +42,9 @@ event_client = EventClient(cfg.event_uri)
 dc_client = DatacheckClient(cfg.dc_uri)
 
 db_types_list = [i for i in cfg.allowed_database_types.split(",")]
-species_pattern = re.compile("(.*[a-z0-9])_(core|rnaseq|cdna|otherfeatures|variation|funcgen)_?[0-9]*?_([0-9]*)_([0-9a-z]*)")
-compara_pattern = re.compile(".*[a-z]_(compara)_?([a-z]*)?_?([a-z]*)?_?[0-9]*?_[0-9].*")
-ancestral_pattern = re.compile("(.*[a-z])_(ancestral)_[0-9]*")
+species_pattern = re.compile(r'^(?P<prefix>\w+)_(?P<type>core|rnaseq|cdna|otherfeatures|variation|funcgen)(_\d+)?_(?P<release>\d+)_(?P<assembly>\d+)$')
+compara_pattern = re.compile(r'^ensembl_compara(_(?P<division>[a-z]+|pan)(_homology)?)?(_(\d+))?(_\d+)$')
+ancestral_pattern = re.compile(r'^ensembl_ancestral_\d+$')
 
 def get_logger():
     return reporting.get_logger(pool, cfg.report_exchange, 'handover', None, {})
@@ -109,19 +109,19 @@ def check_db(uri):
 def parse_db_infos(database):
     """Parse database name and extract db_prefix and db_type. Also extract release and assembly for species databases"""
     if species_pattern.match(database):
-        db_prefix = species_pattern.match(database).group(1)
-        db_type = species_pattern.match(database).group(2)
-        release = species_pattern.match(database).group(3)
-        assembly = species_pattern.match(database).group(4)
+        m = species_pattern.match(database)
+        db_prefix = m.group('prefix')
+        db_type = m.group('type')
+        release = m.group('release')
+        assembly = m.group('assembly')
         return db_prefix, db_type, release, assembly
     elif compara_pattern.match(database):
-        db_type = compara_pattern.match(database).group(1)
-        db_prefix = compara_pattern.match(database).group(2)
-        return db_prefix, db_type, None, None
+        m = compara_pattern.match(database)
+        division = m.group('division')
+        db_prefix = division if division else ''
+        return db_prefix, 'compara', None, None
     elif ancestral_pattern.match(database):
-        db_prefix = ancestral_pattern.match(database).group(1)
-        db_type = ancestral_pattern.match(database).group(2)
-        return db_prefix, db_type, None, None
+        return 'ensembl', 'ancestral', None, None
     else:
         raise ValueError("Database type for "+database+" is not expected. Please contact the Production team")
 
