@@ -25,6 +25,15 @@ Swagger(app, template_file='swagger.yml')
 
 hive = None
 
+def get_gifts_api_uri(environment):
+  with open(app.config["GIFTS_API_URIS_FILE"], 'r') as f:
+    gifts_api_uris = json.loads(f.read())
+    if environment in gifts_api_uris.keys():
+      gifts_api_uri = gifts_api_uris[environment]
+    else:
+      raise RuntimeError('Unrecognised Environment: %s' % environment)
+  return gifts_api_uri
+
 def get_hive(hive_type):
   global hive
   if hive is None:
@@ -38,7 +47,6 @@ def get_hive(hive_type):
       raise RuntimeError('Unrecognised Pipeline: %s' % hive_type)
   return hive
 
-
 @app.route('/gifts/', methods=['GET'])
 def index():
   return render_template('ensembl/gifts/index.html')
@@ -49,6 +57,8 @@ def update_ensembl(payload=None):
   # call /gifts/update_ensembl/status to check that there are no active jobs before proceeding
   if payload is None:
     payload = request.json
+
+  payload['rest_server'] = get_gifts_api_uri(payload['environment'])
 
   analysis = app.config['HIVE_UPDATE_ENSEMBL_ANALYSIS']
   job = get_hive('update_ensembl').create_job(analysis, payload)
@@ -195,17 +205,20 @@ def submit_form():
   form = GIFTsSubmissionForm(request.form)
 
   payload = {
-    'release': form.release.data,
+    'ensembl_release': form.ensembl_release.data,
+    'environment': form.environment.data,
     'email': form.email.data,
     'tag': form.tag.data
   }
 
   if form.update_ensembl.data:
-    update_ensembl(payload)
+    return update_ensembl(payload)
   elif form.process_mapping.data:
-    process_mapping(payload)
+    return process_mapping(payload)
   elif form.publish_mapping.data:
-    publish_mapping(payload)
+    return publish_mapping(payload)
+  else:
+    raise RuntimeError('Unrecognised submission type')
 
 @app.route('/gifts/ping', methods=['GET'])
 def ping():
