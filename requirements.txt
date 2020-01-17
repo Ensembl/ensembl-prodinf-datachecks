@@ -1,4 +1,4 @@
-git+git://github.com/radome/ensembl-prodinf-core@merge_py3#egg=ensembl_prodinf
+git+git://github.com/Ensembl/ensembl-prodinf-core@release/3.1#egg=ensembl_prodinf
 amqp==2.5.1
 appdirs==1.4.0
 billiard==3.6.1.0
