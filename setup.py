@@ -11,12 +11,12 @@ with open('LICENSE') as f:
 
 setup(
     name='ensembl_prodinf',
-    version='0.1.0',
+    version='3.1.0',
     description='Base libraries for Ensembl Production infrastructure services',
     long_description=readme,
     author='Dan Staines',
     author_email='dstaines@ebi.ac.uk',
-    url='https://github.com/radome/ensembl-prodinf-core',
+    url='https://github.com/Ensembl/ensembl-prodinf-core',
     license=license,
     packages=PEP420PackageFinder.find(exclude=('tests', 'docs'))
 )
