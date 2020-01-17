@@ -8,3 +8,4 @@ class GIFTsConfig(EnsemblConfig):
   HIVE_UPDATE_ENSEMBL_URI = os.environ.get("HIVE_UPDATE_ENSEMBL_URI", None)
   HIVE_PROCESS_MAPPING_URI = os.environ.get("HIVE_PROCESS_MAPPING_URI", None)
   HIVE_PUBLISH_MAPPING_URI = os.environ.get("HIVE_PUBLISH_MAPPING_URI", None)
+  GIFTS_API_URIS_FILE = os.environ.get("GIFTS_APIS_URIS_FILE", 'gifts_api_uris.json')
