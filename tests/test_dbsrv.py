@@ -37,7 +37,7 @@ class DbSrvTest(unittest.TestCase):
 
     def test_list_servers_nouser(self):
         response = self.app.get("/servers/rauser?query=loca");
-        self.assertEquals(400, response.status_code)
+        self.assertEquals(404, response.status_code)
 
     def test_list_servers_none(self):
         response = self.app.get("/servers/rouser?query=boca");
