@@ -11,17 +11,19 @@ from ensembl.server_utils import assert_mysql_uri, assert_mysql_db_uri
 class GIFTsClient(RestClient):
   """Client for interacting with the GIFTs services"""
 
-  def submit_job(self, email, tag, release):
+  def submit_job(self, email, environment, tag, ensembl_release):
     """
     Start a GIFTs pipeline.
     Arguments:
-      release - mandatory Ensembl release number
+      ensembl_release - mandatory Ensembl release number
+      environment - mandatory execution environment (dev or staging)
       email - mandatory address for an email on job completion
       tag - optional text for annotating a submission
     """
 
     payload = {
-      'release': release,
+      'ensembl_release': ensembl_release,
+      'environment': environment,
       'email': email,
       'tag': tag
     }
@@ -79,8 +81,10 @@ class GIFTsClient(RestClient):
 
   def print_inputs(self, i):
     """Utility to render a job input dict to logging"""
-    if 'release' in i:
-      logging.info("Release: " + i['release'])
+    if 'ensembl_release' in i:
+      logging.info("Ensembl Release: " + i['ensembl_release'])
+    if 'environment' in i:
+      logging.info("Environment: " + i['environment'])
     if 'email' in i:
       logging.info("Email: " + i['email'])
     if 'tag' in i:
@@ -91,12 +95,13 @@ if __name__ == '__main__':
 
   parser = argparse.ArgumentParser(description='Ensembl Production: Interact with the GIFTs services')
 
-  parser.add_argument('-u', '--uri', help='GIFTs REST service URI', required=True)
+  parser.add_argument('-u', '--uri', help='GIFTs Production service REST URI', required=True)
   parser.add_argument('-a', '--action', help='Action to take', choices=['submit', 'retrieve', 'list'], required=True)
   parser.add_argument('-i', '--job_id', help='GIFTs job identifier to retrieve')
   parser.add_argument('-v', '--verbose', help='Verbose output', action='store_true')
   parser.add_argument('-o', '--output_file', help='File to write output as JSON', type=argparse.FileType('w'))
-  parser.add_argument('-r', '--release', help='Ensembl release number', required=True)
+  parser.add_argument('-r', '--ensembl_release', help='Ensembl release number', required=True)
+  parser.add_argument('-n', '--environment', help='Execution environment (dev or staging)', required=True)
   parser.add_argument('-e', '--email', help='Email address for pipeline reports', required=True)
   parser.add_argument('-t', '--tag', help='Tag for annotating/retrieving a submission')
 
@@ -113,7 +118,7 @@ if __name__ == '__main__':
   client = GIFTsClient(args.uri)
 
   if args.action == 'submit':
-    job_id = client.submit_job(args.release, args.email, args.tag)
+    job_id = client.submit_job(args.ensembl_release, args.environment, args.email, args.tag)
     logging.info('Job submitted with ID ' + str(job_id))
 
   elif args.action == 'retrieve':
