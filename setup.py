@@ -8,14 +8,14 @@ with open('LICENSE') as f:
 
 setup(
     name='ensembl_srv',
-    version='0.1.0',
+    version='3.1.0',
     description='Server libraries for Ensembl Production infrastructure services',
     long_description=readme,
     author='Dan Staines',
     author_email='dstaines@ebi.ac.uk',
-    url='https://github.com/radome/ensembl-prodinf-srv',
+    url='https://github.com/Ensembl/ensembl-prodinf-srv',
     license=license,
     install_requires=[
-        'ensembl_prodinf @ git+https://github.com/radome/ensembl-prodinf-core@EP-4321_py2_to_py3',
+        'ensembl_prodinf @ git+https://github.com/Ensembl/ensembl-prodinf-core@release/3.1',
     ]
 )
