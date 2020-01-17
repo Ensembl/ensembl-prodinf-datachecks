@@ -31,17 +31,17 @@ class HiveTest(unittest.TestCase):
 
     """Test case for checking on a finished semaphore"""
     def test_check_semaphore_success(self):
-        job = self.hive.get_job_by_id(2)
-        logging.debug(job)
-        status = self.hive.check_semaphores_for_job(job)
+        semaphore_data = self.hive.get_semaphore_data(2)
+        logging.debug(semaphore_data)
+        status = self.hive.check_semaphores_for_job(semaphore_data)
         logging.debug("Status for 2 is "+status)
         self.assertEquals(status, 'complete', "Checking expected status for completed semaphore")
 
     """Test case for checking on a failed semaphore"""
     def test_check_semaphore_failure(self):
-        job = self.hive.get_job_by_id(8)
-        logging.debug(job)
-        status = self.hive.check_semaphores_for_job(job)
+        semaphore_data = self.hive.get_semaphore_data(8)
+        logging.debug(semaphore_data)
+        status = self.hive.check_semaphores_for_job(semaphore_data)
         logging.debug("Status for 8 is "+status)
         self.assertEquals(status, 'failed', "Checking expected status for failed semaphore")
 
