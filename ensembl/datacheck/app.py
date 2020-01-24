@@ -322,8 +322,7 @@ def set_registry_file(params):
       else:
         m = re.match(r'.+\_([a-z]+)', params['database'])
         params['db_type'] = m.group(1)
-
-      db_url = os.path.join(params['server_url'], params['database'], '?group=' + params['db_type'])
+    db_url = os.path.join(params['server_url'], params['database'], '?group=' + params['db_type'])
   elif params['species'] or params['division']:
     db_url = params['server_url']
     if params['release']:
