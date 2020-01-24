@@ -39,7 +39,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'ensembl_prodinf'
-copyright = '2017 EMBL-EBI'
+copyright = '2020 EMBL-EBI'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
