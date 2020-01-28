@@ -6,8 +6,7 @@ from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, func
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 
-from ensembl_prodinf.utils import dict_to_perl_string, perl_string_to_python
-
+from ensembl.utils import dict_to_perl_string, perl_string_to_python
 
 __all__ = [ 'Result', 'LogMessage', 'Job', 'HiveInstance', 'Analysis' ]
 
@@ -188,6 +187,7 @@ class HiveInstance:
 
     def get_job_failure_msg_by_id(self, id, child=False):
 
+  # This table can have multiple rows for a single job_id.
         """ Retrieve a job failure message or job child if exist and if child flag turned on"""
         s = Session()
         job = self.get_job_by_id(id)
@@ -234,11 +234,11 @@ class HiveInstance:
 
     def create_job(self, analysis_name, input_data):
 
-        """ Create a job for the supplied analysis and input hash
+        """ Create a job for the supplied analysis and input hash 
         The input_data dict is converted to a Perl string before storing
         """
 
-        input_data['timestamp'] = time.time()
+        input_data['timestamp'] = time.ctime()
         analysis = self.get_analysis_by_name(analysis_name)
         if analysis == None:
             raise ValueError("Analysis %s not found" % analysis_name)
@@ -277,7 +277,7 @@ class HiveInstance:
         finally:
             s.close()
 
-    def get_result_for_job_id(self, id, child=False):
+    def get_result_for_job_id(self, id, child=False, progress=True):
 
         """ Get result for a given job id. If child flag is turned on and job child exist, get result for child job"""
 
@@ -287,11 +287,11 @@ class HiveInstance:
         if child:
             child_job = self.get_job_child(job)
             if child_job != None:
-                return self.get_result_for_job(child_job, progress=True)
+                return self.get_result_for_job(child_job, progress)
             else:
-                return self.get_result_for_job(job, progress=True)
+                return self.get_result_for_job(job, progress)
         else:
-            return self.get_result_for_job(job, progress=True)
+            return self.get_result_for_job(job, progress)
 
     def get_result_for_job(self, job, progress=False):
 

@@ -1,1 +1,0 @@
-from compara import *

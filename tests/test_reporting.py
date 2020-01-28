@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 import logging
 import unittest
 import threading
@@ -21,7 +19,7 @@ class UtilsTest(unittest.TestCase):
         f = ContextFilter(context)
         msg = "Hello world"
         record = logging.LogRecord("logger", 20, None, "1", msg, None, None, None)
-        print record.levelname
+        print(record.levelname)
         result = f.filter(record)
         self.assertTrue(result, "Checking filter return")
         self.assertEquals(record.host, context['host'])
@@ -47,7 +45,7 @@ class UtilsTest(unittest.TestCase):
         record.resource = "myres"
         record.report_time = "2017-01-01T06:00:01"
         record.params = {"key":"val"}
-        print record.levelname
+        print(record.levelname)
         f = JsonFormatter()
         json_str = f.format(record)
         report = json.loads(json_str)

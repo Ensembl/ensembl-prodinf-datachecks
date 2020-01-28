@@ -65,17 +65,16 @@ To Submit the job via the REST enpoint for vertebrates
   SERVER=$(mysql-ens-vertannot-staging details url) #e.g: mysql://ensro@mysql-ens-vertannot-staging:4573/
   GROUP=CoreHandover
   COMPARA_MASTER=$(mysql-ens-compara-prod-1 details url)
-  LIVE=$(mysql-ensembl-mirror details url)
+  LIVE=$(mysql-ens-mirror-1 details url)
   STAGING=$(mysql-ens-sta-1 details url)
-  PRODUCTION=$(mysql-ens-sta-1 details url)
+  PRODUCTION=$(mysql-ens-meta-prod-1 details url)
   ENDPOINT=http://ens-prod-1.ebi.ac.uk:8000/hc/
   DATA_FILE_PATH=/nfs/panda/ensembl/production/ensemblftp/data_files/
-  RELEASE=91
   TAG=my_hc_run
   
   cd $BASE_DIR/ensembl-prodinf-core 
   for db in $(cat vertebrates_db_hc.txt);
-  do python ensembl_prodinf/hc_client.py --uri $ENDPOINT --db_uri "${SERVER}${db}" --production_uri "${PRODUCTION}ensembl_production_${RELEASE}" --staging_uri $STAGING --live_uri $LIVE --compara_uri "${COMPARA_MASTER}ensembl_compara_master" --hc_groups $GROUP --data_files_path $DATA_FILE_PATH --tag $TAG  --action submit
+  do python ensembl_prodinf/hc_client.py --uri $ENDPOINT --db_uri "${SERVER}${db}" --production_uri "${PRODUCTION}ensembl_production" --staging_uri $STAGING --live_uri $LIVE --compara_uri "${COMPARA_MASTER}ensembl_compara_master" --hc_groups $GROUP --data_files_path $DATA_FILE_PATH --tag $TAG  --action submit
   done
   
 To Submit the job via the REST enpoint for non vertebrates
@@ -85,10 +84,10 @@ To Submit the job via the REST enpoint for non vertebrates
   SERVER=$(mysql-ens-sta-3 details url)
   GROUP=EGCoreHandover
   COMPARA_MASTER=$(mysql-eg-pan-prod details url)
-  LIVE=$(mysql-eg-publicsql details url)
+  LIVE=$(mysql-ens-mirror-3 details url)
   STAGING=$(mysql-ens-sta-3 details url)
-  PRODUCTION=$(mysql-eg-pan-prod details url)
-  ENDPOINT=http://ens-prod-1.ebi.ac.uk:7000/hc/
+  PRODUCTION=$(mysql-ens-meta-prod-1 details url)
+  ENDPOINT=http://eg-prod-01.ebi.ac.uk:7000/hc/
   DATA_FILE_PATH=/nfs/panda/ensembl/production/ensemblftp/data_files/
   TAG=my_hc_run
   
@@ -168,8 +167,8 @@ or using the Python client:
 
 .. code-block:: bash
 
-  ensembl_prodinf/db_copy_client.py --action list --uri http://ens-prod-1.ebi.ac.uk:8000/hc
-  ensembl_prodinf/db_copy_client.py --action list --uri http://eg-prod-01.ebi.ac.uk:7000/hc
+  ensembl_prodinf/hc_client.py  --action list --uri http://ens-prod-1.ebi.ac.uk:8000/hc
+  ensembl_prodinf/hc_client.py  --action list --uri http://eg-prod-01.ebi.ac.uk:7000/hc
 
 Collate results
 ###############

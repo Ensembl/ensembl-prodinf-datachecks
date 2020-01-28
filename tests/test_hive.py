@@ -1,10 +1,8 @@
-# -*- coding: utf-8 -*-
-
-from ensembl_prodinf import HiveInstance
+from ensembl_prodinf.hive import HiveInstance
 
 from shutil import copy2
 import unittest
-import os 
+import os
 import logging
 
 dirpath = os.path.dirname(os.path.abspath(__file__))
@@ -20,7 +18,7 @@ class HiveTest(unittest.TestCase):
         copy2(dirpath+"/test_pipeline.db.template",dirpath+"/test_pipeline.db")
         logging.info("Connecting to hive test sqlite database "+dirpath+"/test_pipeline.db")
         self.hive = HiveInstance("sqlite:///"+dirpath+"/test_pipeline.db")
-        
+
     """Basic test case for creating a new job"""
     def test_create_job(self):
         job1 = self.hive.create_job('TestRunnable',{'x':'y','a':'b'})
@@ -32,18 +30,18 @@ class HiveTest(unittest.TestCase):
         self.assertEquals(job1.input_id,job2.input_id)
 
     """Test case for checking on a finished semaphore"""
-    def test_check_semaphore_success(self):  
-        job = self.hive.get_job_by_id(2)
-        logging.debug(job)
-        status = self.hive.check_semaphores_for_job(job)
+    def test_check_semaphore_success(self):
+        semaphore_data = self.hive.get_semaphore_data(2)
+        logging.debug(semaphore_data)
+        status = self.hive.check_semaphores_for_job(semaphore_data)
         logging.debug("Status for 2 is "+status)
         self.assertEquals(status, 'complete', "Checking expected status for completed semaphore")
 
     """Test case for checking on a failed semaphore"""
-    def test_check_semaphore_failure(self):  
-        job = self.hive.get_job_by_id(8)
-        logging.debug(job)
-        status = self.hive.check_semaphores_for_job(job)
+    def test_check_semaphore_failure(self):
+        semaphore_data = self.hive.get_semaphore_data(8)
+        logging.debug(semaphore_data)
+        status = self.hive.check_semaphores_for_job(semaphore_data)
         logging.debug("Status for 8 is "+status)
         self.assertEquals(status, 'failed', "Checking expected status for failed semaphore")
 
@@ -95,7 +93,7 @@ class HiveTest(unittest.TestCase):
     def test_get_all_results(self):
         jobs = self.hive.get_all_results('TestRunnable')
         self.assertEquals(1, len(jobs), "Checking we got just one job")
- 
+
     """Remove test database file"""
     def tearDown(self):
         logging.info("Removing test sqlite database")

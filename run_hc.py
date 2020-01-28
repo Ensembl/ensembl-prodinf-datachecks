@@ -44,7 +44,7 @@ output = None
 while True:
     logging.info("Sleeping for %ds" % args.sleep)
     time.sleep(args.sleep)
-    output = hive.get_result_for_job_id(job.job_id)        
+    output = hive.get_result_for_job_id(job.job_id)
     if output['status'] != 'incomplete':
         logging.debug("Job finished with status "+output['status'])
         break
@@ -52,9 +52,9 @@ while True:
 if output['status'] == 'failed':
     logging.error("Healthchecks could not be run")
 else:
-    print "Status: %s\n" % output['output']['status']
+    print("Status: %s\n" % output['output']['status'])
     if output['output']['failures']!=None:
         for db,fails in output['output']['failures'].items():
             for test,msg in fails.items():
-                print "%s:\n %s" % (test, "\n".join(msg))
+                print("%s:\n %s" % (test, "\n".join(msg)))
 

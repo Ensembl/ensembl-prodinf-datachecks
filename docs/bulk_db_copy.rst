@@ -78,7 +78,7 @@ The script accept the following arguments:
                              [-i JOB_ID] [-v] [-o OUTPUT_FILE] [-f INPUT_FILE]
                              [-s SOURCE_DB_URI] [-t TARGET_DB_URI]
                              [-y ONLY_TABLES] [-n SKIP_TABLES] [-p UPDATE]
-                             [-d DROP] [-e EMAIL]
+                             [-d DROP] [-c CONVERT_INNODB] [-k SKIP_OPTIMIZE] [-e EMAIL]
 
     Copy HCs via a REST service
 
@@ -105,6 +105,8 @@ The script accept the following arguments:
       -p UPDATE, --update UPDATE
                             Incremental database update using rsync checksum
       -d DROP, --drop DROP  Drop database on Target server before copy
+      -c CONVERT_INNODB, --convert_innodb CONVERT_INNODB Convert innoDB tables to MyISAM
+      -k SKIP_OPTIMIZE, --skip_optimize skip the database optimization step after the copy. Useful for very large databases
       -e EMAIL, --email EMAIL
                             Email where to send the report
 
