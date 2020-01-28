@@ -1,0 +1,105 @@
+
+{% extends "ensembl/datacheck/base_submission.html" %}
+
+{% block styles %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='tagsinput.css') }}">
+  {{ super() }}
+{% endblock styles %}
+
+{% block datacheck_submission %}
+
+<p>
+{% with messages = get_flashed_messages() %}
+  {% if messages %}
+    <ul>
+    {% for message in messages %}
+      <li>{{ message }}</li>
+    {% endfor %}
+    </ul>
+  {% endif %}
+{% endwith %}
+</p>
+
+<form action="" method="post" enctype="multipart/form-data" autocomplete="off">
+    {{ form.csrf }}
+
+    <fieldset class="border rounded p-2">
+      <legend class="w-auto">&nbsp;{{ form.server.description }}&nbsp;</legend>
+
+      <div class="form-group row">
+        {{ form.server.server_url.label( class='col-sm-2 col-form-label' ) }}
+        <div class="col-sm-9">{{ form.server.server_url( class='form-control' ) }}</div>
+      </div>
+
+      <div class="form-group row">
+        <div class="col-sm-2">{{ form.server.source( class='form-control select-align-right', onchange='selectServerSource()' ) }}</div>
+        <div class="col-sm-9">
+          {{ form.server.database( class='form-control' ) }}
+          {{ form.server.species( class='form-control', style='display: none' ) }}
+          {{ form.server.division( class='form-control', onchange='selectDivision()', style='display: none' ) }}
+        </div>
+      </div>
+
+      <div class="form-group row">
+        {{ form.server.database_type.label( class='col-sm-2 col-form-label', id='server-database_type-label', style='display: none' ) }}
+        <div class="col-sm-2">{{ form.server.database_type( class='form-control', style='display: none' ) }}</div>
+        {{ form.server.release.label( class='col-sm-1 col-form-label', id='server-release-label', style='display: none' ) }}
+        <div class="col-sm-2">{{ form.server.release( class='form-control', style='display: none' ) }}</div>
+      </div>
+
+    </fieldset>
+
+    <fieldset class="border rounded p-2">
+      <legend class="w-auto">&nbsp;{{ form.datacheck.description }}&nbsp;</legend>
+
+      <div class="form-group row">
+        {{ form.datacheck.datacheck_name.label( class='col-sm-2 col-form-label' ) }}
+        <div class="col-sm-9">{{ form.datacheck.datacheck_name( class='form-control' ) }}</div>
+      </div>
+
+      <div class="form-group row">
+        {{ form.datacheck.datacheck_group.label( class='col-sm-2 col-form-label' ) }}
+        <div class="col-sm-9">{{ form.datacheck.datacheck_group( class='form-control' ) }}</div>
+      </div>
+
+      <div class="form-group row">
+        {{ form.datacheck.datacheck_type.label( class='col-sm-2 col-form-label' ) }}
+        <div class="col-sm-3">{{ form.datacheck.datacheck_type( class='form-control' ) }}</div>
+      </div>
+
+    </fieldset>
+
+    <fieldset class="border rounded p-2">
+      <legend class="w-auto">&nbsp;{{ form.configuration.description }}&nbsp;</legend>
+
+      <div class="form-group row">
+        {{ form.configuration.config_profile.label( class='col-sm-2 col-form-label' ) }}
+        <div class="col-sm-3">{{ form.configuration.config_profile( class='form-control' ) }}</div>
+      </div>
+
+      <div class="form-group row">
+        {{ form.configuration.email.label( class='col-sm-2 col-form-label' ) }}
+        <div class="col-sm-5">{{ form.configuration.email( class='form-control' ) }}</div>
+      </div>
+
+      <div class="form-group row">
+        {{ form.configuration.tag.label( class='col-sm-2 col-form-label' ) }}
+        <div class="col-sm-5">{{ form.configuration.tag( class='form-control' ) }}</div>
+      </div>
+
+    </fieldset>
+
+    <div class="form-group row">
+      <div class="col-sm-12">{{ form.submit( class='btn bg-purple', style='float:right;' ) }}</div>
+    </div>
+
+  </form>
+
+{% endblock %}
+
+{% block scripts %}
+  {{ super() }}
+  <script src="{{ url_for('static', filename='typeahead.bundle.js') }}"></script>
+  <script src="{{ url_for('static', filename='tagsinput.js') }}"></script>
+  <script src="{{ url_for('static', filename='autocomplete.js') }}"></script>
+{% endblock scripts %}

@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import re
@@ -6,25 +7,33 @@ import json
 from flasgger import Swagger
 
 from ensembl_prodinf import reporting
-from ensembl_prodinf import HiveInstance
+from ensembl_prodinf.hive import HiveInstance
 from ensembl_prodinf.event_tasks import process_result
+from ensembl_prodinf.exceptions import HTTPRequestError
 import event_config
 
+
 pool = reporting.get_pool(event_config.report_server)
-     
-def get_logger():    
+
+
+def get_logger():
     return reporting.get_logger(pool, event_config.report_exchange, 'event_handler', None, {})
 
+
 app = Flask(__name__, instance_relative_config=True)
-print app.config
 app.config.from_object('event_config')
-app.config.from_pyfile('event_config.py')
+app.config['SWAGGER'] = {'title': 'Event App'}
+
 swagger = Swagger(app)
 
-class EventNotFoundError(Exception):
-    """Exception showing event not found"""        
+print(app.config)
 
-print event_config.event_lookup
+
+class EventNotFoundError(Exception):
+    """Exception showing event not found"""
+    pass
+
+print(event_config.event_lookup)
 event_lookup = json.loads(open(event_config.event_lookup).read())
 
 
@@ -32,11 +41,12 @@ def get_processes_for_event(event):
     event_type = event['type']
     if event_type not in event_lookup.keys():
         raise EventNotFoundError("Event type " + str(event_type) + " not known")
-    return event_lookup[event_type]    
+    return event_lookup[event_type]
 
 
 class ProcessNotFoundError(Exception):
     """Exception showing process not found"""
+    pass
 
 
 process_lookup = json.loads(open(event_config.process_lookup).read())
@@ -50,7 +60,7 @@ def get_analysis(process):
 hives = {}
 
 
-def get_hive(process):    
+def get_hive(process):
     if process not in hives.keys():
         if process not in process_lookup.keys():
             raise ProcessNotFoundError("Process " + str(process) + " not known")
@@ -94,14 +104,17 @@ def submit_job():
     """
     if json_pattern.match(request.headers['Content-Type']):
         event = request.json
-        results = {"processes":[], "event":event}
+        results = {"processes": [], "event": event}
         # convert event to processes
         processes = get_processes_for_event(event)
         for process in processes:
             get_logger().debug("Submitting process " + str(process))
             hive = get_hive(process)
             analysis = get_analysis(process)
-            job = hive.create_job(analysis, {'event':event})
+            try:
+                job = hive.create_job(analysis, {'event': event})
+            except ValueError as e:
+                raise HTTPRequestError(str(e), 404)
             event_task = process_result.delay(event, process, job.job_id)
             results['processes'].append({
                 "process":process,
@@ -110,7 +123,7 @@ def submit_job():
             })
         return jsonify(results);
     else:
-        raise Exception("Could not handle input of type " + request.headers['Content-Type'])
+        raise HTTPRequestError("Could not handle input of type " + request.headers['Content-Type'])
 
 
 @app.route('/jobs/<string:process>/<int:job_id>', methods=['GET'])
@@ -165,21 +178,26 @@ def job(process, job_id):
         description: Result of an event job
         schema:
           $ref: '#/definitions/job_id'
-    """    
+    """
     output_format = request.args.get('format')
     if output_format == 'email':
         email = request.args.get('email')
         if email == None:
-            raise Exception("Email not specified")
+            raise HTTPRequestError("Email not specified")
         return results_email(request.args.get('email'), process, job_id)
     elif output_format == None:
         return results(process, job_id)
     else:
-        raise Exception("Format "+output_format+" not known")
-        
-def results(process, job_id):    
+        raise HTTPRequestError("Format {} not known".format(output_format))
+
+
+def results(process, job_id):
     get_logger().info("Retrieving job from " + process + " with ID " + str(job_id))
-    return jsonify(get_hive(process).get_result_for_job_id(job_id))
+    try:
+        job_result = get_hive(process).get_result_for_job_id(job_id)
+    except ValueError as e:
+        raise HTTPRequestError(str(e), 404)
+    return jsonify(job_result)
 
 
 @app.route('/jobs/<string:process>/<int:job_id>', methods=['DELETE'])
@@ -238,20 +256,28 @@ def delete_job(process, job_id):
           $ref: '#/definitions/job_id'
         examples:
           id: 1
-    """    
+    """
     hive = get_hive(process)
     job = hive.get_job_by_id(job_id)
-    hive.delete_job(job)
+    try:
+        hive.delete_job(job)
+    except ValueError as e:
+        raise HTTPRequestError(str(e), 404)
     return jsonify({"id":job_id, "process": process})
+
 
 def results_email(email, process, job_id):
     get_logger().info("Retrieving job with ID " + str(job_id) + " for " + str(email))
     hive = get_hive(process)
-    job = hive.get_job_by_id(job_id)
-    results = hive.get_result_for_job_id(job_id)
+    try:
+        job = hive.get_job_by_id(job_id)
+        results = hive.get_result_for_job_id(job_id)
+    except ValueError as e:
+        raise HTTPRequestError(str(e), 404)
     # TODO
     results['email'] = email
     return jsonify(results)
+
 
 @app.route('/jobs/<string:process>', methods=['GET'])
 def jobs(process):
@@ -286,7 +312,7 @@ def jobs(process):
         description: Retrieve all the jobs results from the database
         schema:
           $ref: '#/definitions/job_id'
-    """ 
+    """
     get_logger().info("Retrieving jobs")
     return jsonify(get_hive(process).get_all_results(get_analysis(process)))
 
@@ -313,8 +339,9 @@ def events():
     responses:
       200:
         description: Retrieve all the events
-    """     
-    return jsonify(event_lookup.keys()) 
+    """
+    return jsonify(list(event_lookup.keys()))
+
 
 @app.route('/processes')
 def processes():
@@ -338,13 +365,24 @@ def processes():
     responses:
       200:
         description: Retrieve all the processes
-    """     
-    return jsonify(process_lookup.keys()) 
+    """
+    return jsonify(list(process_lookup.keys()))
 
-@app.errorhandler(Exception)
-def handle_error(e):
-    code = 500
-    if isinstance(e, ValueError):
-        code = 400
-    logger.exception(str(e))
-    return jsonify(error=str(e)), code
+
+@app.errorhandler(HTTPRequestError)
+def handle_bad_request_error(e):
+    get_logger().error(str(e))
+    return jsonify(error=str(e)), e.status_code
+
+
+@app.errorhandler(EventNotFoundError)
+def handle_event_not_found_error(e):
+    get_logger().error(str(e))
+    return jsonify(error=str(e)), 404
+
+
+@app.errorhandler(ProcessNotFoundError)
+def handle_process_not_found_error(e):
+    get_logger().error(str(e))
+    return jsonify(error=str(e)), 404
+

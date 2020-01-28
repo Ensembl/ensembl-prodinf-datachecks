@@ -1,7 +1,8 @@
 #!/usr/bin/env python
+
 import logging
 import re
-from _mysql import IntegrityError
+from sqlalchemy.exc import IntegrityError
 
 from flasgger import Swagger
 from flask import Flask, request, jsonify
@@ -92,7 +93,6 @@ app.config['SWAGGER'] = {
 }
 
 app.config.from_object('lock_config')
-app.config.from_pyfile('lock_config.py', silent=True)
 app.logger.addHandler(app_logging.file_handler(__name__))
 app.logger.addHandler(app_logging.default_handler())
 
@@ -144,7 +144,7 @@ def info():
            properties:
                title:
                    type: string
-                   example: Production resource lock REST endpoints 
+                   example: Production resource lock REST endpoints
     """
     return jsonify({"title": app.config['SWAGGER']['title']})
 
@@ -167,7 +167,7 @@ def ping():
            properties:
                status:
                    type: string
-                   example: ok 
+                   example: ok
     """
     return jsonify({"status": "ok"})
 
@@ -185,7 +185,7 @@ def lock():
        description: Lock request specification
        type: object
        schema:
-          $ref: '#/definitions/LockRequest'          
+          $ref: '#/definitions/LockRequest'
        required: true
     operationId: getLock
     consumes:
@@ -201,7 +201,7 @@ def lock():
       200:
         description: lock successful
         schema:
-          $ref: '#/definitions/Lock'          
+          $ref: '#/definitions/Lock'
       400:
         description: lock specification incorrect
         type: string
@@ -321,7 +321,7 @@ def get_locks():
         type: ResourceUri
       - name: lock_type
         in: query
-        type: LockType       
+        type: LockType
     operationId: listLocks
     produces:
       - application/json

@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+
 import json
 import logging
 import os
@@ -11,22 +12,25 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 
 import app_logging
-from ensembl_prodinf import HiveInstance
+from ensembl_prodinf.hive import HiveInstance
 from ensembl_prodinf.db_utils import list_databases, get_database_sizes
 from ensembl_prodinf.email_tasks import email_when_complete
 from ensembl_prodinf.server_utils import get_status, get_load
+from ensembl_prodinf.exceptions import HTTPRequestError
+
 
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__, instance_relative_config=True)
 app.config.from_object('db_config')
-app.config.from_pyfile('db_config.py', silent=True)
 app.analysis = app.config["HIVE_ANALYSIS"]
 app.config['SWAGGER'] = {
     'title': 'Database copy REST endpoints',
     'uiversion': 2
 }
-print app.config
+
+print(app.config)
+
 swagger = Swagger(app)
 app.servers = None
 app.logger.addHandler(app_logging.file_handler(__name__))
@@ -142,7 +146,11 @@ def list_databases_endpoint():
     db_uri = request.args.get('db_uri')
     query = request.args.get('query')
     logger.debug("Finding dbs matching " + query + " on " + db_uri)
-    return jsonify(list_databases(db_uri, query))
+    try:
+        db_list = list_databases(db_uri, query)
+    except ValueError as e:
+        raise HTTPRequestError(str(e))
+    return jsonify(db_list)
 
 
 @app.route('/databases/sizes', methods=['GET'])
@@ -229,7 +237,11 @@ def database_sizes_endpoint():
     if (dir_name is None):
         dir_name = '/instances'
     logger.debug("Finding sizes of dbs matching " + str(query) + " on " + db_uri)
-    return jsonify(get_database_sizes(db_uri, query, dir_name))
+    try:
+        db_sizes = get_database_sizes(db_uri, query, dir_name)
+    except ValueError as e:
+        raise HTTPRequestError(str(e))
+    return jsonify(db_sizes)
 
 
 @app.route('/hosts/<host>', methods=['GET'])
@@ -293,26 +305,30 @@ def get_status_endpoint(host):
         schema:
           $ref: '#/definitions/host'
         examples:
-          dir: /instances 
-          disk_available_g: 1504 
-          disk_total_g: 6048 
-          disk_used_g: 4258 
-          disk_used_pct: 70.4 
-          host: server_name 
-          load_15m: 0.05 
-          load_1m: 0.0 
-          load_5m: 0.01 
-          memory_available_m: 270 
-          memory_total_m: 48394 
-          memory_used_m: 23624 
-          memory_used_pct: 48.8 
+          dir: /instances
+          disk_available_g: 1504
+          disk_total_g: 6048
+          disk_used_g: 4258
+          disk_used_pct: 70.4
+          host: server_name
+          load_15m: 0.05
+          load_1m: 0.0
+          load_5m: 0.01
+          memory_available_m: 270
+          memory_total_m: 48394
+          memory_used_m: 23624
+          memory_used_pct: 48.8
           n_cpus: 16
     """
     dir_name = request.args.get('dir_name')
     if (dir_name is None):
         dir_name = '/instances'
     logger.debug("Finding status of " + host + " (dir " + dir_name + ")")
-    return jsonify(get_status(host=host, dir_name=dir_name))
+    try:
+        status = get_status(host=host, dir_name=dir_name)
+    except OSError as e:
+        raise HTTPRequestError(str(e))
+    return jsonify(status)
 
 
 @app.route('/hosts/<host>/load', methods=['GET'])
@@ -365,12 +381,16 @@ def get_load_endpoint(host):
         schema:
           $ref: '#/definitions/host'
         examples:
-          load_15m: 0.05 
-          load_1m: 0.05 
+          load_15m: 0.05
+          load_1m: 0.05
           load_5m: 0.03
     """
     logger.debug("Finding load of " + host)
-    return jsonify(get_load(host=host))
+    try:
+        load = get_load(host=host)
+    except OSError as e:
+        raise HTTPRequestError(str(e))
+    return jsonify(load)
 
 
 @app.route('/servers/<user>', methods=['GET'])
@@ -440,14 +460,14 @@ def list_servers_endpoint(user):
     """
     query = request.args.get('query')
     if query is None:
-        raise ValueError("Query not specified")
+        raise HTTPRequestError("Query not specified")
     if user in get_servers():
         logger.debug("Finding servers matching " + query + " for " + user)
         user_urls = get_servers()[user] or []
         urls = filter(lambda x: query in x, user_urls)
-        return jsonify(urls)
+        return jsonify(list(urls))
     else:
-        raise ValueError("User " + user + " not found")
+        raise HTTPRequestError("User " + user + " not found", 404)
 
 
 @app.route('/jobs', methods=['POST'])
@@ -484,7 +504,7 @@ def submit():
         title: Database copy job
         description: A job to copy a database from a source MySQL server to a target MySQL server.
         type: object
-        required: 
+        required:
           -source_db_uri
           -target_db_uri
         properties:
@@ -506,20 +526,26 @@ def submit():
           drop:
             type: integer
             example: 0
+          convert_innodb:
+            type: integer
+            example: 0
           email:
             type: string
             example: 'undefined'
     responses:
       200:
-        description: submit of an healthcheck job
+        description: submit of a copy job
         schema:
           $ref: '#/definitions/submit'
         examples:
-          {source_db_uri: "mysql://user@server:port/saccharomyces_cerevisiae_core_91_4", target_db_uri: "mysql://user:password@server:port/saccharomyces_cerevisiae_core_91_4", only_tables: undefined, skip_tables: undefined, update: undefined, drop: 1, email: undefined }
+          {source_db_uri: "mysql://user@server:port/saccharomyces_cerevisiae_core_91_4", target_db_uri: "mysql://user:password@server:port/saccharomyces_cerevisiae_core_91_4", only_tables: undefined, skip_tables: undefined, update: undefined, drop: 1, convert_innodb: 0, skip_optimize: 0, email: undefined }
     """
     if json_pattern.match(request.headers['Content-Type']):
         logger.debug("Submitting Database copy " + str(request.json))
-        job = get_hive().create_job(app.analysis, request.json)
+        try:
+            job = get_hive().create_job(app.analysis, request.json)
+        except ValueError as e:
+            raise HTTPRequestError(str(e))
         results = {"job_id": job.job_id};
         email = request.json.get('email')
         if email != None and email != '':
@@ -530,7 +556,7 @@ def submit():
         return jsonify(results);
     else:
         logger.error("Could not handle input of type " + request.headers['Content-Type'])
-        raise ValueError("Could not handle input of type " + request.headers['Content-Type'])
+        raise HTTPRequestError("Could not handle input of type " + request.headers['Content-Type'])
 
 
 @app.route('/jobs/<int:job_id>', methods=['GET'])
@@ -587,15 +613,15 @@ def jobs(job_id):
         schema:
           $ref: '#/definitions/job_id'
         examples:
-          id: 1 
-          input: 
-            drop: 1 
-            source_db_uri: mysql://user@server:port/saccharomyces_cerevisiae_core_91_4 
-            target_db_uri: mysql://user:password@server:port/saccharomyces_cerevisiae_core_91_4 
+          id: 1
+          input:
+            drop: 1
+            source_db_uri: mysql://user@server:port/saccharomyces_cerevisiae_core_91_4
+            target_db_uri: mysql://user:password@server:port/saccharomyces_cerevisiae_core_91_4
             timestamp: 1515494114.263158
-          output: 
-            runtime: 31 seconds 
-            source_db_uri: mysql://user@server:port/saccharomyces_cerevisiae_core_91_4 
+          output:
+            runtime: 31 seconds
+            source_db_uri: mysql://user@server:port/saccharomyces_cerevisiae_core_91_4
             target_db_uri: mysql://user:password@server:port/saccharomyces_cerevisiae_core_91_4
           status: complete
     """
@@ -606,35 +632,45 @@ def jobs(job_id):
         return failure(job_id)
     elif fmt is None:
         logger.info("Retrieving job with ID " + str(job_id))
-        return jsonify(get_hive().get_result_for_job_id(job_id))
+        try:
+            job_results = get_hive().get_result_for_job_id(job_id)
+        except ValueError as e:
+            raise HTTPRequestError(str(e), 404)
+        return jsonify(job_results)
     else:
-        raise ValueError("Format " + str(fmt) + " not known")
+        raise HTTPRequestError("Format " + str(fmt) + " not known")
 
 
 def failure(job_id):
     logger.info("Retrieving failure for job with ID " + str(job_id))
-    failure = get_hive().get_job_failure_msg_by_id(job_id)
+    try:
+        failure = get_hive().get_job_failure_msg_by_id(job_id)
+    except ValueError as e:
+        raise HTTPRequestError(str(e), 404)
     return jsonify({"msg": failure.msg})
 
 
 def job_email(email, job_id):
     logger.info("Retrieving job with ID " + str(job_id) + " for " + str(email))
-    job = get_hive().get_job_by_id(job_id)
-    results = get_hive().get_result_for_job_id(job_id)
-    if results['status'] == 'complete':
-        results['subject'] = 'Copy database from %s to %s successful' % (
-        results['output']['source_db_uri'], results['output']['target_db_uri'])
-        results['body'] = 'Copy from %s to %s is successful\n' % (
-        results['output']['source_db_uri'], results['output']['target_db_uri'])
-        results['body'] += 'Copy took %s' % (results['output']['runtime'])
-    elif results['status'] == 'failed':
-        failure = get_hive().get_job_failure_msg_by_id(job_id)
-        results['subject'] = 'Copy database from %s to %s failed' % (
-        results['input']['source_db_uri'], results['input']['target_db_uri'])
-        results['body'] = 'Copy failed with following message:\n'
-        results['body'] += '%s\n\n' % (failure.msg)
-        results['body'] += 'Please see URL for more details: %s%s \n' % (results['input']['result_url'], job_id)
-    results['output'] = None
+    try:
+        job = get_hive().get_job_by_id(job_id)
+        results = get_hive().get_result_for_job_id(job_id)
+        if results['status'] == 'complete':
+            results['subject'] = 'Copy database from %s to %s successful' % (
+            results['output']['source_db_uri'], results['output']['target_db_uri'])
+            results['body'] = 'Copy from %s to %s is successful\n' % (
+            results['output']['source_db_uri'], results['output']['target_db_uri'])
+            results['body'] += 'Copy took %s' % (results['output']['runtime'])
+        elif results['status'] == 'failed':
+            failure = get_hive().get_job_failure_msg_by_id(job_id)
+            results['subject'] = 'Copy database from %s to %s failed' % (
+            results['input']['source_db_uri'], results['input']['target_db_uri'])
+            results['body'] = 'Copy failed with following message:\n'
+            results['body'] += '%s\n\n' % (failure.msg)
+            results['body'] += 'Please see URL for more details: %s%s \n' % (results['input']['result_url'], job_id)
+        results['output'] = None
+    except ValueError as e:
+        raise HTTPRequestError(str(e), 404)
     return jsonify(results)
 
 
@@ -695,10 +731,13 @@ def delete(job_id):
         examples:
           id: 1
     """
-    if 'kill' in request.args.keys() and request.args['kill'] == 1:
-        kill_job(job_id)
-    job = get_hive().get_job_by_id(job_id)
-    hive.delete_job(job)
+    try:
+        if 'kill' in request.args.keys() and request.args['kill'] == 1:
+            kill_job(job_id)
+        job = get_hive().get_job_by_id(job_id)
+        hive.delete_job(job)
+    except ValueError as e:
+        raise HTTPRequestError(str(e), 404)
     return jsonify({"id": job_id})
 
 
@@ -714,7 +753,7 @@ def kill_job(job_id):
     # Check if the process that we killed is alive.
     if (is_running(int(process_id.process_id))):
         logger.error("Wasn't able to kill the process: " + str(process_id.process_id))
-        raise ValueError("Wasn't able to kill the process: " + str(process_id.process_id))
+        raise HTTPRequestError("Wasn't able to kill the process: " + str(process_id.process_id))
     else:
         return jsonify({"process_id": process_id.process_id})
 
@@ -747,38 +786,38 @@ def list_jobs():
         schema:
           $ref: '#/definitions/job_id'
         examples:
-          id: 1 
-          input: 
-            drop: 1 
-            source_db_uri: mysql://user@server:port/saccharomyces_cerevisiae_core_91_4 
-            target_db_uri: mysql://user:password@server:port/saccharomyces_cerevisiae_core_91_4 
-            timestamp: 1515494114.263158  
-          output: 
-            runtime: 31 seconds 
-            source_db_uri: mysql://user@server:port/saccharomyces_cerevisiae_core_91_4 
-            target_db_uri: mysql://user:password@server:port/saccharomyces_cerevisiae_core_91_4     
+          id: 1
+          input:
+            drop: 1
+            source_db_uri: mysql://user@server:port/saccharomyces_cerevisiae_core_91_4
+            target_db_uri: mysql://user:password@server:port/saccharomyces_cerevisiae_core_91_4
+            timestamp: 1515494114.263158
+          output:
+            runtime: 31 seconds
+            source_db_uri: mysql://user@server:port/saccharomyces_cerevisiae_core_91_4
+            target_db_uri: mysql://user:password@server:port/saccharomyces_cerevisiae_core_91_4
           status: complete
-          id: 2 
-          input: 
-            drop: 1 
-            email: john.doe@ebi.ac.uk 
-            source_db_uri: mysql://user@server:port/saccharomyces_cerevisiae_core_91_4 
-            target_db_uri: mysql://user:password@server:port/saccharomyces_cerevisiae_core_91_4 
-            timestamp: 1515494178.544427  
-          output: 
-            runtime: 31 seconds 
-            source_db_uri: mysql://user@server:port/saccharomyces_cerevisiae_core_91_4 
-            target_db_uri: mysql://user:password@server:port/saccharomyces_cerevisiae_core_91_4  
+          id: 2
+          input:
+            drop: 1
+            email: john.doe@ebi.ac.uk
+            source_db_uri: mysql://user@server:port/saccharomyces_cerevisiae_core_91_4
+            target_db_uri: mysql://user:password@server:port/saccharomyces_cerevisiae_core_91_4
+            timestamp: 1515494178.544427
+          output:
+            runtime: 31 seconds
+            source_db_uri: mysql://user@server:port/saccharomyces_cerevisiae_core_91_4
+            target_db_uri: mysql://user:password@server:port/saccharomyces_cerevisiae_core_91_4
           status: complete
-          id: 3 
-          input: 
-            drop: 1 
-            email: john.doe@ebi.ac.uk 
-            source_db_uri: mysql://user@server:port/saccharomyces_cerevisiae_core_91_4 
-            target_db_uri: mysql://user:password@server:port/saccharomyces_cerevisiae_core_91_4 
-            timestamp: 1515602446.492586  
-          progress: 
-            complete: 0 
+          id: 3
+          input:
+            drop: 1
+            email: john.doe@ebi.ac.uk
+            source_db_uri: mysql://user@server:port/saccharomyces_cerevisiae_core_91_4
+            target_db_uri: mysql://user:password@server:port/saccharomyces_cerevisiae_core_91_4
+            timestamp: 1515602446.492586
+          progress:
+            complete: 0
             total: 1
           status: failed
     """
@@ -786,13 +825,10 @@ def list_jobs():
     return jsonify(get_hive().get_all_results(app.analysis))
 
 
-@app.errorhandler(Exception)
-def handle_error(e):
-    code = 500
-    if isinstance(e, ValueError):
-        code = 400
-    logger.exception(str(e))
-    return jsonify(error=str(e)), code
+@app.errorhandler(HTTPRequestError)
+def handle_bad_request_error(e):
+    logger.error(str(e))
+    return jsonify(error=str(e)), e.status_code
 
 
 if __name__ == "__main__":

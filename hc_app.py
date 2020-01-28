@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+
 import json
 import logging
 import re
@@ -9,8 +10,10 @@ from flask_cors import CORS
 
 
 import app_logging
-from ensembl_prodinf import HiveInstance
+from ensembl_prodinf.hive import HiveInstance
 from ensembl_prodinf.email_tasks import email_when_complete
+from ensembl_prodinf.exceptions import HTTPRequestError
+
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +23,6 @@ app.config['SWAGGER'] = {
     'uiversion': 2
 }
 app.config.from_object('hc_config')
-app.config.from_pyfile('hc_config.py', silent=True)
 app.analysis = app.config["HIVE_ANALYSIS"]
 
 app.logger.addHandler(app_logging.file_handler(__name__))
@@ -109,7 +111,7 @@ def submit_job():
         title: Healthcheck job
         description: A job to run multiple healthchecks or healthchecks groups on a given database URI.
         type: object
-        required: 
+        required:
           -db_uri
           -compara_uri
           -live_uri
@@ -159,7 +161,10 @@ def submit_job():
     """
     if json_pattern.match(request.headers['Content-Type']):
         logger.debug("Submitting HC " + str(request.json))
-        job = get_hive().create_job(app.analysis, request.json)
+        try:
+            job = get_hive().create_job(app.analysis, request.json)
+        except ValueError as e:
+            raise HTTPRequestError(str(e), 404)
         results = {"job_id": job.job_id};
         email = request.json.get('email')
         if email is not None and email != '':
@@ -170,7 +175,7 @@ def submit_job():
         return jsonify(results), 201
     else:
         logger.error("Could not handle input of type " + request.headers['Content-Type'])
-        raise ValueError("Could not handle input of type " + request.headers['Content-Type'])
+        raise HTTPRequestError("Could not handle input of type " + request.headers['Content-Type'])
 
 
 @app.route('/jobs/<int:job_id>', methods=['GET'])
@@ -197,7 +202,7 @@ def job_result(job_id):
         in: query
         type: string
         required: false
-        description: Email address to use in report       
+        description: Email address to use in report
     operationId: jobs
     consumes:
       - application/json
@@ -262,38 +267,49 @@ def job_result(job_id):
         return job_failures(job_id)
     elif fmt is None:
         logger.info("Retrieving job with ID " + str(job_id))
-        return jsonify(get_hive().get_result_for_job_id(job_id))
+        try:
+            job_result = get_hive().get_result_for_job_id(job_id)
+        except ValueError as e:
+            raise HTTPRequestError(str(e), 404)
+        return jsonify(job_result)
     else:
-        raise Exception("Format " + fmt + " not valid")
+        raise HTTPRequestError("Format " + fmt + " not valid")
 
 
 def job_email(email, job_id):
     logger.info("Retrieving job with ID " + str(job_id) + " for " + str(email))
-    job = get_hive().get_job_by_id(job_id)
-    results = get_hive().get_result_for_job_id(job_id)
-    if results['status'] == 'complete':
-        results['subject'] = 'Healthchecks for %s - %s' % (results['output']['db_name'], results['output']['status'])
-        results['body'] = 'Please see URL for more details: %s%s\n\n' % (results['input']['result_url'], job_id)
-        results['body'] += "Results for %s:\n" % (results['output']['db_uri'])
-        for (test, result) in results['output']['results'].iteritems():
-            results['body'] += "* %s : %s\n" % (test, result['status'])
-            if result['messages'] != None:
-                for msg in result['messages']:
-                    results['body'] += "** %s\n" % (msg)
-    elif results['status'] == 'failed':
-        failures = get_hive().get_jobs_failure_msg(job_id)
-        results['subject'] = 'Healthcheck job failed'
-        results['body'] = 'Please see URL for more details: %s%s\n\n' % (results['input']['result_url'], job_id)
-        results['body'] += 'Healthcheck job failed with following message:\n'
-        for (jobid, msg) in failures.iteritems():
-            results['body'] += "* Job ID %s : %s\n" % (jobid, msg)
+    try:
+        job = get_hive().get_job_by_id(job_id)
+        results = get_hive().get_result_for_job_id(job_id)
+        if results['status'] == 'complete':
+            results['subject'] = 'Healthchecks for %s - %s' % (results['output']['db_name'], results['output']['status'])
+            results['body'] = 'Please see URL for more details: %s%s\n\n' % (results['input']['result_url'], job_id)
+            results['body'] += "Results for %s:\n" % (results['output']['db_uri'])
+            for (test, result) in results['output']['results'].items():
+                results['body'] += "* %s : %s\n" % (test, result['status'])
+                if result['messages'] != None:
+                    for msg in result['messages']:
+                        results['body'] += "** %s\n" % (msg)
+        elif results['status'] == 'failed':
+            failures = get_hive().get_jobs_failure_msg(job_id)
+            results['subject'] = 'Healthcheck job failed'
+            results['body'] = 'Please see URL for more details: %s%s\n\n' % (results['input']['result_url'], job_id)
+            results['body'] += 'Healthcheck job failed with following message:\n'
+            for (jobid, msg) in failures.items():
+                results['body'] += "* Job ID %s : %s\n" % (jobid, msg)
+    except ValueError as e:
+        raise HTTPRequestError(str(e), 404)
     results['output'] = None
     return jsonify(results)
 
 
 def job_failures(job_id):
     logger.info("Retrieving failure for job with ID " + str(job_id))
-    return jsonify(get_hive().get_jobs_failure_msg(job_id))
+    try:
+        job_failures_msg = get_hive().get_jobs_failure_msg(job_id)
+    except ValueError as e:
+        raise HTTPRequestError(str(e), 404)
+    return jsonify(job_failures_msg)
 
 
 @app.route('/jobs/<int:job_id>', methods=['DELETE'])
@@ -349,8 +365,11 @@ def delete_job(job_id):
           id: 1
     """
     hive = get_hive()
-    job = get_hive().get_job_by_id(job_id)
-    hive.delete_job(job)
+    try:
+        job = get_hive().get_job_by_id(job_id)
+        hive.delete_job(job)
+    except ValueError as e:
+        raise HTTPRequestError(str(e), 404)
     return jsonify({"id": job_id})
 
 
@@ -382,8 +401,8 @@ def jobs():
         schema:
           $ref: '#/definitions/job_id'
         examples:
-          id: 1 
-          input: 
+          id: 1
+          input:
             compara_uri: mysql://user@server:port/ensembl_compara_master
             data_files_path: /nfs/panda/ensembl/production/ensemblftp/data_files/
             db_uri: mysql://user@server:port/ailuropoda_melanoleuca_core_91_1
@@ -392,7 +411,7 @@ def jobs():
             production_uri: mysql://user@server:port/ensembl_production_91
             staging_uri: mysql://user@server:port/
             timestamp: 1515494166.015124
-          output: 
+          output:
             db_name: ailuropoda_melanoleuca_core_91_1
             db_uri: mysql://user@server:port/ailuropoda_melanoleuca_core_91_1
             results:
@@ -401,8 +420,8 @@ def jobs():
                 status: failed
             status: failed
           status: complete
-          id: 4 
-          input: 
+          id: 4
+          input:
             compara_uri: mysql://user@server:port/ensembl_compara_master
             data_files_path: /nfs/panda/ensembl/production/ensemblftp/data_files/
             db_uri: mysql://user@server:port/ailuropoda_melanoleuca_core_91_1
@@ -412,7 +431,7 @@ def jobs():
             production_uri: mysql://user@server:port/ensembl_production_91
             staging_uri: mysql://user@server:port/
             timestamp: 1515494256.239413
-          output: 
+          output:
             db_name: ailuropoda_melanoleuca_core_91_1
             db_uri: mysql://user@server:port/ailuropoda_melanoleuca_core_91_1
             results:
@@ -424,15 +443,15 @@ def jobs():
           body: 'Results for mysql://user@server:port/ailuropoda_melanoleuca_core_91_1: * org.ensembl.healthcheck.testcase.eg_core.GeneSource : failed ** PROBLEM: Found 23262 genes with source Ensembl which should be replaced with an appropriate GOA compatible name for the original source'
           id: 4
           input:
-            compara_uri: mysql://user@server:port/ensembl_compara_master 
-            data_files_path: /nfs/panda/ensembl/production/ensemblftp/data_files/ 
+            compara_uri: mysql://user@server:port/ensembl_compara_master
+            data_files_path: /nfs/panda/ensembl/production/ensemblftp/data_files/
             db_uri: mysql://user@server:port/ailuropoda_melanoleuca_core_91_1
             email: john.doe@ebi.ac.uk
             hc_names: ['org.ensembl.healthcheck.testcase.eg_core.GeneSource']
             live_uri: mysql://user@server:port/
             production_uri: mysql://user@server:port/ensembl_production_91
             staging_uri: mysql://user@server:port/
-            timestamp: 1515494256.239413 
+            timestamp: 1515494256.239413
           output: null
           status: complete
           subject: 'Healthchecks for ailuropoda_melanoleuca_core_91_1 - failed'
@@ -498,7 +517,7 @@ def list_healthchecks_tests_endpoint():
         return jsonify(get_hc_list())
     logger.debug("Finding healthchecks tests matching " + query)
     hc_list = filter(lambda x: str(query).lower() in x.lower(), get_hc_list())
-    return jsonify(hc_list)
+    return jsonify(list(hc_list))
 
 
 @app.route('/healthchecks/groups', methods=['GET'])
@@ -558,7 +577,7 @@ def list_healthchecks_groups_endpoint():
         return jsonify(get_hc_groups())
     logger.debug("Finding healthchecks groups matching " + query)
     hc_groups = filter(lambda x: str(query).lower() in x.lower(), get_hc_groups())
-    return jsonify(hc_groups)
+    return jsonify(list(hc_groups))
 
 
 @app.route('/healthchecks', methods=['GET'])
@@ -566,13 +585,10 @@ def healthchecks_endpoint():
     return jsonify({"tests": request.url + "/tests", "groups": request.url + "/groups"})
 
 
-@app.errorhandler(Exception)
-def handle_error(e):
-    code = 500
-    if isinstance(e, ValueError):
-        code = 400
-    logger.exception(str(e))
-    return jsonify(error=str(e)), code
+@app.errorhandler(HTTPRequestError)
+def handle_bad_request_error(e):
+    logger.error(str(e))
+    return jsonify(error=str(e)), e.status_code
 
 
 if __name__ == "__main__":

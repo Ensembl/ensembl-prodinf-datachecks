@@ -30,25 +30,25 @@ class DbSrvTest(unittest.TestCase):
     def test_list_servers_single(self):
         response = self.app.get("/servers/rouser?query=loca");
         self.assertEquals(200, response.status_code)
-        results = json.loads(response.data);
+        results = json.loads(response.data.decode('utf-8'));
         self.assertEquals(1, len(results))
         self.assertTrue("mysql://rouser@localhost:3306/" in results)
         self.assertFalse("mysql://rouser@locohost:3306/" in results)
 
     def test_list_servers_nouser(self):
         response = self.app.get("/servers/rauser?query=loca");
-        self.assertEquals(400, response.status_code)
+        self.assertEquals(404, response.status_code)
 
     def test_list_servers_none(self):
         response = self.app.get("/servers/rouser?query=boca");
         self.assertEquals(200, response.status_code)
-        results = json.loads(response.data);
+        results = json.loads(response.data.decode('utf-8'));
         self.assertEquals(0, len(results))
 
     def test_list_servers_double(self):
         response = self.app.get("/servers/rouser?query=loc");
         self.assertEquals(200, response.status_code)
-        results = json.loads(response.data);
+        results = json.loads(response.data.decode('utf-8'));
         self.assertEquals(2, len(results))
         self.assertTrue("mysql://rouser@localhost:3306/" in results)
         self.assertTrue("mysql://rouser@locohost:3306/" in results)

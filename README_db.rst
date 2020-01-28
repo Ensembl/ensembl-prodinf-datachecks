@@ -21,6 +21,13 @@ Optionally, when jobs are submitted an email address can be supplied for an emai
 Installation
 ============
 
+First clone this repo
+
+.. code-block:: bash
+
+  git clone https://github.com/Ensembl/ensembl-prodinf-srv
+  cd ensembl-prodinf-srv
+
 To install Python requirements using pip:
 
 .. code-block:: bash
@@ -31,7 +38,7 @@ This will install ``ensembl_prodinf`` from git - alternatively to reference an e
 
 .. code-block:: bash
 
-  PYTHONPATH=dir/ensembl-prodinf/ensembl-prodinf-core
+  PYTHONPATH=[install_dir]/ensembl-prodinf/ensembl-prodinf-core
 
 Hive Setup
 ==========
@@ -61,8 +68,9 @@ For virtualenv:
 
 .. code-block:: bash
 
-  mkdir -p vars/db_app-instance
-  cp db_config.py.instance_example vars/db_app-instance/db_config.py
+  mkdir -p instance
+  cp db_config.py.instance_example instance/db_config.py
+  cp server_uris.json.example server_uris.json
 
 Otherwise:
 
