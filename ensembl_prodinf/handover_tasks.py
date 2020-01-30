@@ -45,6 +45,8 @@ db_types_list = [i for i in cfg.allowed_database_types.split(",")]
 species_pattern = re.compile(r'^(?P<prefix>\w+)_(?P<type>core|rnaseq|cdna|otherfeatures|variation|funcgen)(_\d+)?_(?P<release>\d+)_(?P<assembly>\d+)$')
 compara_pattern = re.compile(r'^ensembl_compara(_(?P<division>[a-z]+|pan)(_homology)?)?(_(\d+))?(_\d+)$')
 ancestral_pattern = re.compile(r'^ensembl_ancestral_\d+$')
+blat_species = ['homo_sapiens','mus_musculus','danio_rerio','rattus_norvegicus','gallus_gallus','canis_lupus_familiaris','bos_taurus',
+    'oryctolagus_cuniculus','oryzias_latipes','sus_scrofa','meleagris_gallopavo','anas_platyrhynchos_platyrhynchos','ovis_aries','oreochromis_niloticus','gadus_morhua']
 
 def get_logger():
     return reporting.get_logger(pool, cfg.report_exchange, 'handover', None, {})
@@ -386,6 +388,9 @@ Please see %s
                 details = json.loads(event['details'])
                 if 'current_database_list' in details :
                     drop_current_databases(details['current_database_list'],spec['staging_uri'],spec['tgt_uri'])
+                if event['genome'] in blat_species and event['type'] == 'new_assembly':
+                    send_email(to_address=cfg.production_email,subject='BLAT species list needs updating in FTP Dumps config',body='The following species '+event['genome']+
+                        ' has a new assembly, please update the port number for this species here and communicate to Web: https://github.com/Ensembl/ensembl-production/blob/master/modules/Bio/EnsEMBL/Production/Pipeline/PipeConfig/DumpCore_conf.pm#L107')
         get_logger().info("Metadata load complete, Handover successful")
         spec['progress_complete']=3
         #get_logger().info("Metadata load complete, submitting event")
