@@ -92,3 +92,6 @@ data_files_path = os.environ.get("DATA_FILE_PATH" ,
 allowed_database_types = os.environ.get("ALLOWED_DATABASE_TYPES" ,
                                         file_config.get('allowed_database_types',
                                                         'core,rnaseq,cdna,otherfeatures,variation,funcgen,compara,ancestral'))
+production_email = os.environ.get("PRODUCTION_EMAIL" ,
+                                        file_config.get('production_email',
+                                                        'email@ebi.ac.uk'))
