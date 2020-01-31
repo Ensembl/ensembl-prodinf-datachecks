@@ -225,7 +225,8 @@ def submit_form():
         'ensembl_release': form.ensembl_release.data,
         'environment': form.environment.data,
         'email': form.email.data,
-        'tag': form.tag.data
+        'tag': form.tag.data,
+        'auth_token': form.auth_token.data
     }
 
     if form.update_ensembl.data:

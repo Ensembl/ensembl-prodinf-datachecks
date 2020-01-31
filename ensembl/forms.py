@@ -1,4 +1,4 @@
-from wtforms import Form, FormField, SelectField, StringField, SubmitField
+from wtforms import Form, FormField, SelectField, StringField, SubmitField, TextAreaField
 from wtforms.validators import Email, InputRequired, ValidationError
 
 divisions = [
@@ -98,6 +98,7 @@ class GIFTsSubmissionForm(Form):
     environment = SelectField('Environment', choices=[('dev', 'Dev'), ('staging', 'Staging')],
                               validators=[InputRequired()])
     email = StringField('Email', validators=[Email(), InputRequired()])
+    auth_token = TextAreaField('Authentication Token', validators=[InputRequired()])
     tag = StringField('Tag')
     update_ensembl = SubmitField('Update Ensembl')
     process_mapping = SubmitField('Process Mapping')
