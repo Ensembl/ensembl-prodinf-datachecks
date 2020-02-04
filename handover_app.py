@@ -19,7 +19,10 @@ app = Flask(__name__, instance_relative_config=True)
 app.config.from_object('handover_config')
 app.logger.addHandler(app_logging.file_handler(__name__))
 app.logger.addHandler(app_logging.default_handler())
-app.config['SWAGGER'] = {'title': 'Handover App'}
+app.config['SWAGGER'] = {
+    'title': 'Handover App',
+    'uiversion': 2
+}
 
 swagger = Swagger(app)
 cors = CORS(app)
