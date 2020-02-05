@@ -22,11 +22,7 @@ Bootstrap(app)
 
 CORS(app)
 
-swagger_config = Swagger.DEFAULT_CONFIG
-swagger_config['specs'][0]['route'] = '/gifts/specifications.json'
-swagger_config['specs_route'] = '/gifts/api'
-
-Swagger(app, template_file='swagger.yml', config=swagger_config)
+Swagger(app, template_file='swagger.yml')
 
 hive = None
 
