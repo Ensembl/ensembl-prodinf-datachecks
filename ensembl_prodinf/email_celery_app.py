@@ -10,7 +10,7 @@ try:
     import email_celery_app_config
 
     app.config_from_object('email_celery_app_config')
-except:
+except ImportError:
     logging.warning('Celery email requires email_celery_app_config module')
 
 if __name__ == '__main__':

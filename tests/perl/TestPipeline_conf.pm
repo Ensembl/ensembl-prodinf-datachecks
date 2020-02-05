@@ -16,7 +16,7 @@ sub pipeline_analyses {
 	   -parameters => {},
 	   -flow_into => { '2->A' => ['TestRunnableParallel'],
 			   'A->1' => ['TestRunnableMerge'] }
-	  }, 
+	  },
 	  {
 	   -logic_name => 'TestRunnableParallel',
 	   -module =>
@@ -34,7 +34,7 @@ sub pipeline_analyses {
 	   -parameters    => {},
 	   -hive_capacity => 8,
 	   -flow_into     => {
-			      2 => [ '?accu_name=message&accu_address=[]']			      
+			      2 => [ '?accu_name=message&accu_address=[]']
 			     }
 	  },
 	  {
@@ -46,7 +46,7 @@ sub pipeline_analyses {
 	   -hive_capacity => 8,
 	   -flow_into     => {
 			      2 => [ '?table_name=result']
-			      
+
 			     }
 	  },
 	  {
@@ -57,7 +57,7 @@ sub pipeline_analyses {
 	   -parameters    => {},
 	   -hive_capacity => 8,
 	   -flow_into     => {
-			      2 => [ '?table_name=result']			      
+			      2 => [ '?table_name=result']
 			     }
 	  }
 	 ];

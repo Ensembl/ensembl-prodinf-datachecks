@@ -6,7 +6,8 @@ from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, func
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 
-from .utils import dict_to_perl_string, perl_string_to_python
+from ensembl_prodinf.utils import dict_to_perl_string, perl_string_to_python
+
 
 __all__ = [ 'Result', 'LogMessage', 'Job', 'HiveInstance', 'Analysis' ]
 
@@ -233,7 +234,7 @@ class HiveInstance:
 
     def create_job(self, analysis_name, input_data):
 
-        """ Create a job for the supplied analysis and input hash 
+        """ Create a job for the supplied analysis and input hash
         The input_data dict is converted to a Perl string before storing
         """
 
@@ -457,7 +458,7 @@ class HiveInstance:
             if child_job != None:
                 s = Session()
                 try:
-                    print "Deleting children job " + str(child_job.job_id)
+                    print("Deleting children job " + str(child_job.job_id))
                     if (child_job.result != None):
                         s.delete(child_job.result)
                     s.delete(child_job)
@@ -470,7 +471,7 @@ class HiveInstance:
         if parent_job != None:
             s = Session()
             try:
-                print "Deleting parent job " + str(parent_job.job_id)
+                print("Deleting parent job " + str(parent_job.job_id))
                 if (parent_job.result != None):
                     s.delete(parent_job.result)
                 s.delete(parent_job)
@@ -482,7 +483,7 @@ class HiveInstance:
                 s.close()
         try:
             s = Session()
-            print "Deleting job " + str(job.job_id)
+            print("Deleting job " + str(job.job_id))
             if (job.result != None):
                 s.delete(job.result)
             s.delete(job)

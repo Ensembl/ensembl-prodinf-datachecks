@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 import logging
 import unittest
 from ensembl_prodinf.resource_lock import ResourceLocker, LockException

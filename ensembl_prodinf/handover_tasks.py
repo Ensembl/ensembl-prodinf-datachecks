@@ -1,5 +1,5 @@
 '''
-Tasks and entrypoint need to accept and sequentially process a database. 
+Tasks and entrypoint need to accept and sequentially process a database.
 The data flow is:
 1. handover_database (standard function)
 - checks existence of database
@@ -18,20 +18,20 @@ The data flow is:
 '''
 from ensembl_prodinf.handover_celery_app import app
 
-from hc_client import HcClient
-from db_copy_client import DbCopyClient
-from metadata_client import MetadataClient
-from event_client import EventClient
+from ensembl_prodinf.hc_client import HcClient
+from ensembl_prodinf.db_copy_client import DbCopyClient
+from ensembl_prodinf.metadata_client import MetadataClient
+from ensembl_prodinf.event_client import EventClient
 from ensembl.datacheck.client import DatacheckClient
 from sqlalchemy_utils.functions import database_exists, drop_database
 from sqlalchemy.engine.url import make_url
-from .utils import send_email
-from .models.compara import check_grch37
-from .models.core import get_division
-import handover_config as cfg
+from ensembl_prodinf.utils import send_email
+from ensembl_prodinf.models.compara import check_grch37
+from ensembl_prodinf.models.core import get_division
+from ensembl_prodinf import handover_config as cfg
 import uuid
 import re
-import reporting
+from ensembl_prodinf import reporting
 import json
 
 pool = reporting.get_pool(cfg.report_server)
@@ -42,17 +42,19 @@ event_client = EventClient(cfg.event_uri)
 dc_client = DatacheckClient(cfg.dc_uri)
 
 db_types_list = [i for i in cfg.allowed_database_types.split(",")]
-species_pattern = re.compile("(.*[a-z0-9])_(core|rnaseq|cdna|otherfeatures|variation|funcgen)_?[0-9]*?_([0-9]*)_([0-9a-z]*)")
-compara_pattern = re.compile(".*[a-z]_(compara)_?([a-z]*)?_?([a-z]*)?_?[0-9]*?_[0-9].*")
-ancestral_pattern = re.compile("(.*[a-z])_(ancestral)_[0-9]*")
+species_pattern = re.compile(r'^(?P<prefix>\w+)_(?P<type>core|rnaseq|cdna|otherfeatures|variation|funcgen)(_\d+)?_(?P<release>\d+)_(?P<assembly>\d+)$')
+compara_pattern = re.compile(r'^ensembl_compara(_(?P<division>[a-z]+|pan)(_homology)?)?(_(\d+))?(_\d+)$')
+ancestral_pattern = re.compile(r'^ensembl_ancestral_\d+$')
+blat_species = ['homo_sapiens','mus_musculus','danio_rerio','rattus_norvegicus','gallus_gallus','canis_lupus_familiaris','bos_taurus',
+    'oryctolagus_cuniculus','oryzias_latipes','sus_scrofa','meleagris_gallopavo','anas_platyrhynchos_platyrhynchos','ovis_aries','oreochromis_niloticus','gadus_morhua']
 
-def get_logger():    
+def get_logger():
     return reporting.get_logger(pool, cfg.report_exchange, 'handover', None, {})
-                
-def handover_database(spec):    
-    """ Method to accept a new database for incorporation into the system 
+
+def handover_database(spec):
+    """ Method to accept a new database for incorporation into the system
     Argument is a dict with the following keys:
-    * src_uri - URI to database to handover (required) 
+    * src_uri - URI to database to handover (required)
     * tgt_uri - URI to copy database to (optional - generated from staging and src_uri if not set)
     * contact - email address of submitter (required)
     * comment - additional information about submission (required)
@@ -64,8 +66,8 @@ def handover_database(spec):
     * progress_total - Total number of task to do
     * progress_complete - Total number of task completed
     """
-    # TODO verify dict    
-    reporting.set_logger_context(get_logger(), spec['src_uri'], spec)    
+    # TODO verify dict
+    reporting.set_logger_context(get_logger(), spec['src_uri'], spec)
     # create unique identifier
     spec['handover_token'] = str(uuid.uuid1())
     spec['progress_total']=3
@@ -80,7 +82,7 @@ def handover_database(spec):
     #Get database hc group and compara_uri
     (groups,compara_uri) = hc_groups(db_type,db_prefix,spec['src_uri'])
     #Check to which staging server the database need to be copied to
-    (spec,staging_uri) = check_staging_server(spec,db_type,db_prefix,assembly)
+    (spec,staging_uri,live_uri) = check_staging_server(spec,db_type,db_prefix,assembly)
     #setting compara url to default value for species databases. This value is only used by Compara healthchecks
     if compara_uri is None:
         compara_uri=cfg.compara_uri + 'ensembl_compara_master'
@@ -90,15 +92,15 @@ def handover_database(spec):
     spec['progress_complete']=0
     get_logger().info("Handling " + str(spec))
     submit_dc(spec, src_url, db_type, db_prefix, release, staging_uri, compara_uri)
-    submit_hc(spec, groups, compara_uri, staging_uri)
+    submit_hc(spec, groups, compara_uri, staging_uri, live_uri)
     return spec['handover_token']
 
 def get_tgt_uri(src_url,staging_uri):
     """Create target URI from staging details and name of source database"""
     return str(staging_uri) + str(src_url.database)
 
-    
-def check_db(uri):    
+
+def check_db(uri):
     """Check if source database exists"""
     if not database_exists(uri):
         get_logger().error("Handover failed, " + uri + " does not exist")
@@ -109,19 +111,19 @@ def check_db(uri):
 def parse_db_infos(database):
     """Parse database name and extract db_prefix and db_type. Also extract release and assembly for species databases"""
     if species_pattern.match(database):
-        db_prefix = species_pattern.match(database).group(1)
-        db_type = species_pattern.match(database).group(2)
-        release = species_pattern.match(database).group(3)
-        assembly = species_pattern.match(database).group(4)
+        m = species_pattern.match(database)
+        db_prefix = m.group('prefix')
+        db_type = m.group('type')
+        release = m.group('release')
+        assembly = m.group('assembly')
         return db_prefix, db_type, release, assembly
     elif compara_pattern.match(database):
-        db_type = compara_pattern.match(database).group(1)
-        db_prefix = compara_pattern.match(database).group(2)
-        return db_prefix, db_type, None, None
+        m = compara_pattern.match(database)
+        division = m.group('division')
+        db_prefix = division if division else ''
+        return db_prefix, 'compara', None, None
     elif ancestral_pattern.match(database):
-        db_prefix = ancestral_pattern.match(database).group(1)
-        db_type = ancestral_pattern.match(database).group(2)
-        return db_prefix, db_type, None, None
+        return 'ensembl', 'ancestral', None, None
     else:
         raise ValueError("Database type for "+database+" is not expected. Please contact the Production team")
 
@@ -146,7 +148,7 @@ def hc_groups(db_type,db_prefix,uri):
             compara_uri=cfg.compara_metazoa_uri + 'ensembl_compara_master_' + db_prefix
             compara_handover_group=cfg.compara_handover_group
         elif check_grch37(uri,'homo_sapiens'):
-            compara_uri=cfg.compara_uri + 'ensembl_compara_master_grch37'
+            compara_uri=cfg.compara_grch37_uri + 'ensembl_compara_master_grch37'
             compara_handover_group=cfg.compara_handover_group
         elif db_prefix:
             compara_uri=cfg.compara_uri + db_prefix + '_compara_master'
@@ -160,23 +162,27 @@ def check_staging_server(spec,db_type,db_prefix,assembly):
     """Find which staging server should be use. secondary_staging for GRCh37 and Bacteria, staging for the rest"""
     if 'bacteria' in db_prefix:
         staging_uri = cfg.secondary_staging_uri
+        live_uri = cfg.secondary_live_uri
     elif db_prefix == 'homo_sapiens' and assembly == '37':
         staging_uri = cfg.secondary_staging_uri
+        live_uri = cfg.secondary_live_uri
         spec['GRCh37']=1
         spec['progress_total']=2
     elif db_type == 'compara' and check_grch37(spec['src_uri'],'homo_sapiens'):
         staging_uri = cfg.secondary_staging_uri
+        live_uri = cfg.secondary_live_uri
         spec['GRCh37']=1
         spec['progress_total']=2
     else:
         staging_uri = cfg.staging_uri
-    return spec,staging_uri
+        live_uri = cfg.live_uri
+    return spec,staging_uri,live_uri
 
 
-def submit_hc(spec, groups, compara_uri, staging_uri):
+def submit_hc(spec, groups, compara_uri, staging_uri, live_uri):
     """Submit the source database for healthchecking. Returns a celery job identifier"""
     try:
-        hc_job_id = hc_client.submit_job(spec['src_uri'], cfg.production_uri, compara_uri, staging_uri, cfg.live_uri, None, groups, cfg.data_files_path, None, spec['handover_token'])
+        hc_job_id = hc_client.submit_job(spec['src_uri'], cfg.production_uri, compara_uri, staging_uri, live_uri, None, groups, cfg.data_files_path, None, spec['handover_token'])
     except Exception as e:
         get_logger().error("Handover failed, Cannot submit hc job")
         raise ValueError("Handover failed, Cannot submit hc job {}".format(e))
@@ -191,16 +197,18 @@ def submit_dc(spec, src_url, db_type, db_prefix, release, staging_uri, compara_u
         server_url = 'mysql://'+str(src_url.username)+'@'+str(src_url.host)+':'+str(src_url.port)+"/"
         if db_type == 'compara':
             get_logger().debug("Submitting DC for "+src_url.database+ " on server: "+server_url)
-            dc_job_id = dc_client.submit_job(server_url, src_url.database, None, None, None, release, None, db_type, 'critical', db_prefix, None, spec['handover_token'])
+            dc_job_id = dc_client.submit_job(server_url, src_url.database, None, None, db_type, release, None, db_type, 'critical', db_type, None, spec['handover_token'])
         elif db_type in ['rnaseq','cdna','otherfeatures']:
+            division = get_division(spec['src_uri'],db_type)
+            get_logger().debug("division: "+division)
             get_logger().debug("Submitting DC for "+src_url.database+ " on server: "+server_url)
-            dc_job_id = dc_client.submit_job(server_url, src_url.database, None, None, None, release, None, 'corelike', 'critical', db_prefix, None, spec['handover_token'])
+            dc_job_id = dc_client.submit_job(server_url, src_url.database, None, None, db_type, release, None, 'corelike', 'critical', division, None, spec['handover_token'])
         else:
             get_logger().debug("src_uri: "+spec['src_uri']+" dbtype "+db_type+" server_url "+server_url)
             division = get_division(spec['src_uri'],db_type)
             get_logger().debug("division: "+division)
             get_logger().debug("Submitting DC for "+src_url.database+ " on server: "+server_url)
-            dc_job_id = dc_client.submit_job(server_url, src_url.database, None, None, None, release, None, db_type, 'critical', division, None, spec['handover_token'])
+            dc_job_id = dc_client.submit_job(server_url, src_url.database, None, None, db_type, release, None, db_type, 'critical', division, None, spec['handover_token'])
     except Exception as e:
         get_logger().debug("Cannot submit dc job {}".format(e))
         #get_logger().error("Handover failed, Cannot submit dc job")
@@ -217,8 +225,8 @@ def process_checked_db(self, hc_job_id, spec):
     * submit copy if HCs succeed
     * send error email if not
     """
-    reporting.set_logger_context(get_logger(), spec['src_uri'], spec)    
-    # allow infinite retries 
+    reporting.set_logger_context(get_logger(), spec['src_uri'], spec)
+    # allow infinite retries
     self.max_retries = None
     get_logger().info("HCs in progress, please see: " +cfg.hc_web_uri + str(hc_job_id))
     try:
@@ -237,7 +245,7 @@ Running healthchecks on %s failed to execute.
 Please see %s
 """ % (spec['src_uri'], cfg.hc_web_uri + str(hc_job_id))
         send_email(to_address=spec['contact'], subject='HC failed to run', body=msg, smtp_server=cfg.smtp_server)
-        return 
+        return
     elif result['output']['status'] == 'failed':
         get_logger().info("HCs found problems, please see: "+cfg.hc_web_uri + str(hc_job_id))
         msg = """
@@ -292,24 +300,24 @@ Please see %s
         submit_copy(spec)
 
 def submit_copy(spec):
-    """Submit the source database for copying to the target. Returns a celery job identifier"""    
+    """Submit the source database for copying to the target. Returns a celery job identifier"""
     try:
         copy_job_id = db_copy_client.submit_job(spec['src_uri'], spec['tgt_uri'], None, None, False, True, True, None, None)
     except Exception as e:
         get_logger().error("Handover failed, cannot submit copy job")
         raise ValueError("Handover failed, cannot submit copy job {}".format(e))
     spec['copy_job_id'] = copy_job_id
-    task_id = process_copied_db.delay(copy_job_id, spec)    
+    task_id = process_copied_db.delay(copy_job_id, spec)
     get_logger().debug("Submitted DB for copying as " + str(task_id))
     return task_id
 
-@app.task(bind=True)    
+@app.task(bind=True)
 def process_copied_db(self, copy_job_id, spec):
     """Wait for copy to complete and then respond accordingly:
     * if success, submit to metadata database
     * if failure, flag error using email"""
-    reporting.set_logger_context(get_logger(), spec['src_uri'], spec)    
-    # allow infinite retries     
+    reporting.set_logger_context(get_logger(), spec['src_uri'], spec)
+    # allow infinite retries
     self.max_retries = None
     get_logger().info("Copying in progress, please see: " +cfg.copy_web_uri + str(copy_job_id))
     try:
@@ -348,7 +356,7 @@ def submit_metadata_update(spec):
     get_logger().debug("Submitted DB for metadata loading " + str(task_id))
     return task_id
 
-@app.task(bind=True)    
+@app.task(bind=True)
 def process_db_metadata(self, metadata_job_id, spec):
     """Wait for metadata update to complete and then respond accordingly:
     * if success, submit event to event handler for further processing
@@ -380,6 +388,9 @@ Please see %s
                 details = json.loads(event['details'])
                 if 'current_database_list' in details :
                     drop_current_databases(details['current_database_list'],spec['staging_uri'],spec['tgt_uri'])
+                if event['genome'] in blat_species and event['type'] == 'new_assembly':
+                    send_email(to_address=cfg.production_email,subject='BLAT species list needs updating in FTP Dumps config',body='The following species '+event['genome']+
+                        ' has a new assembly, please update the port number for this species here and communicate to Web: https://github.com/Ensembl/ensembl-production/blob/master/modules/Bio/EnsEMBL/Production/Pipeline/PipeConfig/DumpCore_conf.pm#L107')
         get_logger().info("Metadata load complete, Handover successful")
         spec['progress_complete']=3
         #get_logger().info("Metadata load complete, submitting event")
