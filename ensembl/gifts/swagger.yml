@@ -38,7 +38,7 @@ paths:
         - Update Ensembl data in the GIFTs database
       summary: "Retrieve information for a specific Ensembl update to the GIFTs database"
       parameters:
-        - $ref: "#/components/parameters/job"
+        - $ref: "#/components/parameters/job_id"
       responses:
         200:
           description: Details of the specified 'Update Ensembl' job.
@@ -46,21 +46,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/job"
-
-  /gifts/update_ensembl/status/{ensembl_release}:
-    get:
-      tags:
-        - Update Ensembl data in the GIFTs database
-      summary: "Retrieve the status of the Ensembl update to the GIFTs database for a given release"
-      parameters:
-        - $ref: "#/components/parameters/ensembl_release"
-      responses:
-        200:
-          description: Status of the latest 'Update Ensembl' job for the specified release.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/status"
 
   /gifts/process_mapping:
     post:
@@ -92,7 +77,7 @@ paths:
         - Update Ensembl and UniProt alignments in the GIFTs database
       summary: "Retrieve information for a specific update to the Ensembl and UniProt alignments"
       parameters:
-        - $ref: "#/components/parameters/job"
+        - $ref: "#/components/parameters/job_id"
       responses:
         200:
           description: Details of the specified 'Process Mapping' job.
@@ -100,21 +85,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/job"
-
-  /gifts/process_mapping/status/{ensembl_release}:
-    get:
-      tags:
-        - Update Ensembl and UniProt alignments in the GIFTs database
-      summary: "Retrieve the status of the update to the Ensembl and UniProt alignments for a given release"
-      parameters:
-        - $ref: "#/components/parameters/ensembl_release"
-      responses:
-        200:
-          description: Status of the latest 'Process Mapping' job for the specified release.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/status"
 
   /gifts/publish_mapping:
     post:
@@ -146,7 +116,7 @@ paths:
         - Publish GIFTs database with latest Ensembl/UniProt alignments
       summary: "Retrieve information for a specific publication of GIFTs data"
       parameters:
-        - $ref: "#/components/parameters/job"
+        - $ref: "#/components/parameters/job_id"
       responses:
         200:
           description: Details of the specified 'Publish Mapping' job.
@@ -154,21 +124,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/job"
-
-  /gifts/publish_mapping/status/{ensembl_release}:
-    get:
-      tags:
-        - Publish GIFTs database with latest Ensembl/UniProt alignments
-      summary: "Retrieve the status of the publication of GIFTs data for a given release"
-      parameters:
-        - $ref: "#/components/parameters/ensembl_release"
-      responses:
-        200:
-          description: Status of the latest 'Publish Mapping' job for the specified release.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/status"
 
 components:
   parameters:
@@ -180,15 +135,6 @@ components:
       schema:
         type: integer
         example: 1
-
-    ensembl_release:
-      name: ensembl_release
-      in: path
-      description: An Ensembl release
-      required: true
-      schema:
-        type: integer
-        example: 99
 
   schemas:
     result:
