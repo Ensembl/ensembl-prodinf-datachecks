@@ -113,6 +113,8 @@ def process_mapping(payload=None):
     if payload is None:
         payload = request.json
 
+    payload['rest_server'] = get_gifts_api_uri(payload['environment'])
+
     analysis = app.config['HIVE_PROCESS_MAPPING_ANALYSIS']
     job = get_hive('process_mapping').create_job(analysis, payload)
 
