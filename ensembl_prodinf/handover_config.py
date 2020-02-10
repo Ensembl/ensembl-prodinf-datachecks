@@ -92,3 +92,6 @@ allowed_database_types = os.environ.get("ALLOWED_DATABASE_TYPES" ,
 production_email = os.environ.get("PRODUCTION_EMAIL" ,
                                         file_config.get('production_email',
                                                         'email@ebi.ac.uk'))
+allowed_divisions = os.environ.get("ALLOWED_DIVISIONS" ,
+                                        file_config.get('allowed_divisions',
+                                                        'vertebrates'))

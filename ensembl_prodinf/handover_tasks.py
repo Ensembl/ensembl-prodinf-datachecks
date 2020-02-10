@@ -42,6 +42,7 @@ event_client = EventClient(cfg.event_uri)
 dc_client = DatacheckClient(cfg.dc_uri)
 
 db_types_list = [i for i in cfg.allowed_database_types.split(",")]
+allowed_divisions_list = [i for i in cfg.allowed_divisions.split(",")]
 species_pattern = re.compile(r'^(?P<prefix>\w+)_(?P<type>core|rnaseq|cdna|otherfeatures|variation|funcgen)(_\d+)?_(?P<release>\d+)_(?P<assembly>\d+)$')
 compara_pattern = re.compile(r'^ensembl_compara(_(?P<division>[a-z]+|pan)(_homology)?)?(_(\d+))?(_\d+)$')
 ancestral_pattern = re.compile(r'^ensembl_ancestral_\d+$')
@@ -79,6 +80,13 @@ def handover_database(spec):
     if db_type not in db_types_list:
         get_logger().error("Handover failed, " + spec['src_uri'] + " has been handed over after deadline. Please contact the Production team")
         raise ValueError(spec['src_uri'] + " has been handed over after the deadline. Please contact the Production team")
+    # Check that the database division match the target staging server
+    if db_type == 'compara':
+        db_division = db_prefix
+    else:
+        db_division = get_division(spec['src_uri'],db_type)
+    if db_division not in allowed_divisions_list:
+        raise ValueError('Database division '+db_division+' does not match server division list '+str(allowed_divisions_list))
     #Get database hc group and compara_uri
     (groups,compara_uri) = hc_groups(db_type,db_prefix,spec['src_uri'])
     #Check to which staging server the database need to be copied to
@@ -120,10 +128,10 @@ def parse_db_infos(database):
     elif compara_pattern.match(database):
         m = compara_pattern.match(database)
         division = m.group('division')
-        db_prefix = division if division else ''
+        db_prefix = division if division else 'vertebrates'
         return db_prefix, 'compara', None, None
     elif ancestral_pattern.match(database):
-        return 'ensembl', 'ancestral', None, None
+        return 'vertebrates', 'ancestral', None, None
     else:
         raise ValueError("Database type for "+database+" is not expected. Please contact the Production team")
 
@@ -146,6 +154,9 @@ def hc_groups(db_type,db_prefix,uri):
             compara_handover_group=cfg.compara_handover_group
         elif db_prefix == "metazoa":
             compara_uri=cfg.compara_metazoa_uri + 'ensembl_compara_master_' + db_prefix
+            compara_handover_group=cfg.compara_handover_group
+        elif db_prefix == "vertebrates":
+            compara_uri=cfg.compara_uri + 'ensembl_compara_master'
             compara_handover_group=cfg.compara_handover_group
         elif check_grch37(uri,'homo_sapiens'):
             compara_uri=cfg.compara_grch37_uri + 'ensembl_compara_master_grch37'
