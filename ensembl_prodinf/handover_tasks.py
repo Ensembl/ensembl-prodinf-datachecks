@@ -81,7 +81,7 @@ def handover_database(spec):
         get_logger().error("Handover failed, " + spec['src_uri'] + " has been handed over after deadline. Please contact the Production team")
         raise ValueError(spec['src_uri'] + " has been handed over after the deadline. Please contact the Production team")
     # Check that the database division match the target staging server
-    if db_type == 'compara':
+    if db_type in ['compara','ancestral']:
         db_division = db_prefix
     else:
         db_division = get_division(spec['src_uri'],db_type)
