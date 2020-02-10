@@ -45,7 +45,7 @@ db_types_list = [i for i in cfg.allowed_database_types.split(",")]
 allowed_divisions_list = [i for i in cfg.allowed_divisions.split(",")]
 species_pattern = re.compile(r'^(?P<prefix>\w+)_(?P<type>core|rnaseq|cdna|otherfeatures|variation|funcgen)(_\d+)?_(?P<release>\d+)_(?P<assembly>\d+)$')
 compara_pattern = re.compile(r'^ensembl_compara(_(?P<division>[a-z]+|pan)(_homology)?)?(_(\d+))?(_\d+)$')
-ancestral_pattern = re.compile(r'^ensembl_ancestral_\d+$')
+ancestral_pattern = re.compile(r'^ensembl_ancestral(_(?P<division>[a-z]+))?(_(\d+))?(_\d+)$')
 blat_species = ['homo_sapiens','mus_musculus','danio_rerio','rattus_norvegicus','gallus_gallus','canis_lupus_familiaris','bos_taurus',
     'oryctolagus_cuniculus','oryzias_latipes','sus_scrofa','meleagris_gallopavo','anas_platyrhynchos_platyrhynchos','ovis_aries','oreochromis_niloticus','gadus_morhua']
 
@@ -131,7 +131,10 @@ def parse_db_infos(database):
         db_prefix = division if division else 'vertebrates'
         return db_prefix, 'compara', None, None
     elif ancestral_pattern.match(database):
-        return 'vertebrates', 'ancestral', None, None
+        m = ancestral_pattern.match(database)
+        division = m.group('division')
+        db_prefix = division if division else 'vertebrates'
+        return db_prefix, 'ancestral', None, None
     else:
         raise ValueError("Database type for "+database+" is not expected. Please contact the Production team")
 
