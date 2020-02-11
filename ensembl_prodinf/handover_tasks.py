@@ -45,7 +45,7 @@ db_types_list = [i for i in cfg.allowed_database_types.split(",")]
 allowed_divisions_list = [i for i in cfg.allowed_divisions.split(",")]
 species_pattern = re.compile(r'^(?P<prefix>\w+)_(?P<type>core|rnaseq|cdna|otherfeatures|variation|funcgen)(_\d+)?_(?P<release>\d+)_(?P<assembly>\d+)$')
 compara_pattern = re.compile(r'^ensembl_compara(_(?P<division>[a-z]+|pan)(_homology)?)?(_(\d+))?(_\d+)$')
-ancestral_pattern = re.compile(r'^ensembl_ancestral_\d+$')
+ancestral_pattern = re.compile(r'^ensembl_ancestral(_(?P<division>[a-z]+))?(_(\d+))?(_\d+)$')
 blat_species = ['homo_sapiens','mus_musculus','danio_rerio','rattus_norvegicus','gallus_gallus','canis_lupus_familiaris','bos_taurus',
     'oryctolagus_cuniculus','oryzias_latipes','sus_scrofa','meleagris_gallopavo','anas_platyrhynchos_platyrhynchos','ovis_aries','oreochromis_niloticus','gadus_morhua']
 
@@ -81,7 +81,7 @@ def handover_database(spec):
         get_logger().error("Handover failed, " + spec['src_uri'] + " has been handed over after deadline. Please contact the Production team")
         raise ValueError(spec['src_uri'] + " has been handed over after the deadline. Please contact the Production team")
     # Check that the database division match the target staging server
-    if db_type == 'compara':
+    if db_type in ['compara','ancestral']:
         db_division = db_prefix
     else:
         db_division = get_division(spec['src_uri'],db_type)
@@ -131,7 +131,10 @@ def parse_db_infos(database):
         db_prefix = division if division else 'vertebrates'
         return db_prefix, 'compara', None, None
     elif ancestral_pattern.match(database):
-        return 'vertebrates', 'ancestral', None, None
+        m = ancestral_pattern.match(database)
+        division = m.group('division')
+        db_prefix = division if division else 'vertebrates'
+        return db_prefix, 'ancestral', None, None
     else:
         raise ValueError("Database type for "+database+" is not expected. Please contact the Production team")
 
@@ -209,6 +212,9 @@ def submit_dc(spec, src_url, db_type, db_prefix, release, staging_uri, compara_u
         if db_type == 'compara':
             get_logger().debug("Submitting DC for "+src_url.database+ " on server: "+server_url)
             dc_job_id = dc_client.submit_job(server_url, src_url.database, None, None, db_type, release, None, db_type, 'critical', db_type, None, spec['handover_token'])
+        elif db_type == 'ancestral':
+            get_logger().debug("Submitting DC for "+src_url.database+ " on server: "+server_url)
+            dc_job_id = dc_client.submit_job(server_url, src_url.database, None, None, db_type, release, None, 'corelike', 'critical', db_type, None, spec['handover_token'])
         elif db_type in ['rnaseq','cdna','otherfeatures']:
             division = get_division(spec['src_uri'],db_type)
             get_logger().debug("division: "+division)
