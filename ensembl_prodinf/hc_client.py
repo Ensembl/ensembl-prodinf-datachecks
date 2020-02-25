@@ -84,8 +84,8 @@ class HcClient(RestClient):
             try:
                 job_id = job['id']
                 if re_pattern.match(job['input']['tag']) and ('output' in job and job['output']['status'] == 'failed'):
-                    logging.info("Found tag " + str(pattern) + " for job: " + str(job_id) )
-                    for h,r in {k: v for k, v in job['output']['results'].iteritems() if v['status'] == 'failed'}.items():
+                    logging.info("Found tag " + str(pattern) + " for job: " + str(job_id))
+                    for h, r in {k: v for k, v in job['output']['results'].items() if v['status'] == 'failed'}.items():
                         [output[h].append(job['input']['db_uri']+"\t"+m) for m in r['messages']]
                 elif re_pattern.match(job['input']['tag']) and ( job['status'] == 'incomplete' or job['status'] == "submitted"):
                     logging.info("WARNING: job: " + str(job_id) + " for tag " + str(pattern) + " is still running, skipping it ")
@@ -115,7 +115,7 @@ class HcClient(RestClient):
         if job['status'] == 'complete':
             if print_results == True:
                 logging.info("HC result: " + str(job['output']['status']))
-                for (hc, result) in job['output']['results'].iteritems():
+                for (hc, result) in job['output']['results'].items():
                     logging.info("%s : %s" % (hc, result['status']))
                     if result['messages'] != None:
                         for msg in result['messages']:
