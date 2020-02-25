@@ -8,9 +8,9 @@ from ensembl_prodinf.rest_client import RestClient
 from ensembl_prodinf.server_utils import assert_mysql_uri, assert_mysql_db_uri
 
 class HcClient(RestClient):
-    
+
     """Client for checking databases using the HC service"""
-    
+
     def submit_job(self, db_uri, production_uri, compara_uri, staging_uri, live_uri, hc_names, hc_groups, data_files_path, email, tag):
         """
         Submit a database for checkiing
@@ -44,14 +44,14 @@ class HcClient(RestClient):
             'email':email,
             'tag':tag
         }
-        return RestClient.submit_job(self,payload)
-    
-    
+        return RestClient.submit_job(self, payload)
+
+
     def list_jobs(self, output_file, pattern='.*', failure_only=False):
         """
         Find jobs and print results
         Arguments:
-          output_file - optional file to write report 
+          output_file - optional file to write report
           pattern - optional pattern to filter jobs by
           failure_only - only report failed jobs
         """
@@ -59,7 +59,7 @@ class HcClient(RestClient):
         r = super(HcClient, self).list_jobs()
         re_pattern = re.compile(pattern)
         output = []
-        for job in r:    
+        for job in r:
             if 'db_uri' in job['input'].keys() and re_pattern.match(job['input']['db_uri']) and (failure_only == False or ('output' in job and job['output']['status'] == 'failed')):
                 self.print_job(job, print_results=False, print_input=False)
             if 'output' in job:
@@ -73,11 +73,11 @@ class HcClient(RestClient):
         """
         Find jobs and collate results by healthcheck to identify common failures
         Arguments:
-          output_file - optional file to write report 
+          output_file - optional file to write report
           pattern - optional pattern to filter jobs tags by
         """
         logging.info("Collating jobs using tag " + str(pattern))
-        r = super(HcClient, self).list_jobs()  
+        r = super(HcClient, self).list_jobs()
         re_pattern = re.compile(pattern)
         output = defaultdict(list)
         for job in r:
@@ -98,9 +98,9 @@ class HcClient(RestClient):
                     if 'tag' in failed_job['input']:
                         if re_pattern.match(failed_job['input']['tag']):
                             logging.info("WARNING: job: " + str(failed_job['id']) + " for tag " + str(pattern) + " has failed, please check error message")
-        if output_file!= None:
+        if output_file != None:
             output_file.write(json.dumps(output))
-    
+
     def print_job(self, job, print_results=False, print_input=False):
         """
         Render a job to logging
@@ -150,7 +150,7 @@ class HcClient(RestClient):
             logging.info("Tag: " + i['tag'])
 
 if __name__ == '__main__':
-            
+
     parser = argparse.ArgumentParser(description='Run HCs via a REST service')
 
     parser.add_argument('-u', '--uri', help='HC REST service URI', required=True)
@@ -172,33 +172,33 @@ if __name__ == '__main__':
     parser.add_argument('-t', '--tag', help='Tag use to collate result and facilitate filtering')
 
     args = parser.parse_args()
-    
+
     if args.verbose == True:
         logging.basicConfig(level=logging.DEBUG, format='%(message)s')
     else:
         logging.basicConfig(level=logging.INFO, format='%(message)s')
-    
+
     if args.uri.endswith('/') == False:
-        args.uri = args.uri + '/'    
+        args.uri = args.uri + '/'
 
     client = HcClient(args.uri)
-            
+
     if args.action == 'submit':
         job_id = client.submit_job(args.db_uri, args.production_uri, args.compara_uri, args.staging_uri, args.live_uri, args.hc_names, args.hc_groups, args.data_files_path, args.email, args.tag)
         logging.info('Job submitted with ID '+str(job_id))
-    
+
     elif args.action == 'retrieve':
         job = client.retrieve_job(args.job_id)
         client.print_job(job, print_results=True, print_input=True)
-    
+
     elif args.action == 'list':
-        jobs = client.list_jobs(args.output_file, args.db_pattern, args.failure_only)   
+        jobs = client.list_jobs(args.output_file, args.db_pattern, args.failure_only)
 
     elif args.action == 'collate':
         if args.tag == None:
             raise ValueError("Collate needs a tag argument")
-        jobs = client.collate_jobs(args.output_file, args.tag)   
-    
+        jobs = client.collate_jobs(args.output_file, args.tag)
+
     elif args.action == 'delete':
         client.delete_job(args.job_id)
-        
+
