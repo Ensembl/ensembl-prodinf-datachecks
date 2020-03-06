@@ -1,20 +1,14 @@
 import os
-from ensembl_prodinf.config import load_yaml
+from ensembl_prodinf.config import load_config_yaml, parse_debug_var
 
 
 config_file_path = os.environ.get('HC_CONFIG_PATH')
-if config_file_path:
-    file_config = load_yaml(config_file_path)
-else:
-    file_config = {}
+file_config = load_config_yaml(config_file_path)
 
 
-DEBUG = str(os.environ.get("DEBUG", file_config.get('debug', 'false')))
-if DEBUG.lower() in ("f", "false"):
-    DEBUG = False
-elif DEBUG.lower() in ("t", "true"):
-    DEBUG = True
+debug_var = os.environ.get("DEBUG", file_config.get('debug', 'false'))
 
+DEBUG = parse_debug_var(debug_var)
 
 HIVE_ANALYSIS = os.environ.get("HIVE_ANALYSIS",
                                file_config.get('hive_analysis', 'RunStandaloneHealthcheckFactory'))

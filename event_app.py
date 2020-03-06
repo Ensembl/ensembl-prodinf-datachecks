@@ -22,7 +22,10 @@ def get_logger():
 
 app = Flask(__name__, instance_relative_config=True)
 app.config.from_object('event_config')
-app.config['SWAGGER'] = {'title': 'Event App'}
+app.config['SWAGGER'] = {
+    'title': 'Event App',
+    'uiversion': 2
+}
 
 swagger = Swagger(app)
 
