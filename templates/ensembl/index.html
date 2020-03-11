@@ -1,30 +1,15 @@
 
 {% extends 'ensembl/base.html' %}
 
-{% block title %}
-  Production Web Services
-{% endblock %}
-
-{% block styles %}
-  {{ super() }}
-  <link rel="stylesheet" href="{{ url_for('static', filename='ensembl.css') }}">
-  <link rel="shortcut icon" href="{{ url_for('static', filename='img/production.png') }}">
-{% endblock styles %}
-
-{% block content %}
-
-  <a id="top"></a>
-
-  <div class="container">
-    <h2><img src="{{ url_for('static', filename='img/production.png') }}" /> Production Web Services</h2>
-  </div>
+{% block content -%}
 
   <div class="container">
     <ul>
       <li><a href="datacheck/names">Datacheck Catalog</a></li>
       <li><a href="datacheck/submit">Datacheck Submission</a></li>
+      <li><a href="gifts/submit">GIFTs Submission</a></li>
       <li>etc...</li>
     </ul>
   </div>
 
-{% endblock %}
+{%- endblock %}
