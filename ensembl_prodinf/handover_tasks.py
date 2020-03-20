@@ -202,7 +202,6 @@ def submit_hc(spec, groups, compara_uri, staging_uri, live_uri):
     #spec['hc_job_id'] = hc_job_id
     #task_id = process_checked_db.delay(hc_job_id, spec)
     #get_logger().debug("Submitted DB for checking as " + str(task_id))
-    return
 
 def submit_dc(spec, src_url, db_type, db_prefix, release, staging_uri, compara_uri):
     """Submit the source database for healthchecking. Returns a celery job identifier"""
