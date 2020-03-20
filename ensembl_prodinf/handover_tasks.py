@@ -100,7 +100,7 @@ def handover_database(spec):
     spec['progress_complete']=0
     get_logger().info("Handling " + str(spec))
     submit_dc(spec, src_url, db_type, db_prefix, release, staging_uri, compara_uri)
-    #submit_hc(spec, groups, compara_uri, staging_uri, live_uri)
+    submit_hc(spec, groups, compara_uri, staging_uri, live_uri)
     return spec['handover_token']
 
 def get_tgt_uri(src_url,staging_uri):
@@ -198,12 +198,11 @@ def submit_hc(spec, groups, compara_uri, staging_uri, live_uri):
     try:
         hc_job_id = hc_client.submit_job(spec['src_uri'], cfg.production_uri, compara_uri, staging_uri, live_uri, None, groups, cfg.data_files_path, None, spec['handover_token'])
     except Exception as e:
-        get_logger().error("Handover failed, Cannot submit hc job")
-        raise ValueError("Handover failed, Cannot submit hc job {}".format(e))
+        get_logger().debug("Handover failed, Cannot submit hc job {}".format(e))
     spec['hc_job_id'] = hc_job_id
     task_id = process_checked_db.delay(hc_job_id, spec)
     get_logger().debug("Submitted DB for checking as " + str(task_id))
-    return task_id
+    return
 
 def submit_dc(spec, src_url, db_type, db_prefix, release, staging_uri, compara_uri):
     """Submit the source database for healthchecking. Returns a celery job identifier"""
