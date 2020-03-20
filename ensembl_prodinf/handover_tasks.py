@@ -199,9 +199,9 @@ def submit_hc(spec, groups, compara_uri, staging_uri, live_uri):
         hc_job_id = hc_client.submit_job(spec['src_uri'], cfg.production_uri, compara_uri, staging_uri, live_uri, None, groups, cfg.data_files_path, None, spec['handover_token'])
     except Exception as e:
         get_logger().debug("Handover failed, Cannot submit hc job {}".format(e))
-    spec['hc_job_id'] = hc_job_id
-    task_id = process_checked_db.delay(hc_job_id, spec)
-    get_logger().debug("Submitted DB for checking as " + str(task_id))
+    #spec['hc_job_id'] = hc_job_id
+    #task_id = process_checked_db.delay(hc_job_id, spec)
+    #get_logger().debug("Submitted DB for checking as " + str(task_id))
     return
 
 def submit_dc(spec, src_url, db_type, db_prefix, release, staging_uri, compara_uri):
