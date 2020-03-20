@@ -100,7 +100,7 @@ def handover_database(spec):
     spec['progress_complete']=0
     get_logger().info("Handling " + str(spec))
     submit_dc(spec, src_url, db_type, db_prefix, release, staging_uri, compara_uri)
-    submit_hc(spec, groups, compara_uri, staging_uri, live_uri)
+    #submit_hc(spec, groups, compara_uri, staging_uri, live_uri)
     return spec['handover_token']
 
 def get_tgt_uri(src_url,staging_uri):
@@ -227,14 +227,12 @@ def submit_dc(spec, src_url, db_type, db_prefix, release, staging_uri, compara_u
             get_logger().debug("Submitting DC for "+src_url.database+ " on server: "+server_url)
             dc_job_id = dc_client.submit_job(server_url, src_url.database, None, None, db_type, release, None, db_type, 'critical', division, None, spec['handover_token'])
     except Exception as e:
-        get_logger().debug("Cannot submit dc job {}".format(e))
-        #get_logger().error("Handover failed, Cannot submit dc job")
-        #raise ValueError("Handover failed, Cannot submit dc job {}".format(e))
-    #spec['dc_job_id'] = dc_job_id
-    #task_id = process_datachecked_db.delay(dc_job_id, spec)
-    #get_logger().debug("Submitted DB for checking as " + str(task_id))
-    #return task_id
-    return
+        get_logger().error("Handover failed, Cannot submit dc job")
+        raise ValueError("Handover failed, Cannot submit dc job {}".format(e))
+    spec['dc_job_id'] = dc_job_id
+    task_id = process_datachecked_db.delay(dc_job_id, spec)
+    get_logger().debug("Submitted DB for checking as " + str(task_id))
+    return task_id
 
 @app.task(bind=True)
 def process_checked_db(self, hc_job_id, spec):
