@@ -42,9 +42,12 @@ event_client = EventClient(cfg.event_uri)
 dc_client = DatacheckClient(cfg.dc_uri)
 
 db_types_list = [i for i in cfg.allowed_database_types.split(",")]
+allowed_divisions_list = [i for i in cfg.allowed_divisions.split(",")]
 species_pattern = re.compile(r'^(?P<prefix>\w+)_(?P<type>core|rnaseq|cdna|otherfeatures|variation|funcgen)(_\d+)?_(?P<release>\d+)_(?P<assembly>\d+)$')
 compara_pattern = re.compile(r'^ensembl_compara(_(?P<division>[a-z]+|pan)(_homology)?)?(_(\d+))?(_\d+)$')
-ancestral_pattern = re.compile(r'^ensembl_ancestral_\d+$')
+ancestral_pattern = re.compile(r'^ensembl_ancestral(_(?P<division>[a-z]+))?(_(\d+))?(_\d+)$')
+blat_species = ['homo_sapiens','mus_musculus','danio_rerio','rattus_norvegicus','gallus_gallus','canis_lupus_familiaris','bos_taurus',
+    'oryctolagus_cuniculus','oryzias_latipes','sus_scrofa','meleagris_gallopavo','anas_platyrhynchos_platyrhynchos','ovis_aries','oreochromis_niloticus','gadus_morhua']
 
 def get_logger():
     return reporting.get_logger(pool, cfg.report_exchange, 'handover', None, {})
@@ -77,6 +80,13 @@ def handover_database(spec):
     if db_type not in db_types_list:
         get_logger().error("Handover failed, " + spec['src_uri'] + " has been handed over after deadline. Please contact the Production team")
         raise ValueError(spec['src_uri'] + " has been handed over after the deadline. Please contact the Production team")
+    # Check that the database division match the target staging server
+    if db_type in ['compara','ancestral']:
+        db_division = db_prefix
+    else:
+        db_division = get_division(spec['src_uri'],db_type)
+    if db_division not in allowed_divisions_list:
+        raise ValueError('Database division '+db_division+' does not match server division list '+str(allowed_divisions_list))
     #Get database hc group and compara_uri
     (groups,compara_uri) = hc_groups(db_type,db_prefix,spec['src_uri'])
     #Check to which staging server the database need to be copied to
@@ -118,10 +128,13 @@ def parse_db_infos(database):
     elif compara_pattern.match(database):
         m = compara_pattern.match(database)
         division = m.group('division')
-        db_prefix = division if division else ''
+        db_prefix = division if division else 'vertebrates'
         return db_prefix, 'compara', None, None
     elif ancestral_pattern.match(database):
-        return 'ensembl', 'ancestral', None, None
+        m = ancestral_pattern.match(database)
+        division = m.group('division')
+        db_prefix = division if division else 'vertebrates'
+        return db_prefix, 'ancestral', None, None
     else:
         raise ValueError("Database type for "+database+" is not expected. Please contact the Production team")
 
@@ -144,6 +157,9 @@ def hc_groups(db_type,db_prefix,uri):
             compara_handover_group=cfg.compara_handover_group
         elif db_prefix == "metazoa":
             compara_uri=cfg.compara_metazoa_uri + 'ensembl_compara_master_' + db_prefix
+            compara_handover_group=cfg.compara_handover_group
+        elif db_prefix == "vertebrates":
+            compara_uri=cfg.compara_uri + 'ensembl_compara_master'
             compara_handover_group=cfg.compara_handover_group
         elif check_grch37(uri,'homo_sapiens'):
             compara_uri=cfg.compara_grch37_uri + 'ensembl_compara_master_grch37'
@@ -196,6 +212,9 @@ def submit_dc(spec, src_url, db_type, db_prefix, release, staging_uri, compara_u
         if db_type == 'compara':
             get_logger().debug("Submitting DC for "+src_url.database+ " on server: "+server_url)
             dc_job_id = dc_client.submit_job(server_url, src_url.database, None, None, db_type, release, None, db_type, 'critical', db_type, None, spec['handover_token'])
+        elif db_type == 'ancestral':
+            get_logger().debug("Submitting DC for "+src_url.database+ " on server: "+server_url)
+            dc_job_id = dc_client.submit_job(server_url, src_url.database, None, None, db_type, release, None, 'corelike', 'critical', db_type, None, spec['handover_token'])
         elif db_type in ['rnaseq','cdna','otherfeatures']:
             division = get_division(spec['src_uri'],db_type)
             get_logger().debug("division: "+division)
@@ -386,6 +405,9 @@ Please see %s
                 details = json.loads(event['details'])
                 if 'current_database_list' in details :
                     drop_current_databases(details['current_database_list'],spec['staging_uri'],spec['tgt_uri'])
+                if event['genome'] in blat_species and event['type'] == 'new_assembly':
+                    send_email(to_address=cfg.production_email,subject='BLAT species list needs updating in FTP Dumps config',body='The following species '+event['genome']+
+                        ' has a new assembly, please update the port number for this species here and communicate to Web: https://github.com/Ensembl/ensembl-production/blob/master/modules/Bio/EnsEMBL/Production/Pipeline/PipeConfig/DumpCore_conf.pm#L107')
         get_logger().info("Metadata load complete, Handover successful")
         spec['progress_complete']=3
         #get_logger().info("Metadata load complete, submitting event")
