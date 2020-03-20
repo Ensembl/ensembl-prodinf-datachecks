@@ -109,3 +109,4 @@ ENV/
 
 # ensembl-prodinf
 instance/
+gifts_api_uris.json

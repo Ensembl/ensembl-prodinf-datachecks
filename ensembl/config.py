@@ -1,12 +1,9 @@
 import os
-from ensembl_prodinf.config import load_yaml
+from ensembl_prodinf.config import load_config_yaml
 
 
 config_file_path = os.environ.get('DATACHECK_CONFIG_PATH')
-if config_file_path:
-    file_config = load_yaml(config_file_path)
-else:
-    file_config = {}
+file_config = load_config_yaml(config_file_path)
 
 
 class EnsemblConfig:

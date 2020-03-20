@@ -1,0 +1,13 @@
+
+{% extends 'ensembl/base.html' %}
+
+{% block content %}
+  <div class="container">
+    {% block submit %}{% endblock submit %}
+  </div>
+{% endblock content %}
+
+{% block scripts %}
+  {{ super() }}
+  <script src="{{ url_for('static', filename='ensembl.js') }}"></script>
+{% endblock scripts %}

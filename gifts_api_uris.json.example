@@ -1,0 +1,4 @@
+{
+  "dev": "http://dev/gifts/api/",
+  "staging": "http://staging/gifts/api/"
+}

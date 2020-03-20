@@ -2,14 +2,11 @@
 @author: dstaines
 '''
 import os
-from ensembl_prodinf.config import load_yaml
+from ensembl_prodinf.config import load_config_yaml
 
 
 config_file_path = os.environ.get('EVENT_CONFIG_PATH')
-if config_file_path:
-    file_config = load_yaml(config_file_path)
-else:
-    file_config = {}
+file_config = load_config_yaml(config_file_path)
 
 event_lookup = os.environ.get("EVENT_LOOKUP_FILE",
                               file_config.get('event_lookup_file', "./event_lookup.json"))
