@@ -11,7 +11,7 @@ with open('LICENSE') as f:
 
 setup(
     name='ensembl_prodinf',
-    version='3.1.0',
+    version='3.1.1',
     description='Base libraries for Ensembl Production infrastructure services',
     long_description=readme,
     author='Dan Staines',
