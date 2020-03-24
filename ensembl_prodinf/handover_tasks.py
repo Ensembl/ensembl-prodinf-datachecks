@@ -281,7 +281,7 @@ def process_datachecked_db(self, dc_job_id, spec):
     reporting.set_logger_context(get_logger(), spec['src_uri'], spec)
     # allow infinite retries
     self.max_retries = None
-    get_logger().info("DC in progress, please see: " +cfg.dc_uri + "/datacheck/jobs/" + str(dc_job_id))
+    get_logger().info("DC in progress, please see: " +cfg.dc_uri + "jobs/" + str(dc_job_id))
     try:
         result = dc_client.retrieve_job(dc_job_id)
     except Exception as e:
@@ -292,19 +292,19 @@ def process_datachecked_db(self, dc_job_id, spec):
         raise self.retry()
     # check results
     if result['status'] == 'failed':
-        get_logger().info("DCs failed to run, please see: "+cfg.dc_uri + "/datacheck/jobs/" + str(dc_job_id))
+        get_logger().info("DCs failed to run, please see: "+cfg.dc_uri + "jobs/" + str(dc_job_id))
         msg = """
 Running datachecks on %s failed to execute.
 Please see %s
-""" % (spec['src_uri'], cfg.dc_uri + "/datacheck/jobs/" + str(dc_job_id))
+""" % (spec['src_uri'], cfg.dc_uri + "jobs/" + str(dc_job_id))
         send_email(to_address=spec['contact'], subject='DC failed to run', body=msg, smtp_server=cfg.smtp_server)
         return
     elif result['output']['failed_total'] > 0:
-        get_logger().info("DCs found problems, please see: "+cfg.dc_uri + "/datacheck/jobs/" + str(dc_job_id))
+        get_logger().info("DCs found problems, please see: "+cfg.dc_uri + "jobs/" + str(dc_job_id))
         msg = """
 Running datachecks on %s completed but found failures.
 Please see %s
-""" % (spec['src_uri'], cfg.dc_uri + "/datacheck/jobs/" + str(dc_job_id))
+""" % (spec['src_uri'], cfg.dc_uri + "jobs/" + str(dc_job_id))
         send_email(to_address=spec['contact'], subject='DC ran but failed', body=msg, smtp_server=cfg.smtp_server)
         return
     else:
