@@ -212,7 +212,7 @@ def job_submit(payload = None):
 
 @app.route('/datacheck/jobs', methods=['GET'])
 def job_list():
-  jobs = get_hive().get_all_results(app.analysis)
+  jobs = get_hive().get_all_results(app.analysis, child=True)
 
   # Handle case where submission is marked as complete,
   # but where output has not been created.
@@ -229,7 +229,7 @@ def job_list():
 
 @app.route('/datacheck/jobs/<int:job_id>', methods=['GET'])
 def job_result(job_id):
-  job = get_hive().get_result_for_job_id(job_id, progress=False)
+  job = get_hive().get_result_for_job_id(job_id, child=True, progress=False)
 
   # Handle case where submission is marked as complete,
   # but where output has not been created.
