@@ -34,6 +34,7 @@ import re
 from ensembl_prodinf import reporting
 import json
 
+
 pool = reporting.get_pool(cfg.report_server)
 hc_client = HcClient(cfg.hc_uri)
 db_copy_client = DbCopyClient(cfg.copy_uri)
@@ -292,12 +293,13 @@ def process_datachecked_db(self, dc_job_id, spec):
         raise self.retry()
     # check results
     if result['status'] == 'failed':
-        get_logger().info("DCs failed to run, please see: "+cfg.dc_uri + "jobs/" + str(dc_job_id))
+        logger = get_logger()
+        logger.info("DCs failed to run, please see: "+cfg.dc_uri + "jobs/" + str(dc_job_id))
         msg = """
 Running datachecks on %s failed to execute.
 Please see %s
 """ % (spec['src_uri'], cfg.dc_uri + "jobs/" + str(dc_job_id))
-        send_email(to_address=spec['contact'], subject='DC failed to run', body=msg, smtp_server=cfg.smtp_server)
+        send_email(to_address=spec['contact'], subject='DC failed to run', body=msg, smtp_server=cfg.smtp_server, logger=logger)
         return
     elif result['output']['failed_total'] > 0:
         get_logger().info("DCs found problems, please see: "+cfg.dc_uri + "jobs/" + str(dc_job_id))
