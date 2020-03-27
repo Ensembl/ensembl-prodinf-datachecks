@@ -60,9 +60,11 @@ To submit the job via the REST enpoint
 
   SOURCE_SERVER=$(mysql-ens-vertannot-staging details url) #e.g: mysql://ensro@mysql-ens-vertannot-staging:4573/
   TARGET_SERVER=$(mysql-ens-general-prod-1-ensadmin details url)
-  ENDPOINT=http://ens-prod-1.ebi.ac.uk:8000/dbcopy/ #or http://eg-prod-01.ebi.ac.uk:7000/dbcopy/ for non vertebrates
+  ENDPOINT=http://production-services.ensembl.org/api/vertebrates/db/ #or http://production-services.ensembl.org/api/ensgenomes/db/ for non vertebrates
 
-  cd $BASE_DIR/ensembl-prodinf-core 
+  cd $BASE_DIR/ensembl-prodinf-core
+  git checkout stable
+  pyenv activate production-app
   for db in $(cat db_to_copy.txt); 
   do ensembl_prodinf/db_copy_client.py --action submit --uri ${ENDPOINT} --source_db_uri "${SOURCE_SERVER}${db}" --target_db_uri "${TARGET_SERVER}${db}" --drop 1;
   done
@@ -113,13 +115,13 @@ The script accept the following arguments:
 Check job status
 ################
 
-You can check job status either on the production interface: `<http://ens-prod-1.ebi.ac.uk:8000/#!/copy_list>`_ or `<http://eg-prod-01.ebi.ac.uk:7000/#!/copy_list>`_ for non vertebrates:
+You can check job status either on the production interface: `<http://production-services.ensembl.org/app/vertebrates/>`_ or `<http://production-services.ensembl.org/app/plants/>`_ for non vertebrates:
 
 or using the Python client:
 
 .. code-block:: bash
 
-  ensembl_prodinf/db_copy_client.py --action list --uri http://ens-prod-1.ebi.ac.uk:8000/dbcopy
-  ensembl_prodinf/db_copy_client.py --action list --uri http://eg-prod-01.ebi.ac.uk:7000/dbcopy
+  ensembl_prodinf/db_copy_client.py --action list --uri http://production-services.ensembl.org/api/vertebrates/db/
+  ensembl_prodinf/db_copy_client.py --action list --uri http://production-services.ensembl.org/api/ensgenomes/db/
   
   

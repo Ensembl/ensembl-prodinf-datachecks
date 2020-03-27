@@ -57,7 +57,7 @@ For Ensembl:
 .. code-block:: bash
 
   DATABASE_SERVER=$(mysql-ens-sta-1 details url)
-  ENDPOINT=http://ens-prod-1.ebi.ac.uk:8000/metadata
+  ENDPOINT=http://production-services.ensembl.org/api/vertebrates/meta/
   ENS_VERSION=91
   RELEASE_DATE="2017-12-06"
   CURRENT_RELEASE=1
@@ -65,7 +65,9 @@ For Ensembl:
   COMMENT="Loading database for release 91"
   SOURCE="Pre release load"
 
-  cd $BASE_DIR/ensembl-prodinf-core 
+  cd $BASE_DIR/ensembl-prodinf-core
+  git checkout stable
+  pyenv activate production-app
   for db in $(cat metadata_load.txt); 
   do ensembl_prodinf/metadata_client.py --action submit --uri ${ENDPOINT} --database_uri "${DATABASE_SERVER}${db}" --e_release ${ENS_VERSION} --release_date ${RELEASE_DATE} --current_release ${CURRENT_RELEASE} --email "${EMAIL}" --comment "${COMMENT}" --source "${SOURCE}";
   done
@@ -75,7 +77,7 @@ For Non vertebrates:
 .. code-block:: bash
 
   DATABASE_SERVER=$(mysql-ens-sta-3 details url)
-  ENDPOINT=http://eg-prod-01.ebi.ac.uk:7000/metadata
+  ENDPOINT=http://production-services.ensembl.org/api/ensgenomes/meta/
   ENS_VERSION=91
   RELEASE_DATE="2017-12-13"
   EG_VERSION=38
@@ -141,13 +143,13 @@ The script accept the following arguments:
 Check job status
 ################
 
-You can check job status either on the production interface: `http://ens-prod-1.ebi.ac.uk:8000/#!/metadata_list` or `http://eg-prod-01.ebi.ac.uk:7000/#!/metadata_list` for non vertebrates
+You can check job status either on the production interface: `<http://production-services.ensembl.org/app/vertebrates/>`_ or `<http://production-services.ensembl.org/app/plants/>`_ for non vertebrates:
 
 or using the Python client:
 
 .. code-block:: bash
 
-  ensembl_prodinf/metadata_client.py --action list --uri http://ens-prod-1.ebi.ac.uk:8000/metadata
-  ensembl_prodinf/metadata_client.py --action list --uri http://eg-prod-01.ebi.ac.uk:7000/metadata
+  ensembl_prodinf/metadata_client.py --action list --uri http://production-services.ensembl.org/api/vertebrates/meta/
+  ensembl_prodinf/metadata_client.py --action list --uri http://production-services.ensembl.org/api/ensgenomes/meta/
   
   
