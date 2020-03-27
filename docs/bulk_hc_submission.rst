@@ -68,11 +68,13 @@ To Submit the job via the REST enpoint for vertebrates
   LIVE=$(mysql-ens-mirror-1 details url)
   STAGING=$(mysql-ens-sta-1 details url)
   PRODUCTION=$(mysql-ens-meta-prod-1 details url)
-  ENDPOINT=http://ens-prod-1.ebi.ac.uk:8000/hc/
+  ENDPOINT=http://production-services.ensembl.org/api/vertebrates/hc/
   DATA_FILE_PATH=/nfs/panda/ensembl/production/ensemblftp/data_files/
   TAG=my_hc_run
   
-  cd $BASE_DIR/ensembl-prodinf-core 
+  cd $BASE_DIR/ensembl-prodinf-core
+  git checkout stable
+  pyenv activate production-app
   for db in $(cat vertebrates_db_hc.txt);
   do python ensembl_prodinf/hc_client.py --uri $ENDPOINT --db_uri "${SERVER}${db}" --production_uri "${PRODUCTION}ensembl_production" --staging_uri $STAGING --live_uri $LIVE --compara_uri "${COMPARA_MASTER}ensembl_compara_master" --hc_groups $GROUP --data_files_path $DATA_FILE_PATH --tag $TAG  --action submit
   done
@@ -87,11 +89,13 @@ To Submit the job via the REST enpoint for non vertebrates
   LIVE=$(mysql-ens-mirror-3 details url)
   STAGING=$(mysql-ens-sta-3 details url)
   PRODUCTION=$(mysql-ens-meta-prod-1 details url)
-  ENDPOINT=http://eg-prod-01.ebi.ac.uk:7000/hc/
+  ENDPOINT=http://production-services.ensembl.org/api/ensgenomes/hc/
   DATA_FILE_PATH=/nfs/panda/ensembl/production/ensemblftp/data_files/
   TAG=my_hc_run
   
-  cd $BASE_DIR/ensembl-prodinf-core 
+  cd $BASE_DIR/ensembl-prodinf-core
+  git checkout stable
+  pyenv activate production-app
   for db in $(cat fungi_db_hc.txt);
   do python ensembl_prodinf/hc_client.py --uri $ENDPOINT --db_uri "${SERVER}${db}" --production_uri "${PRODUCTION}ensembl_production" --staging_uri $STAGING --live_uri $LIVE --compara_uri "${COMPARA_MASTER}ensembl_compara_master" --hc_groups $GROUP --data_files_path $DATA_FILE_PATH --tag $TAG  --action submit 
   done
@@ -161,14 +165,14 @@ The script accept the following arguments:
 Check job status
 ################
 
-You can check job status either on the production interface: `<http://ens-prod-1.ebi.ac.uk:8000/#!/hc_list>`_ or `<http://eg-prod-01.ebi.ac.uk:7000/#!/hc_list>`_ for non vertebrates
+You can check job status either on the production interface: `<http://production-services.ensembl.org/app/vertebrates/>`_ or `<http://production-services.ensembl.org/app/plants/>`_ for non vertebrates:
 
 or using the Python client:
 
 .. code-block:: bash
 
-  ensembl_prodinf/hc_client.py  --action list --uri http://ens-prod-1.ebi.ac.uk:8000/hc
-  ensembl_prodinf/hc_client.py  --action list --uri http://eg-prod-01.ebi.ac.uk:7000/hc
+  ensembl_prodinf/hc_client.py  --action list --uri http://production-services.ensembl.org/api/vertebrates/hc/
+  ensembl_prodinf/hc_client.py  --action list --uri http://production-services.ensembl.org/api/ensgenomes/hc/
 
 Collate results
 ###############
@@ -177,7 +181,7 @@ If you have run the healthchecks on a large number of databases, you can collate
 
 .. code-block:: bash
 
-  python ensembl-prodinf-core/ensembl_prodinf/hc_client.py --uri http://ens-prod-1.ebi.ac.uk:8000/hc --action collate --tag "my_hc_run" --output_file results.json
+  python ensembl-prodinf-core/ensembl_prodinf/hc_client.py --uri http://production-services.ensembl.org/api/vertebrates/hc/ --action collate --tag "my_hc_run" --output_file results.json
 
 Convert results in readable form
 ################################

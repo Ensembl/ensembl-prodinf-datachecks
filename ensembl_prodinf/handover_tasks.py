@@ -288,7 +288,7 @@ def process_datachecked_db(self, dc_job_id, spec):
         get_logger().error("Handover failed, cannot retrieve dc job")
         raise ValueError("Handover failed, cannot retrieve dc job {}".format(e))
     if result['status'] in ['incomplete', 'running', 'submitted']:
-        get_logger().debug("HC Job incomplete, checking again later")
+        get_logger().debug("DC Job incomplete, checking again later")
         raise self.retry()
     # check results
     if result['status'] == 'failed':
