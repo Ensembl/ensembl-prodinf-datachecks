@@ -23,7 +23,7 @@ def get_default_user():
 def send_email(**kwargs):
     """ Utility method for sending an email"""
     logger = kwargs.get('logger', logging)
-    from_address = kwargs.get('from_address', 'ensembl-production@ebi.ac.uk')
+    from_address = kwargs.get('from_email_address', 'ensembl-production@ebi.ac.uk')
     msg = MIMEText(kwargs['body'])
     msg['Subject'] = kwargs['subject']
     msg['From'] = from_address
