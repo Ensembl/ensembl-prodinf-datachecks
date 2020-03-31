@@ -3,33 +3,38 @@ from email.mime.text import MIMEText
 from smtplib import SMTP
 import json
 import logging
+import os
+import pwd
 
-default_user = None
+
 def get_default_user():
     """Method to obtain the current user. This can be complicated when running Docker containers"""
-    if default_user == None:
-        import os
-        for name in ('LOGNAME', 'USER', 'LNAME', 'USERNAME'):
-            user = os.environ.get(name)
-            if user:
-                default_user = user
-                break
-    if default_user == None:
-        import pwd
-        default_user = pwd.getpwuid(os.getuid())[0]
+    default_user = None
+    for name in ('LOGNAME', 'USER', 'LNAME', 'USERNAME'):
+        user = os.environ.get(name)
+        if user:
+            default_user = user
+            break
+    if not default_user:
+        default_user = pwd.getpwuid(os.getuid()).pw_name
     return default_user
+
 
 def send_email(**kwargs):
     """ Utility method for sending an email"""
-    logging.debug("Sending email "+str(kwargs))
-    from_address = kwargs.get('from_address',default_user)
+    logger = kwargs.get('logger', logging)
+    from_address = kwargs.get('from_email_address', 'ensembl-production@ebi.ac.uk')
     msg = MIMEText(kwargs['body'])
     msg['Subject'] = kwargs['subject']
     msg['From'] = from_address
     msg['To'] = kwargs['to_address']
-    s = SMTP(kwargs.get('smtp_server','localhost'))
-    s.sendmail(from_address, [kwargs['to_address']], msg.as_string())
+    smtp_server = kwargs.get('smtp_server', 'localhost')
+    to_address = kwargs['to_address']
+    logger.info('sendmail server: {} - Message from: {}, to: {}, subject: {}'.format(smtp_server, from_address, to_address, msg['Subject']))
+    s = SMTP(smtp_server)
+    s.sendmail(from_address, (to_address,), msg.as_string())
     s.quit()
+
 
 def dict_to_perl_string(input_dict):
     """Transform the supplied dict into a string representation of a Perl hash"""
