@@ -65,11 +65,13 @@ For Vertebrates:
 .. code-block:: bash
 
   DATABASE_SERVER=$(mysql-ens-general-prod-1 details url)
-  ENDPOINT=http://ens-prod-1.ebi.ac.uk:8000/handover
+  ENDPOINT=http://production-services.ensembl.org/api/vertebrates/ho/
   EMAIL=john.doe@ebi.ac.uk
   DESCRIPTION="handover new databases"
 
-  cd $BASE_DIR/ensembl-prodinf-core 
+  cd $BASE_DIR/ensembl-prodinf-core
+  git checkout stable
+  pyenv activate production-app
   for db in $(cat vertebrates_handover.txt);
   do ensembl_prodinf/handover_client.py --action submit --uri ${ENDPOINT} --src_uri "${DATABASE_SERVER}${db}" --email "${EMAIL}" --description "${DESCRIPTION}";
   done
@@ -79,11 +81,13 @@ For Fungi:
 .. code-block:: bash
 
   DATABASE_SERVER=$(mysql-ens-general-prod-1 details url)
-  ENDPOINT=http://eg-prod-01.ebi.ac.uk:7000/handover
+  ENDPOINT=http://production-services.ensembl.org/api/ensgenomes/ho/
   EMAIL=john.doe@ebi.ac.uk
   DESCRIPTION="handover new Fungi databases"
 
-  cd $BASE_DIR/ensembl-prodinf-core 
+  cd $BASE_DIR/ensembl-prodinf-core
+  git checkout stable
+  pyenv activate production-app
   for db in $(cat fungi_handover.txt);
   do ensembl_prodinf/handover_client.py --action submit --uri ${ENDPOINT} --src_uri "${DATABASE_SERVER}${db}" --email "${EMAIL}" --description "${DESCRIPTION}";
   done
@@ -123,20 +127,20 @@ The script accept the following arguments:
 Check job status
 ################
 
-You can check job status either on the production interface: `http://ens-prod-1.ebi.ac.uk:8000/#!/database_handover_list` or `http://eg-prod-01.ebi.ac.uk:7000/#!/database_handover_list` for non vertebrates
+You can check job status either on the production interface: `<http://production-services.ensembl.org/app/vertebrates/>`_ or `<http://production-services.ensembl.org/app/plants/>`_ for non vertebrates:
 
 or using the Python client:
 
 .. code-block:: bash
 
-  ensembl_prodinf/handover_client.py --action list --uri http://ens-prod-1.ebi.ac.uk:8000/handover
-  ensembl_prodinf/handover_client.py --action list --uri http://eg-prod-01.ebi.ac.uk:7000/handover
+  ensembl_prodinf/handover_client.py --action list --uri http://production-services.ensembl.org/api/vertebrates/ho/
+  ensembl_prodinf/handover_client.py --action list --uri http://production-services.ensembl.org/api/ensgenomes/ho/
   
 If you have handed over many databases, you can get a summary of your handover:
 
 .. code-block:: bash
 
-  ensembl_prodinf/handover_client.py --action summary --uri http://ens-prod-1.ebi.ac.uk:8000/handover -e john.doe@ebi.ac.uk
-  ensembl_prodinf/handover_client.py --action summary --uri http://eg-prod-01.ebi.ac.uk:7000/handover -e john.doe@ebi.ac.uk
+  ensembl_prodinf/handover_client.py --action summary --uri http://production-services.ensembl.org/api/vertebrates/ho/ -e john.doe@ebi.ac.uk
+  ensembl_prodinf/handover_client.py --action summary --uri http://production-services.ensembl.org/api/ensgenomes/ho/ -e john.doe@ebi.ac.uk
 
 If a database was handed over multiple times, you will only see the latest one.
