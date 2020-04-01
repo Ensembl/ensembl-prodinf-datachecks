@@ -14,7 +14,7 @@ class HandoverClient(object):
     Client for submitting databases for handover
     """
 
-    handovers = '{}handovers/'
+    handovers = '{}handovers'
     handover_token = '{}handovers/{}'
 
     def __init__(self, uri):
