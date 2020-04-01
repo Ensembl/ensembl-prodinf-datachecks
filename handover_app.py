@@ -202,7 +202,7 @@ def handover_result(handover_token):
         return jsonify(handover_detail)
 
 
-@app.route('/handovers/', methods=['GET'])
+@app.route('/handovers', methods=['GET'])
 def handover_results():
     """
     Endpoint to get a list of all the handover by release
