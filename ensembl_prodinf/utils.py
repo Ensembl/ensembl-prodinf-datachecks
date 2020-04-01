@@ -30,7 +30,7 @@ def send_email(**kwargs):
     msg['To'] = kwargs['to_address']
     smtp_server = kwargs.get('smtp_server', 'localhost')
     to_address = kwargs['to_address']
-    logger.info('sendmail server: {} - Message from: {}, to: {}, subject: {}'.format(smtp_server, from_address, to_address, msg['Subject']))
+    logger.debug('sendmail server: {} - Message from: {}, to: {}, subject: {}'.format(smtp_server, from_address, to_address, msg['Subject']))
     s = SMTP(smtp_server)
     s.sendmail(from_address, (to_address,), msg.as_string())
     s.quit()
