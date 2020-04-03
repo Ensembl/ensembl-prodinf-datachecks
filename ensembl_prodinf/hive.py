@@ -314,7 +314,7 @@ class HiveInstance:
                 if progress:
                     result['progress'] = self.get_jobs_progress(job)
         except ValueError as e:
-            raise ValueError('Cannot retrieve job: {}. {}'.format(job, str(e))) from e
+            raise ValueError('Cannot retrieve results for job: {}'.format(job.job_id)) from e
         return result
 
     def get_jobs_progress(self, job):

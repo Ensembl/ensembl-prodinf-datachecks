@@ -90,5 +90,5 @@ def perl_string_to_python(s):
     except json.JSONDecodeError as e:
         beg = max(0, e.pos - 25)
         end = min(len(e.doc), e.pos + 25)
-        raise ValueError('Invalid JSON: {}. --> {} <--'.format(str(e), e.doc[beg:end])) from e
+        raise ValueError('Invalid JSON: {}. --> {} <--'.format(e, e.doc[beg:end]))
     return res
