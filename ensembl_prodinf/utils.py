@@ -85,4 +85,10 @@ def escape_perl_string(v):
 def perl_string_to_python(s):
     """Parse a Perl hash string into a Python dict"""
     s = s.replace("=>",":").replace("\\$","$").replace("\\@","@")
-    return json.loads(s)
+    try:
+        res = json.loads(s)
+    except json.JSONDecodeError as e:
+        beg = max(0, e.pos - 25)
+        end = min(len(e.doc), e.pos + 25)
+        raise ValueError('Invalid JSON: {}. --> {} <--'.format(e, e.doc[beg:end]))
+    return res
