@@ -218,7 +218,7 @@ def job_list():
   # but where output has not been created.
   for job in jobs:
     if job['status'] == 'complete' and 'output' not in job.keys():
-      job['status'] = 'failed'
+      job['status'] = 'incomplete'
 
   #if request.is_json:
   return jsonify(jobs)
@@ -234,7 +234,7 @@ def job_result(job_id):
   # Handle case where submission is marked as complete,
   # but where output has not been created.
   if job['status'] == 'complete' and 'output' not in job.keys():
-    job['status'] = 'failed'
+    job['status'] = 'incomplete'
 
   #if request.is_json:
   return jsonify(job)
