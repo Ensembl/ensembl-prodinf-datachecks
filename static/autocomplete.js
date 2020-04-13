@@ -44,20 +44,6 @@ $(document).ready(function(){
         }
     });
 
-    var datacheck_server_list = new Bloodhound({
-        datumTokenizer: Bloodhound.tokenizers.whitespace,
-        queryTokenizer: Bloodhound.tokenizers.whitespace,
-        prefetch: 'servers/list'
-    });
-
-    $('#server-server_url').tagsinput({
-        typeaheadjs: {
-            highlight: true,
-            name: 'datacheck_server_list',
-            source: datacheck_server_list
-        }
-    });
-
     var datacheck_database_list = new Bloodhound({
         datumTokenizer: Bloodhound.tokenizers.whitespace,
         queryTokenizer: Bloodhound.tokenizers.whitespace
