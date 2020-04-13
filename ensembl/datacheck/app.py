@@ -194,7 +194,7 @@ def job_submit(payload=None):
     if input_data['dbname'] is not None:
         db_uri = input_data['server_url'] + input_data['dbname']
         assert_mysql_db_uri(db_uri)
-        input_data['db_type'] = get_db_type(db_uri)
+        input_data['db_type'] = set_db_type(input_data['dbname'], db_uri)
         input_data['dbname'] = input_data['dbname'].split(',')
     elif input_data['species'] is not None:
         input_data['species'] = input_data['species'].split(',')
@@ -317,6 +317,15 @@ def submit_form():
 def ping():
     return jsonify({'status': 'ok'})
 
+
+def set_db_type(dbname, db_uri):
+    p = re.compile('cdna|otherfeatures|rnaseq')
+    m = p.search(dbname)
+    if m is not None:
+        db_type = m.group()
+    else:
+        db_type = get_db_type(db_uri)
+    return db_type
 
 def set_registry_file(db_type, server_name):
     return os.path.join(app.config['DATACHECK_REGISTRY_DIR'], db_type, '.'.join([server_name, 'pm']))
