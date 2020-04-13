@@ -191,24 +191,31 @@ def job_submit(payload=None):
 
     # Determine db_type if necessary.
     # Convert all species-selection parameters to lists, as required by the hive pipeline
-    if input_data['dbname'] is not None:
-        db_uri = input_data['server_url'] + input_data['dbname']
+    dbname = input_data['dbname']
+    if dbname is not None:
+        db_uri = input_data['server_url'] + dbname
         assert_mysql_db_uri(db_uri)
-        input_data['db_type'] = set_db_type(input_data['dbname'], db_uri)
-        input_data['dbname'] = input_data['dbname'].split(',')
+        input_data['db_type'] = set_db_type(dbname, db_uri)
+        input_data['dbname'] = dbname.split(',')
     elif input_data['species'] is not None:
         input_data['species'] = input_data['species'].split(',')
     elif input_data['division'] is not None:
         input_data['division'] = input_data['division'].split(',')
 
-    servers = get_servers_dict()
-    server_name = servers[input_data['server_url']]['server_name']
-    config_profile = servers[input_data['server_url']]['config_profile']
-
     # Hard-code this for the time being; need to handle memory usage better for unparallelised runs
     input_data['parallelize_datachecks'] = 1
 
-    input_data['registry_file'] = set_registry_file(input_data['db_type'], server_name)
+    servers = get_servers_dict()
+    server_name = servers[input_data['server_url']]['server_name']
+    config_profile = servers[input_data['server_url']]['config_profile']
+    db_category = input_data['db_type']
+    if dbname is not None:
+        if is_grch37(dbname):
+            config_profile = 'grch37'
+            if db_category != 'core':
+                db_category = 'grch37'
+
+    input_data['registry_file'] = set_registry_file(db_category, server_name)
 
     input_data['config_file'] = set_config_file(config_profile)
 
@@ -327,9 +334,15 @@ def set_db_type(dbname, db_uri):
         db_type = get_db_type(db_uri)
     return db_type
 
-def set_registry_file(db_type, server_name):
-    return os.path.join(app.config['DATACHECK_REGISTRY_DIR'], db_type, '.'.join([server_name, 'pm']))
+
+def set_registry_file(db_category, server_name):
+    return os.path.join(app.config['DATACHECK_REGISTRY_DIR'], db_category, '.'.join([server_name, 'pm']))
 
 
 def set_config_file(config_profile):
     return os.path.join(app.config['DATACHECK_CONFIG_DIR'], '.'.join([config_profile, 'json']))
+
+
+def is_grch37(dbname):
+    p = re.compile('homo_sapiens.*_37')
+    return p.match(dbname)
