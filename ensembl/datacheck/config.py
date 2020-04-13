@@ -13,8 +13,7 @@ class DatacheckConfig(EnsemblConfig):
                                           file_config.get('datacheck_common_dir'))
     DATACHECK_CONFIG_DIR = os.path.join(DATACHECK_COMMON_DIR, 'config')
     DATACHECK_REGISTRY_DIR = os.path.join(DATACHECK_COMMON_DIR, 'registry')
-    DATACHECK_REGISTRY_META = os.path.join(DATACHECK_REGISTRY_DIR, 'registry_meta.pm')
     HIVE_ANALYSIS = os.environ.get("HIVE_ANALYSIS",
                                    file_config.get('hive_analysis', 'DataCheckSubmission'))
-    HIVE_VERT_URI = os.environ.get("HIVE_VERT_URI", file_config.get('hive_vert_uri'))
-    HIVE_NONVERT_URI = os.environ.get("HIVE_NONVERT_URI", file_config.get('hive_nonvert_uri'))
+    HIVE_URI = os.environ.get("HIVE_URI", file_config.get('hive_uri'))
+    SERVER_NAMES_FILE = os.environ.get("SERVER_NAMES", file_config.get('server_names_file'))
