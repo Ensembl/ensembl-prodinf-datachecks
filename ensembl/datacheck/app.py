@@ -9,7 +9,8 @@ from flasgger import Swagger
 from ensembl.datacheck.config import DatacheckConfig
 from ensembl.forms import DatacheckSubmissionForm
 from ensembl.hive import HiveInstance
-from ensembl.db_utils import get_databases_list
+from ensembl.db_utils import get_databases_list, get_db_type
+from ensembl.server_utils import assert_mysql_uri, assert_mysql_db_uri
 
 # Go up two levels to get to root, where we will find the static and template files
 app_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -28,9 +29,12 @@ Swagger(app, template_file='swagger.yml')
 
 app.analysis = app.config['HIVE_ANALYSIS']
 app.index = json.load(open(app.config['DATACHECK_INDEX']))
-app.server_uris = json.load(open(os.path.join(app_path, app.config['SERVER_URIS_FILE'])))
+app.server_names = json.load(open(os.path.join(app_path, app.config['SERVER_NAMES_FILE'])))
 
 app.names_list = []
+app.groups_list = []
+app.servers_list = []
+app.servers_dict = {}
 
 
 def get_names_list():
@@ -39,9 +43,6 @@ def get_names_list():
             app.names_list.append(name)
         app.names_list.sort()
     return app.names_list
-
-
-app.groups_list = []
 
 
 def get_groups_list():
@@ -54,27 +55,25 @@ def get_groups_list():
     return app.groups_list
 
 
-app.servers_list = []
-
-
 def get_servers_list():
     if not app.servers_list:
-        app.servers_list = sorted(set(app.server_uris))
+        app.servers_list = sorted(set(app.server_names))
     return app.servers_list
+
+
+def get_servers_dict():
+    if not app.servers_dict:
+        app.servers_dict = app.server_names
+    return app.servers_dict
 
 
 hive = None
 
 
-def get_hive(hive_server='vertebrates'):
+def get_hive():
     global hive
     if hive is None:
-        if hive_server == 'vertebrates':
-            hive = HiveInstance(app.config['HIVE_VERT_URI'])
-        elif hive_server == 'non_vertebrates':
-            hive = HiveInstance(app.config['HIVE_NONVERT_URI'])
-        else:
-            raise RuntimeError('Unrecognised Pipeline Server: %s' % hive_server)
+        hive = HiveInstance(app.config['HIVE_URI'])
     return hive
 
 
@@ -86,6 +85,11 @@ def index():
 @app.route('/datacheck/servers/list', methods=['GET'])
 def servers_list():
     return jsonify(get_servers_list())
+
+
+@app.route('/datacheck/servers/dict', methods=['GET'])
+def servers_dict():
+    return jsonify(get_servers_dict())
 
 
 @app.route('/datacheck/databases/list', methods=['GET'])
@@ -177,35 +181,38 @@ def job_submit(payload=None):
     # Most of the parameters that are in the payload can be pushed straight
     # through to the input_data for the hive submission. The parameter names
     # have been made to match up nicely. However, there are a few input
-    # parameters that need to be derived from the payload ones, and once that's
-    # done we remove them from the input dictionary.
+    # parameters that need to be derived from the payload ones.
     if payload is None:
         payload = request.json
 
     input_data = dict(payload)
 
-    if payload['database']:
-        input_data['run_all'] = 1
+    assert_mysql_uri(input_data['server_url'])
+
+    # Determine db_type if necessary.
+    # Convert all species-selection parameters to lists, as required by the hive pipeline
+    if input_data['dbname'] is not None:
+        db_uri = input_data['server_url'] + input_data['dbname']
+        assert_mysql_db_uri(db_uri)
+        input_data['db_type'] = get_db_type(db_uri)
+        input_data['dbname'] = input_data['dbname'].split(',')
+    elif input_data['species'] is not None:
+        input_data['species'] = input_data['species'].split(',')
+    elif input_data['division'] is not None:
+        input_data['division'] = input_data['division'].split(',')
+
+    servers = get_servers_dict()
+    server_name = servers[input_data['server_url']]['server_name']
+    config_profile = servers[input_data['server_url']]['config_profile']
 
     # Hard-code this for the time being; need to handle memory usage better for unparallelised runs
     input_data['parallelize_datachecks'] = 1
 
-    input_data['registry_file'] = set_registry_file(payload)
+    input_data['registry_file'] = set_registry_file(input_data['db_type'], server_name)
 
-    input_data['config_file'] = set_config_file(payload)
+    input_data['config_file'] = set_config_file(config_profile)
 
-    del input_data['server_url']
-    del input_data['database']
-    del input_data['release']
-    del input_data['config_profile']
-
-    print(input_data)
-
-    hive_server = 'vertebrates'
-    if payload['config_profile'] != 'vertebrates':
-        hive_server = 'non_vertebrates'
-
-    job = get_hive(hive_server).create_job(app.analysis, input_data)
+    job = get_hive().create_job(app.analysis, input_data)
 
     if request.is_json:
         results = {"job_id": job.job_id}
@@ -216,13 +223,15 @@ def job_submit(payload=None):
 
 @app.route('/datacheck/jobs', methods=['GET'])
 def job_list():
-    jobs = get_hive().get_all_results(app.analysis, child=True)
+    jobs = get_hive().get_all_results(app.analysis)
 
     # Handle case where submission is marked as complete,
     # but where output has not been created.
     for job in jobs:
-        if job['status'] == 'complete' and 'output' not in job.keys():
+        if 'output' not in job.keys():
             job['status'] = 'incomplete'
+        elif job['output']['failed_total'] > 0:
+            job['status'] = 'failed'
 
     # if request.is_json:
     return jsonify(jobs)
@@ -233,12 +242,14 @@ def job_list():
 
 @app.route('/datacheck/jobs/<int:job_id>', methods=['GET'])
 def job_result(job_id):
-    job = get_hive().get_result_for_job_id(job_id, child=True, progress=False)
+    job = get_hive().get_result_for_job_id(job_id, progress=False)
 
     # Handle case where submission is marked as complete,
     # but where output has not been created.
-    if job['status'] == 'complete' and 'output' not in job.keys():
+    if 'output' not in job.keys():
         job['status'] = 'incomplete'
+    elif job['output']['failed_total'] > 0:
+        job['status'] = 'failed'
 
     # if request.is_json:
     return jsonify(job)
@@ -250,6 +261,11 @@ def job_result(job_id):
 @app.route('/datacheck/submit', methods=['GET'])
 def display_form():
     form = DatacheckSubmissionForm(request.form)
+
+    server_name_choices = [('', '')]
+    for i, j in get_servers_dict().items():
+        server_name_choices.append((i, j['server_name']))
+    form.server.server_name.choices = server_name_choices
 
     return render_template(
         'ensembl/datacheck/submit.html',
@@ -265,30 +281,27 @@ def submit_form():
     form = DatacheckSubmissionForm(request.form)
 
     payload = {
-        'server_url': form.server.server_url.data,
-        'database': None,
+        'server_url': form.server.server_name.data,
+        'dbname': None,
         'species': None,
         'division': None,
         'db_type': None,
-        'release': None,
         'datacheck_names': [],
         'datacheck_groups': [],
         'datacheck_types': [],
-        'config_profile': form.configuration.config_profile.data,
-        'email': form.configuration.email.data,
-        'tag': form.configuration.tag.data
+        'email': form.submitter.email.data,
+        'tag': form.submitter.tag.data
     }
 
-    if form.server.source.data == 'database':
-        payload['database'] = form.server.database.data
+    if form.server.source.data == 'dbname':
+        payload['dbname'] = form.server.dbname.data
     else:
         if form.server.source.data == 'species':
-            payload['species'] = form.server.species.data.split(',')
+            payload['species'] = form.server.species.data
         elif form.server.source.data == 'division':
-            payload['division'] = form.server.division.data.split(',')
+            payload['division'] = form.server.division.data
 
-        payload['db_type'] = form.server.database_type.data
-        payload['release'] = dict(form.server.release.choices).get(form.server.release.data)
+        payload['db_type'] = form.server.db_type.data
 
     if form.datacheck.datacheck_name.data != '':
         payload['datacheck_names'] = form.datacheck.datacheck_name.data.split(',')
@@ -305,44 +318,9 @@ def ping():
     return jsonify({'status': 'ok'})
 
 
-def set_registry_file(params):
-    # We need to create a registry file that knows where the metadata and
-    # production db are, because some datachecks need them; so we read those in from a file.
-    # We then need to work out whether we're connecting to a specific database,
-    # or a server with species/division parameters, and add the appropriate stanza.
-
-    # Note that we don't need to check server_url format here,
-    # both the client script and web page perform validation.
-
-    meta_db_file = open(app.config['DATACHECK_REGISTRY_META'], 'r')
-    meta_db_text = meta_db_file.read()
-    meta_db_file.close()
-
-    db_url = None
-    if params['database']:
-        if not params['db_type']:
-            if 'compara' in params['database']:
-                params['db_type'] = 'compara'
-            else:
-                m = re.match(r'.+_([a-z]+)', params['database'])
-                params['db_type'] = m.group(1)
-        db_url = os.path.join(params['server_url'], params['database'], '?group=' + params['db_type'])
-    elif params['species'] or params['division']:
-        db_url = params['server_url']
-        if params['release']:
-            db_url = os.path.join(db_url, params['release'])
-
-    timestamp = str(int(time.time()))
-    registry_path = os.path.join(app.config['DATACHECK_REGISTRY_DIR'], '_'.join([timestamp, 'registry.pm']))
-
-    registry_file = open(registry_path, 'x')
-    registry_file.write(meta_db_text)
-    registry_file.write("Bio::EnsEMBL::Registry->load_registry_from_url('" + db_url + "');\n")
-    registry_file.write('1;\n')
-    registry_file.close()
-
-    return registry_path
+def set_registry_file(db_type, server_name):
+    return os.path.join(app.config['DATACHECK_REGISTRY_DIR'], db_type, '.'.join([server_name, 'pm']))
 
 
-def set_config_file(params):
-    return os.path.join(app.config['DATACHECK_CONFIG_DIR'], '.'.join([params['config_profile'], 'json']))
+def set_config_file(config_profile):
+    return os.path.join(app.config['DATACHECK_CONFIG_DIR'], '.'.join([config_profile, 'json']))
