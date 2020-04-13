@@ -20,11 +20,10 @@ database_types = [
     ('variation', 'variation')
 ]
 
-# Dynamically populate the versions
-releases = [
-    ('master', '99'),
-    ('active', '98'),
-    ('live', '97')
+datacheck_types = [
+    ('', 'critical and advisory'),
+    ('critical', 'critical'),
+    ('advisory', 'advisory')
 ]
 
 
@@ -64,32 +63,29 @@ class AtLeastOne(object):
 
 
 class ServerForm(Form):
-    server_url = StringField('Server URL', validators=[InputRequired()])
-    source = SelectField('Source', choices=[('database', 'Database'), ('species', 'Species'), ('division', 'Division')])
-    database = StringField('Database')
-    species = StringField('Species')
-    division = SelectField('Division', choices=divisions)
-    database_type = SelectField('Database Type', choices=database_types, default='core')
-    release = SelectField('Release', choices=releases, default='active')
+    server_name = SelectField('Server Name', validators=[InputRequired()])
+    source = SelectField('Source', choices=[('dbname', 'Database'), ('species', 'Species'), ('division', 'Division')])
+    dbname = StringField('Database', validators=[AtLeastOne(['species', 'division'])])
+    species = StringField('Species', validators=[AtLeastOne(['database', 'division'])])
+    division = SelectField('Division', choices=divisions, validators=[AtLeastOne(['database', 'species'])], default='vertebrates')
+    db_type = SelectField('Database Type', choices=database_types, default='core')
 
 
 class DatacheckForm(Form):
-    datacheck_name = StringField('Names')
-    datacheck_group = StringField('Groups')
-    datacheck_type = SelectField('Type', choices=[('', 'critical and advisory'), ('critical', 'critical'),
-                                                  ('advisory', 'advisory')])
+    datacheck_name = StringField('Names', validators=[AtLeastOne(['datacheck_name'])])
+    datacheck_group = StringField('Groups', validators=[AtLeastOne(['datacheck_group'])])
+    datacheck_type = SelectField('Type', choices=datacheck_types, default='critical')
 
 
-class ConfigurationForm(Form):
-    config_profile = SelectField('Profile', choices=divisions)
-    email = StringField('Email', validators=[Email()])
+class SubmitterForm(Form):
+    email = StringField('Email', validators=[Email(), InputRequired()])
     tag = StringField('Tag')
 
 
 class DatacheckSubmissionForm(Form):
     server = FormField(ServerForm, description='Server')
     datacheck = FormField(DatacheckForm, description='Datachecks')
-    configuration = FormField(ConfigurationForm, description='Configuration')
+    submitter = FormField(SubmitterForm, description='Submitter')
     submit = SubmitField('Submit')
 
 
