@@ -1,0 +1,6 @@
+{
+  "mysql://ensro@localhost:3306/": {
+    "server_name": "localhost",
+    "config_profile": "local"
+  }
+}

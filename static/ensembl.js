@@ -1,48 +1,43 @@
 function selectServerSource() {
-  var server_source = document.getElementById('server-source').value;
+  const server_source = document.getElementById('server-source').value;
 
-  if (server_source == 'database') {
-    databaseDisplay('block');
+  if (server_source === 'dbname') {
+    dbnameDisplay('block');
     speciesDisplay('none');
     divisionDisplay('none');
-    releaseDisplay('none');
+    db_typeDisplay('none');
 
-  } else if (server_source == 'species') {
-    databaseDisplay('none');
+  } else if (server_source === 'species') {
+    dbnameDisplay('none');
     speciesDisplay('block');
     divisionDisplay('none');
-    releaseDisplay('block');
+    db_typeDisplay('block');
 
-  } else if (server_source == 'division') {
-    databaseDisplay('none');
+  } else if (server_source === 'division') {
+    dbnameDisplay('none');
     speciesDisplay('none');
     divisionDisplay('block');
-    releaseDisplay('block');
+    db_typeDisplay('block');
 
   }
 }
 
-function selectDivision() {
-  var division = document.getElementById('server-division').value;
+function dbnameDisplay(display_value) {
+  document.getElementById('server-dbname').style.display = display_value;
 
-  document.getElementById('configuration-config_profile').value = division;
-}
-
-function databaseDisplay(display_value) {
-  document.getElementById('server-database').style.display = display_value;
 }
 
 function speciesDisplay(display_value) {
   document.getElementById('server-species').style.display = display_value;
+
 }
 
 function divisionDisplay(display_value) {
   document.getElementById('server-division').style.display = display_value;
+
 }
 
-function releaseDisplay(display_value) {
-  document.getElementById('server-database_type').style.display = display_value;
-  document.getElementById('server-database_type-label').style.display = display_value;
-  document.getElementById('server-release').style.display = display_value;
-  document.getElementById('server-release-label').style.display = display_value;
+function db_typeDisplay(display_value) {
+  document.getElementById('server-db_type').style.display = display_value;
+  document.getElementById('server-db_type-label').style.display = display_value;
 }
