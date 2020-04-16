@@ -1,5 +1,4 @@
 import os
-import getpass
 from ensembl_prodinf.config import load_config_yaml
 
 
