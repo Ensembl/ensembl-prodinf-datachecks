@@ -1,11 +1,12 @@
+import requests
 from ensembl_prodinf.email_celery_app import app
 from ensembl_prodinf.utils import send_email
-import json
-from urllib.request import urlopen
+
 
 smtp_server = app.conf['smtp_server']
 from_email_address = app.conf['from_email_address']
 retry_wait = app.conf['retry_wait']
+
 
 @app.task(bind=True)
 def email_when_complete(self, url, address):
@@ -18,14 +19,14 @@ def email_when_complete(self, url, address):
     """
     # allow infinite retries
     self.max_retries = None
-    result = json.load(urlopen(url))
+    result = requests.get(url).json()
     if (result['status'] == 'incomplete') or (result['status'] == 'running') or (result['status'] == 'submitted'):
         # job incomplete so retry task after waiting
         raise self.retry(countdown=retry_wait)
-    else:
-        # job complete so send email and complete task
-        send_email(smtp_server=smtp_server, from_email_address=from_email_address, to_address=address, subject=result['subject'], body=result['body'])
-        return result
+    # job complete so send email and complete task
+    send_email(smtp_server=smtp_server, from_email_address=from_email_address, to_address=address, subject=result['subject'], body=result['body'])
+    return result
+
 
 @app.task(bind=True)
 def email(self, address, subject, body):
