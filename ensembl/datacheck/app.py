@@ -79,13 +79,9 @@ def get_hive():
 
 @app.route('/datacheck/', methods=['GET'])
 def index():
-<<<<<<< Updated upstream
-    return render_template('ensembl/datacheck/index.html')
-=======
   # Missing template
   # return render_template('ensembl/datacheck/index.html')
   return jsonify({'title': 'Datacheck REST endpoints', 'uiversion': 2})
->>>>>>> Stashed changes
 
 
 @app.route('/datacheck/servers/list', methods=['GET'])
