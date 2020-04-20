@@ -210,21 +210,21 @@ def submit_dc(spec, src_url, db_type, db_prefix, release, staging_uri, compara_u
         server_url = 'mysql://'+str(src_url.username)+'@'+str(src_url.host)+':'+str(src_url.port)+"/"
         if db_type == 'compara':
             get_logger().debug("Submitting DC for "+src_url.database+ " on server: "+server_url)
-            dc_job_id = dc_client.submit_job(server_url, src_url.database, None, None, db_type, release, None, db_type, 'critical', db_type, None, spec['handover_token'])
+            dc_job_id = dc_client.submit_job(server_url, src_url.database, None, None, db_type, None, db_type, 'critical', None, spec['handover_token'])
         elif db_type == 'ancestral':
             get_logger().debug("Submitting DC for "+src_url.database+ " on server: "+server_url)
-            dc_job_id = dc_client.submit_job(server_url, src_url.database, None, None, db_type, release, None, 'corelike', 'critical', db_type, None, spec['handover_token'])
+            dc_job_id = dc_client.submit_job(server_url, src_url.database, None, None, db_type, None, 'corelike', 'critical', None, spec['handover_token'])
         elif db_type in ['rnaseq','cdna','otherfeatures']:
             division = get_division(spec['src_uri'],db_type)
             get_logger().debug("division: "+division)
             get_logger().debug("Submitting DC for "+src_url.database+ " on server: "+server_url)
-            dc_job_id = dc_client.submit_job(server_url, src_url.database, None, None, db_type, release, None, 'corelike', 'critical', division, None, spec['handover_token'])
+            dc_job_id = dc_client.submit_job(server_url, src_url.database, None, None, db_type, None, 'corelike', 'critical', None, spec['handover_token'])
         else:
             get_logger().debug("src_uri: "+spec['src_uri']+" dbtype "+db_type+" server_url "+server_url)
             division = get_division(spec['src_uri'],db_type)
             get_logger().debug("division: "+division)
             get_logger().debug("Submitting DC for "+src_url.database+ " on server: "+server_url)
-            dc_job_id = dc_client.submit_job(server_url, src_url.database, None, None, db_type, release, None, db_type, 'critical', division, None, spec['handover_token'])
+            dc_job_id = dc_client.submit_job(server_url, src_url.database, None, None, db_type, None, db_type, 'critical', None, spec['handover_token'])
     except Exception as e:
         get_logger().error("Handover failed, Cannot submit dc job")
         raise ValueError("Handover failed, Cannot submit dc job {}".format(e))
