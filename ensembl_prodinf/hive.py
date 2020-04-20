@@ -298,21 +298,23 @@ class HiveInstance:
         """ Determine if the job has completed. If the job has semaphored children, they are also checked """
         """ Also return progress of jobs, completed and total if flag is on """
         result = {"id": job.job_id}
-
-        if re.search(r"^(_extended_data_id){1}(\s){1}(\d+){1}", job.input_id):
-            extended_data = job.input_id.split(" ")
-            job_input = self.get_analysis_data_input(extended_data[1])
-            result['input'] = perl_string_to_python(job_input.data)
-        else:
-            result['input'] = perl_string_to_python(job.input_id)
-        if job.status == 'DONE' and job.result != None:
-            result['status'] = 'complete'
-            result['when_completed'] = job.when_completed
-            result['output'] = job.result.output_dict()
-        else:
-            result['status'] = self.get_job_tree_status(job)
-            if progress:
-                result['progress'] = self.get_jobs_progress(job)
+        try:
+            if re.search(r"^(_extended_data_id){1}(\s){1}(\d+){1}", job.input_id):
+                extended_data = job.input_id.split(" ")
+                job_input = self.get_analysis_data_input(extended_data[1])
+                result['input'] = perl_string_to_python(job_input.data)
+            else:
+                result['input'] = perl_string_to_python(job.input_id)
+            if job.status == 'DONE' and job.result != None:
+                result['status'] = 'complete'
+                result['when_completed'] = job.when_completed
+                result['output'] = job.result.output_dict()
+            else:
+                result['status'] = self.get_job_tree_status(job)
+                if progress:
+                    result['progress'] = self.get_jobs_progress(job)
+        except ValueError as e:
+            raise ValueError('Cannot retrieve results for job: {}'.format(job.job_id)) from e
         return result
 
     def get_jobs_progress(self, job):
