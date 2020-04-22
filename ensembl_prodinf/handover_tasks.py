@@ -81,6 +81,8 @@ def handover_database(spec):
     if db_type not in db_types_list:
         get_logger().error("Handover failed, " + spec['src_uri'] + " has been handed over after deadline. Please contact the Production team")
         raise ValueError(spec['src_uri'] + " has been handed over after the deadline. Please contact the Production team")
+    #Check to which staging server the database need to be copied to
+    (spec,staging_uri,live_uri) = check_staging_server(spec,db_type,db_prefix,assembly)
     if 'tgt_uri' not in spec:
         spec['tgt_uri'] = get_tgt_uri(src_url,staging_uri)
     # Check that the database division match the target staging server
@@ -92,8 +94,6 @@ def handover_database(spec):
         raise ValueError('Database division '+db_division+' does not match server division list '+str(allowed_divisions_list))
     #Get database hc group and compara_uri
     (groups,compara_uri) = hc_groups(db_type,db_prefix,spec['src_uri'])
-    #Check to which staging server the database need to be copied to
-    (spec,staging_uri,live_uri) = check_staging_server(spec,db_type,db_prefix,assembly)
     #setting compara url to default value for species databases. This value is only used by Compara healthchecks
     if compara_uri is None:
         compara_uri=cfg.compara_uri + 'ensembl_compara_master'
