@@ -56,9 +56,10 @@ class CoreInstance:
             self.__division = self.__get_meta_value('species.division')
         return self.__division
 
-def get_division(uri, db_type):
+def get_division(src_uri, tgt_uri, db_type):
+    uri = src_uri
     if db_type == "variation" or db_type == "funcgen":
-        uri = uri.replace("_variation_", "_core_").replace("_funcgen_","_core_")
+        uri = tgt_uri.replace("_variation_", "_core_").replace("_funcgen_","_core_")
     inst = CoreInstance(uri)
     division_meta = inst.division
     division = str(division_meta).replace('Ensembl','')
