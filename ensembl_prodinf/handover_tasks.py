@@ -81,22 +81,22 @@ def handover_database(spec):
     if db_type not in db_types_list:
         get_logger().error("Handover failed, " + spec['src_uri'] + " has been handed over after deadline. Please contact the Production team")
         raise ValueError(spec['src_uri'] + " has been handed over after the deadline. Please contact the Production team")
+    #Check to which staging server the database need to be copied to
+    (spec,staging_uri,live_uri) = check_staging_server(spec,db_type,db_prefix,assembly)
+    if 'tgt_uri' not in spec:
+        spec['tgt_uri'] = get_tgt_uri(src_url,staging_uri)
     # Check that the database division match the target staging server
     if db_type in ['compara','ancestral']:
         db_division = db_prefix
     else:
-        db_division = get_division(spec['src_uri'],db_type)
+        db_division = get_division(spec['src_uri'],spec['tgt_uri'],db_type)
     if db_division not in allowed_divisions_list:
         raise ValueError('Database division '+db_division+' does not match server division list '+str(allowed_divisions_list))
     #Get database hc group and compara_uri
     (groups,compara_uri) = hc_groups(db_type,db_prefix,spec['src_uri'])
-    #Check to which staging server the database need to be copied to
-    (spec,staging_uri,live_uri) = check_staging_server(spec,db_type,db_prefix,assembly)
     #setting compara url to default value for species databases. This value is only used by Compara healthchecks
     if compara_uri is None:
         compara_uri=cfg.compara_uri + 'ensembl_compara_master'
-    if 'tgt_uri' not in spec:
-        spec['tgt_uri'] = get_tgt_uri(src_url,staging_uri)
     spec['staging_uri'] = staging_uri
     spec['progress_complete']=0
     get_logger().info("Handling " + str(spec))
@@ -215,13 +215,13 @@ def submit_dc(spec, src_url, db_type, db_prefix, release, staging_uri, compara_u
             get_logger().debug("Submitting DC for "+src_url.database+ " on server: "+server_url)
             dc_job_id = dc_client.submit_job(server_url, src_url.database, None, None, db_type, None, 'corelike', 'critical', None, spec['handover_token'])
         elif db_type in ['rnaseq','cdna','otherfeatures']:
-            division = get_division(spec['src_uri'],db_type)
+            division = get_division(spec['src_uri'],spec['tgt_uri'],db_type)
             get_logger().debug("division: "+division)
             get_logger().debug("Submitting DC for "+src_url.database+ " on server: "+server_url)
             dc_job_id = dc_client.submit_job(server_url, src_url.database, None, None, db_type, None, 'corelike', 'critical', None, spec['handover_token'])
         else:
             get_logger().debug("src_uri: "+spec['src_uri']+" dbtype "+db_type+" server_url "+server_url)
-            division = get_division(spec['src_uri'],db_type)
+            division = get_division(spec['src_uri'],spec['tgt_uri'],db_type)
             get_logger().debug("division: "+division)
             get_logger().debug("Submitting DC for "+src_url.database+ " on server: "+server_url)
             dc_job_id = dc_client.submit_job(server_url, src_url.database, None, None, db_type, None, db_type, 'critical', None, spec['handover_token'])
