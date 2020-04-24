@@ -50,8 +50,8 @@ ancestral_pattern = re.compile(r'^ensembl_ancestral(_(?P<division>[a-z]+))?(_(\d
 blat_species = ['homo_sapiens','mus_musculus','danio_rerio','rattus_norvegicus','gallus_gallus','canis_lupus_familiaris','bos_taurus',
     'oryctolagus_cuniculus','oryzias_latipes','sus_scrofa','meleagris_gallopavo','anas_platyrhynchos_platyrhynchos','ovis_aries','oreochromis_niloticus','gadus_morhua']
 
-def get_logger():
-    return reporting.get_logger(pool, cfg.report_exchange, 'handover', None, {})
+logger = reporting.get_logger(pool, cfg.report_exchange, 'handover', None, {})
+
 
 def handover_database(spec):
     """ Method to accept a new database for incorporation into the system
@@ -69,7 +69,7 @@ def handover_database(spec):
     * progress_complete - Total number of task completed
     """
     # TODO verify dict
-    reporting.set_logger_context(get_logger(), spec['src_uri'], spec)
+    reporting.set_logger_context(logger, spec['src_uri'], spec)
     # create unique identifier
     spec['handover_token'] = str(uuid.uuid1())
     spec['progress_total']=3
@@ -79,7 +79,7 @@ def handover_database(spec):
     (db_prefix, db_type, release, assembly) = parse_db_infos(src_url.database)
     # Check if the given database can be handed over
     if db_type not in db_types_list:
-        get_logger().error("Handover failed, " + spec['src_uri'] + " has been handed over after deadline. Please contact the Production team")
+        logger.error("Handover failed, " + spec['src_uri'] + " has been handed over after deadline. Please contact the Production team")
         raise ValueError(spec['src_uri'] + " has been handed over after the deadline. Please contact the Production team")
     # Check that the database division match the target staging server
     if db_type in ['compara','ancestral']:
@@ -99,7 +99,7 @@ def handover_database(spec):
         spec['tgt_uri'] = get_tgt_uri(src_url,staging_uri)
     spec['staging_uri'] = staging_uri
     spec['progress_complete']=0
-    get_logger().info("Handling " + str(spec))
+    logger.info("Handling " + str(spec))
     submit_dc(spec, src_url, db_type, db_prefix, release, staging_uri, compara_uri)
     submit_hc(spec, groups, compara_uri, staging_uri, live_uri)
     return spec['handover_token']
@@ -112,7 +112,7 @@ def get_tgt_uri(src_url,staging_uri):
 def check_db(uri):
     """Check if source database exists"""
     if not database_exists(uri):
-        get_logger().error("Handover failed, " + uri + " does not exist")
+        logger.error("Handover failed, " + uri + " does not exist")
         raise ValueError(uri + " does not exist")
     else:
         return
@@ -199,38 +199,38 @@ def submit_hc(spec, groups, compara_uri, staging_uri, live_uri):
     try:
         hc_job_id = hc_client.submit_job(spec['src_uri'], cfg.production_uri, compara_uri, staging_uri, live_uri, None, groups, cfg.data_files_path, None, spec['handover_token'])
     except Exception as e:
-        get_logger().warning("Handover failed, Cannot submit hc job {}".format(e))
+        logger.warning("Handover failed, Cannot submit hc job {}".format(e))
     #spec['hc_job_id'] = hc_job_id
     #task_id = process_checked_db.delay(hc_job_id, spec)
-    #get_logger().debug("Submitted DB for checking as " + str(task_id))
+    #logger.debug("Submitted DB for checking as " + str(task_id))
 
 def submit_dc(spec, src_url, db_type, db_prefix, release, staging_uri, compara_uri):
     """Submit the source database for healthchecking. Returns a celery job identifier"""
     try:
         server_url = 'mysql://'+str(src_url.username)+'@'+str(src_url.host)+':'+str(src_url.port)+"/"
         if db_type == 'compara':
-            get_logger().debug("Submitting DC for "+src_url.database+ " on server: "+server_url)
+            logger.debug("Submitting DC for "+src_url.database+ " on server: "+server_url)
             dc_job_id = dc_client.submit_job(server_url, src_url.database, None, None, db_type, None, db_type, 'critical', None, spec['handover_token'])
         elif db_type == 'ancestral':
-            get_logger().debug("Submitting DC for "+src_url.database+ " on server: "+server_url)
+            logger.debug("Submitting DC for "+src_url.database+ " on server: "+server_url)
             dc_job_id = dc_client.submit_job(server_url, src_url.database, None, None, db_type, None, 'corelike', 'critical', None, spec['handover_token'])
         elif db_type in ['rnaseq','cdna','otherfeatures']:
             division = get_division(spec['src_uri'],db_type)
-            get_logger().debug("division: "+division)
-            get_logger().debug("Submitting DC for "+src_url.database+ " on server: "+server_url)
+            logger.debug("division: "+division)
+            logger.debug("Submitting DC for "+src_url.database+ " on server: "+server_url)
             dc_job_id = dc_client.submit_job(server_url, src_url.database, None, None, db_type, None, 'corelike', 'critical', None, spec['handover_token'])
         else:
-            get_logger().debug("src_uri: "+spec['src_uri']+" dbtype "+db_type+" server_url "+server_url)
+            logger.debug("src_uri: "+spec['src_uri']+" dbtype "+db_type+" server_url "+server_url)
             division = get_division(spec['src_uri'],db_type)
-            get_logger().debug("division: "+division)
-            get_logger().debug("Submitting DC for "+src_url.database+ " on server: "+server_url)
+            logger.debug("division: "+division)
+            logger.debug("Submitting DC for "+src_url.database+ " on server: "+server_url)
             dc_job_id = dc_client.submit_job(server_url, src_url.database, None, None, db_type, None, db_type, 'critical', None, spec['handover_token'])
     except Exception as e:
-        get_logger().error("Handover failed, Cannot submit dc job")
+        logger.error("Handover failed, Cannot submit dc job")
         raise ValueError("Handover failed, Cannot submit dc job {}".format(e))
     spec['dc_job_id'] = dc_job_id
     task_id = process_datachecked_db.delay(dc_job_id, spec)
-    get_logger().debug("Submitted DB for checking as " + str(task_id))
+    logger.debug("Submitted DB for checking as " + str(task_id))
     return task_id
 
 @app.task(bind=True)
@@ -239,21 +239,21 @@ def process_checked_db(self, hc_job_id, spec):
     * submit copy if HCs succeed
     * send error email if not
     """
-    reporting.set_logger_context(get_logger(), spec['src_uri'], spec)
+    reporting.set_logger_context(logger, spec['src_uri'], spec)
     # allow infinite retries
     self.max_retries = None
-    get_logger().info("HCs in progress, please see: " +cfg.hc_web_uri + str(hc_job_id))
+    logger.info("HCs in progress, please see: " +cfg.hc_web_uri + str(hc_job_id))
     try:
         result = hc_client.retrieve_job(hc_job_id)
     except Exception as e:
-        get_logger().error("Handover failed, cannot retrieve hc job")
+        logger.error("Handover failed, cannot retrieve hc job")
         raise ValueError("Handover failed, cannot retrieve hc job {}".format(e))
     if result['status'] in ['incomplete', 'running', 'submitted']:
-        get_logger().debug("HC Job incomplete, checking again later")
+        logger.debug("HC Job incomplete, checking again later")
         raise self.retry()
     # check results
     if result['status'] == 'failed':
-        get_logger().info("HCs failed to run, please see: "+cfg.hc_web_uri + str(hc_job_id))
+        logger.info("HCs failed to run, please see: "+cfg.hc_web_uri + str(hc_job_id))
         msg = """
 Running healthchecks on %s failed to execute.
 Please see %s
@@ -261,7 +261,7 @@ Please see %s
         send_email(to_address=spec['contact'], subject='HC failed to run', body=msg, smtp_server=cfg.smtp_server)
         return
     elif result['output']['status'] == 'failed':
-        get_logger().info("HCs found problems, please see: "+cfg.hc_web_uri + str(hc_job_id))
+        logger.info("HCs found problems, please see: "+cfg.hc_web_uri + str(hc_job_id))
         msg = """
 Running healthchecks on %s completed but found failures.
 Please see %s
@@ -269,7 +269,7 @@ Please see %s
         send_email(to_address=spec['contact'], subject='HC ran but failed', body=msg, smtp_server=cfg.smtp_server)
         return
     else:
-        get_logger().info("HCs fine, starting copy")
+        logger.info("HCs fine, starting copy")
         spec['progress_complete']=1
         submit_copy(spec)
 
@@ -279,21 +279,20 @@ def process_datachecked_db(self, dc_job_id, spec):
     * submit copy if DC succeed
     * send error email if not
     """
-    reporting.set_logger_context(get_logger(), spec['src_uri'], spec)
+    reporting.set_logger_context(logger, spec['src_uri'], spec)
     # allow infinite retries
     self.max_retries = None
-    get_logger().info("DC in progress, please see: " +cfg.dc_uri + "jobs/" + str(dc_job_id))
+    logger.info("DC in progress, please see: " +cfg.dc_uri + "jobs/" + str(dc_job_id))
     try:
         result = dc_client.retrieve_job(dc_job_id)
     except Exception as e:
-        get_logger().error("Handover failed, cannot retrieve dc job")
+        logger.error("Handover failed, cannot retrieve dc job")
         raise ValueError("Handover failed, cannot retrieve dc job {}".format(e))
     if result['status'] in ['incomplete', 'running', 'submitted']:
-        get_logger().debug("DC Job incomplete, checking again later")
+        logger.debug("DC Job incomplete, checking again later")
         raise self.retry()
     # check results
     if result['status'] == 'failed':
-        logger = get_logger()
         logger.info("DCs failed to run, please see: "+cfg.dc_uri + "jobs/" + str(dc_job_id))
         msg = """
 Running datachecks on %s failed to execute.
@@ -302,7 +301,7 @@ Please see %s
         send_email(to_address=spec['contact'], subject='DC failed to run', body=msg, smtp_server=cfg.smtp_server, logger=logger)
         return
     elif result['output']['failed_total'] > 0:
-        get_logger().info("DCs found problems, please see: "+cfg.dc_uri + "jobs/" + str(dc_job_id))
+        logger.info("DCs found problems, please see: "+cfg.dc_uri + "jobs/" + str(dc_job_id))
         msg = """
 Running datachecks on %s completed but found failures.
 Please see %s
@@ -310,7 +309,7 @@ Please see %s
         send_email(to_address=spec['contact'], subject='DC ran but failed', body=msg, smtp_server=cfg.smtp_server)
         return
     else:
-        get_logger().info("DCs fine, starting copy")
+        logger.info("DCs fine, starting copy")
         spec['progress_complete']=1
         submit_copy(spec)
 
@@ -319,11 +318,11 @@ def submit_copy(spec):
     try:
         copy_job_id = db_copy_client.submit_job(spec['src_uri'], spec['tgt_uri'], None, None, False, True, True, None, None)
     except Exception as e:
-        get_logger().error("Handover failed, cannot submit copy job")
+        logger.error("Handover failed, cannot submit copy job")
         raise ValueError("Handover failed, cannot submit copy job {}".format(e))
     spec['copy_job_id'] = copy_job_id
     task_id = process_copied_db.delay(copy_job_id, spec)
-    get_logger().debug("Submitted DB for copying as " + str(task_id))
+    logger.debug("Submitted DB for copying as " + str(task_id))
     return task_id
 
 @app.task(bind=True)
@@ -331,20 +330,20 @@ def process_copied_db(self, copy_job_id, spec):
     """Wait for copy to complete and then respond accordingly:
     * if success, submit to metadata database
     * if failure, flag error using email"""
-    reporting.set_logger_context(get_logger(), spec['src_uri'], spec)
+    reporting.set_logger_context(logger, spec['src_uri'], spec)
     # allow infinite retries
     self.max_retries = None
-    get_logger().info("Copying in progress, please see: " +cfg.copy_web_uri + str(copy_job_id))
+    logger.info("Copying in progress, please see: " +cfg.copy_web_uri + str(copy_job_id))
     try:
         result = db_copy_client.retrieve_job(copy_job_id)
     except Exception as e:
-        get_logger().error("Handover failed, cannot retrieve copy job")
+        logger.error("Handover failed, cannot retrieve copy job")
         raise ValueError("Handover failed, cannot retrieve copy job {}".format(e))
     if result['status'] in ['incomplete', 'running', 'submitted']:
-        get_logger().debug("Database copy job incomplete, checking again later")
+        logger.debug("Database copy job incomplete, checking again later")
         raise self.retry()
     if result['status'] == 'failed':
-        get_logger().info("Copy failed, please see: "+cfg.copy_web_uri + str(copy_job_id))
+        logger.info("Copy failed, please see: "+cfg.copy_web_uri + str(copy_job_id))
         msg = """
 Copying %s to %s failed.
 Please see %s
@@ -352,10 +351,10 @@ Please see %s
         send_email(to_address=spec['contact'], subject='Database copy failed', body=msg, smtp_server=cfg.smtp_server)
         return
     elif 'GRCh37'in spec:
-        get_logger().info("Copying complete, Handover successful")
+        logger.info("Copying complete, Handover successful")
         spec['progress_complete']=2
     else:
-        get_logger().info("Copying complete, submitting metadata job")
+        logger.info("Copying complete, submitting metadata job")
         spec['progress_complete']=2
         submit_metadata_update(spec)
 
@@ -364,11 +363,11 @@ def submit_metadata_update(spec):
     try:
         metadata_job_id = metadata_client.submit_job( spec['tgt_uri'], None, None, None, None, spec['contact'], spec['comment'], 'Handover', None)
     except Exception as e:
-        get_logger().error("Handover failed, cannot submit metadata job")
+        logger.error("Handover failed, cannot submit metadata job")
         raise ValueError("Handover failed, cannot submit metadata job {}".format(e))
     spec['metadata_job_id'] = metadata_job_id
     task_id = process_db_metadata.delay(metadata_job_id, spec)
-    get_logger().debug("Submitted DB for metadata loading " + str(task_id))
+    logger.debug("Submitted DB for metadata loading " + str(task_id))
     return task_id
 
 @app.task(bind=True)
@@ -376,20 +375,20 @@ def process_db_metadata(self, metadata_job_id, spec):
     """Wait for metadata update to complete and then respond accordingly:
     * if success, submit event to event handler for further processing
     * if failure, flag error using email"""
-    reporting.set_logger_context(get_logger(), spec['tgt_uri'], spec)
+    reporting.set_logger_context(logger, spec['tgt_uri'], spec)
     # allow infinite retries
     self.max_retries = None
-    get_logger().info("Loading into metadata database, please see: "+cfg.meta_uri + "jobs/"+ str(metadata_job_id))
+    logger.info("Loading into metadata database, please see: "+cfg.meta_uri + "jobs/"+ str(metadata_job_id))
     try:
         result = metadata_client.retrieve_job(metadata_job_id)
     except Exception as e:
-        get_logger().error("Handover failed, Cannot retrieve metadata job")
+        logger.error("Handover failed, Cannot retrieve metadata job")
         raise ValueError("Handover failed, Cannot retrieve metadata job {}".format(e))
     if result['status'] in ['incomplete', 'running', 'submitted']:
-        get_logger().debug("Metadata load Job incomplete, checking again later")
+        logger.debug("Metadata load Job incomplete, checking again later")
         raise self.retry()
     if result['status'] == 'failed':
-        get_logger().info("Metadata load failed, please see "+cfg.meta_uri+ 'jobs/' + str(metadata_job_id) + '?format=failures')
+        logger.info("Metadata load failed, please see "+cfg.meta_uri+ 'jobs/' + str(metadata_job_id) + '?format=failures')
         msg = """
 Metadata load of %s failed.
 Please see %s
@@ -406,9 +405,9 @@ Please see %s
                 if event['genome'] in blat_species and event['type'] == 'new_assembly':
                     send_email(to_address=cfg.production_email,subject='BLAT species list needs updating in FTP Dumps config',body='The following species '+event['genome']+
                         ' has a new assembly, please update the port number for this species here and communicate to Web: https://github.com/Ensembl/ensembl-production/blob/master/modules/Bio/EnsEMBL/Production/Pipeline/PipeConfig/DumpCore_conf.pm#L107')
-        get_logger().info("Metadata load complete, Handover successful")
+        logger.info("Metadata load complete, Handover successful")
         spec['progress_complete']=3
-        #get_logger().info("Metadata load complete, submitting event")
+        #logger.info("Metadata load complete, submitting event")
         #submit_event(spec,result)
     return
 
@@ -418,7 +417,7 @@ def submit_event(spec,result):
     for event in result['output']['events']:
         print(event)
         event_client.submit_job({"type":event['type'],"genome":event['genome']})
-        get_logger().debug("Submitted event to event handler endpoint")
+        logger.debug("Submitted event to event handler endpoint")
 
 def drop_current_databases(current_db_list,staging_uri,tgt_uri):
     """Drop databases on a previous assembly or previous genebuild (e.g: Wormbase) from the staging MySQL server"""
@@ -426,11 +425,11 @@ def drop_current_databases(current_db_list,staging_uri,tgt_uri):
     #Check if the new database has the same name as the one on staging. In this case DO NOT drop it
     #This can happen if the assembly get renamed or genebuild version has changed for Wormbase
     if tgt_url.database in current_db_list:
-        get_logger().debug("The assembly or genebuild has been updated but the new database " + str(tgt_url.database) +" is the same as old one")
+        logger.debug("The assembly or genebuild has been updated but the new database " + str(tgt_url.database) +" is the same as old one")
     else:
         for database in current_db_list:
             db_uri = staging_uri + database
             if database_exists(db_uri):
-                get_logger().info("Dropping " + str(db_uri))
+                logger.info("Dropping " + str(db_uri))
                 drop_database(db_uri)
     return
