@@ -34,7 +34,7 @@ import re
 from ensembl_prodinf import reporting
 import json
 
-
+retry_wait = app.conf.get('retry_wait',60)
 pool = reporting.get_pool(cfg.report_server)
 hc_client = HcClient(cfg.hc_uri)
 db_copy_client = DbCopyClient(cfg.copy_uri)
@@ -233,7 +233,7 @@ def submit_dc(spec, src_url, db_type, db_prefix, release, staging_uri, compara_u
     get_logger().debug("Submitted DB for checking as " + str(task_id))
     return task_id
 
-@app.task(bind=True)
+@app.task(bind=True, default_retry_delay=retry_wait)
 def process_checked_db(self, hc_job_id, spec):
     """ Task to wait until HCs finish and then respond e.g.
     * submit copy if HCs succeed
@@ -273,7 +273,7 @@ Please see %s
         spec['progress_complete']=1
         submit_copy(spec)
 
-@app.task(bind=True)
+@app.task(bind=True, default_retry_delay=retry_wait)
 def process_datachecked_db(self, dc_job_id, spec):
     """ Task to wait until DCs finish and then respond e.g.
     * submit copy if DC succeed
@@ -326,7 +326,7 @@ def submit_copy(spec):
     get_logger().debug("Submitted DB for copying as " + str(task_id))
     return task_id
 
-@app.task(bind=True)
+@app.task(bind=True, default_retry_delay=retry_wait)
 def process_copied_db(self, copy_job_id, spec):
     """Wait for copy to complete and then respond accordingly:
     * if success, submit to metadata database
@@ -371,7 +371,7 @@ def submit_metadata_update(spec):
     get_logger().debug("Submitted DB for metadata loading " + str(task_id))
     return task_id
 
-@app.task(bind=True)
+@app.task(bind=True, default_retry_delay=retry_wait)
 def process_db_metadata(self, metadata_job_id, spec):
     """Wait for metadata update to complete and then respond accordingly:
     * if success, submit event to event handler for further processing
