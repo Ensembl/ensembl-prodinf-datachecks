@@ -34,7 +34,7 @@ import re
 from ensembl_prodinf import reporting
 import json
 
-retry_wait = app.conf['retry_wait']
+retry_wait = app.conf.get('retry_wait',60)
 pool = reporting.get_pool(cfg.report_server)
 hc_client = HcClient(cfg.hc_uri)
 db_copy_client = DbCopyClient(cfg.copy_uri)
