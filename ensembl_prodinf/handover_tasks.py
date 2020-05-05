@@ -34,7 +34,7 @@ import re
 from ensembl_prodinf import reporting
 import json
 
-
+retry_wait = app.conf.get('retry_wait',60)
 pool = reporting.get_pool(cfg.report_server)
 hc_client = HcClient(cfg.hc_uri)
 db_copy_client = DbCopyClient(cfg.copy_uri)
@@ -81,22 +81,22 @@ def handover_database(spec):
     if db_type not in db_types_list:
         get_logger().error("Handover failed, " + spec['src_uri'] + " has been handed over after deadline. Please contact the Production team")
         raise ValueError(spec['src_uri'] + " has been handed over after the deadline. Please contact the Production team")
+    #Check to which staging server the database need to be copied to
+    (spec,staging_uri,live_uri) = check_staging_server(spec,db_type,db_prefix,assembly)
+    if 'tgt_uri' not in spec:
+        spec['tgt_uri'] = get_tgt_uri(src_url,staging_uri)
     # Check that the database division match the target staging server
     if db_type in ['compara','ancestral']:
         db_division = db_prefix
     else:
-        db_division = get_division(spec['src_uri'],db_type)
+        db_division = get_division(spec['src_uri'],spec['tgt_uri'],db_type)
     if db_division not in allowed_divisions_list:
         raise ValueError('Database division '+db_division+' does not match server division list '+str(allowed_divisions_list))
     #Get database hc group and compara_uri
     (groups,compara_uri) = hc_groups(db_type,db_prefix,spec['src_uri'])
-    #Check to which staging server the database need to be copied to
-    (spec,staging_uri,live_uri) = check_staging_server(spec,db_type,db_prefix,assembly)
     #setting compara url to default value for species databases. This value is only used by Compara healthchecks
     if compara_uri is None:
         compara_uri=cfg.compara_uri + 'ensembl_compara_master'
-    if 'tgt_uri' not in spec:
-        spec['tgt_uri'] = get_tgt_uri(src_url,staging_uri)
     spec['staging_uri'] = staging_uri
     spec['progress_complete']=0
     get_logger().info("Handling " + str(spec))
@@ -205,7 +205,7 @@ def submit_hc(spec, groups, compara_uri, staging_uri, live_uri):
     #get_logger().debug("Submitted DB for checking as " + str(task_id))
 
 def submit_dc(spec, src_url, db_type, db_prefix, release, staging_uri, compara_uri):
-    """Submit the source database for healthchecking. Returns a celery job identifier"""
+    """Submit the source database for checking. Returns a celery job identifier"""
     try:
         server_url = 'mysql://'+str(src_url.username)+'@'+str(src_url.host)+':'+str(src_url.port)+"/"
         if db_type == 'compara':
@@ -215,13 +215,13 @@ def submit_dc(spec, src_url, db_type, db_prefix, release, staging_uri, compara_u
             get_logger().debug("Submitting DC for "+src_url.database+ " on server: "+server_url)
             dc_job_id = dc_client.submit_job(server_url, src_url.database, None, None, db_type, None, 'corelike', 'critical', None, spec['handover_token'])
         elif db_type in ['rnaseq','cdna','otherfeatures']:
-            division = get_division(spec['src_uri'],db_type)
+            division = get_division(spec['src_uri'],spec['tgt_uri'],db_type)
             get_logger().debug("division: "+division)
             get_logger().debug("Submitting DC for "+src_url.database+ " on server: "+server_url)
             dc_job_id = dc_client.submit_job(server_url, src_url.database, None, None, db_type, None, 'corelike', 'critical', None, spec['handover_token'])
         else:
             get_logger().debug("src_uri: "+spec['src_uri']+" dbtype "+db_type+" server_url "+server_url)
-            division = get_division(spec['src_uri'],db_type)
+            division = get_division(spec['src_uri'],spec['tgt_uri'],db_type)
             get_logger().debug("division: "+division)
             get_logger().debug("Submitting DC for "+src_url.database+ " on server: "+server_url)
             dc_job_id = dc_client.submit_job(server_url, src_url.database, None, None, db_type, None, db_type, 'critical', None, spec['handover_token'])
@@ -233,7 +233,7 @@ def submit_dc(spec, src_url, db_type, db_prefix, release, staging_uri, compara_u
     get_logger().debug("Submitted DB for checking as " + str(task_id))
     return task_id
 
-@app.task(bind=True)
+@app.task(bind=True, default_retry_delay=retry_wait)
 def process_checked_db(self, hc_job_id, spec):
     """ Task to wait until HCs finish and then respond e.g.
     * submit copy if HCs succeed
@@ -273,7 +273,7 @@ Please see %s
         spec['progress_complete']=1
         submit_copy(spec)
 
-@app.task(bind=True)
+@app.task(bind=True, default_retry_delay=retry_wait)
 def process_datachecked_db(self, dc_job_id, spec):
     """ Task to wait until DCs finish and then respond e.g.
     * submit copy if DC succeed
@@ -282,35 +282,26 @@ def process_datachecked_db(self, dc_job_id, spec):
     reporting.set_logger_context(get_logger(), spec['src_uri'], spec)
     # allow infinite retries
     self.max_retries = None
-    get_logger().info("DC in progress, please see: " +cfg.dc_uri + "jobs/" + str(dc_job_id))
+    get_logger().info("Datachecks in progress, please see: " +cfg.dc_uri + "jobs/" + str(dc_job_id))
     try:
         result = dc_client.retrieve_job(dc_job_id)
     except Exception as e:
-        get_logger().error("Handover failed, cannot retrieve dc job")
-        raise ValueError("Handover failed, cannot retrieve dc job {}".format(e))
+        get_logger().error("Handover failed, cannot retrieve datacheck job")
+        raise ValueError("Handover failed, cannot retrieve datacheck job {}".format(e))
     if result['status'] in ['incomplete', 'running', 'submitted']:
-        get_logger().debug("DC Job incomplete, checking again later")
+        get_logger().debug("Datacheck Job incomplete, checking again later")
         raise self.retry()
     # check results
     if result['status'] == 'failed':
-        logger = get_logger()
-        logger.info("DCs failed to run, please see: "+cfg.dc_uri + "jobs/" + str(dc_job_id))
+        get_logger().info("Datachecks found problems, please see: "+cfg.dc_uri + "jobs/" + str(dc_job_id))
         msg = """
-Running datachecks on %s failed to execute.
+Running datachecks on %s completed but found problems.
 Please see %s
 """ % (spec['src_uri'], cfg.dc_uri + "jobs/" + str(dc_job_id))
-        send_email(to_address=spec['contact'], subject='DC failed to run', body=msg, smtp_server=cfg.smtp_server, logger=logger)
-        return
-    elif result['output']['failed_total'] > 0:
-        get_logger().info("DCs found problems, please see: "+cfg.dc_uri + "jobs/" + str(dc_job_id))
-        msg = """
-Running datachecks on %s completed but found failures.
-Please see %s
-""" % (spec['src_uri'], cfg.dc_uri + "jobs/" + str(dc_job_id))
-        send_email(to_address=spec['contact'], subject='DC ran but failed', body=msg, smtp_server=cfg.smtp_server)
+        send_email(to_address=spec['contact'], subject='Datachecks found problems', body=msg, smtp_server=cfg.smtp_server)
         return
     else:
-        get_logger().info("DCs fine, starting copy")
+        get_logger().info("Datachecks successful, starting copy")
         spec['progress_complete']=1
         submit_copy(spec)
 
@@ -326,7 +317,7 @@ def submit_copy(spec):
     get_logger().debug("Submitted DB for copying as " + str(task_id))
     return task_id
 
-@app.task(bind=True)
+@app.task(bind=True, default_retry_delay=retry_wait)
 def process_copied_db(self, copy_job_id, spec):
     """Wait for copy to complete and then respond accordingly:
     * if success, submit to metadata database
@@ -371,7 +362,7 @@ def submit_metadata_update(spec):
     get_logger().debug("Submitted DB for metadata loading " + str(task_id))
     return task_id
 
-@app.task(bind=True)
+@app.task(bind=True, default_retry_delay=retry_wait)
 def process_db_metadata(self, metadata_job_id, spec):
     """Wait for metadata update to complete and then respond accordingly:
     * if success, submit event to event handler for further processing
