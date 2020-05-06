@@ -1,10 +1,13 @@
 import os
 import re
 import time
-from flask import Flask, json, jsonify, redirect, render_template, request
+from flask import Flask, json, jsonify, redirect, render_template, request, send_file
 from flask_bootstrap import Bootstrap
 from flask_cors import CORS
 from flasgger import Swagger
+from io import BytesIO
+from zipfile import ZipFile
+from pathlib import Path
 
 from ensembl.datacheck.config import DatacheckConfig
 from ensembl.forms import DatacheckSubmissionForm
@@ -265,6 +268,20 @@ def job_result(job_id):
     # else:
     # Need to pass some data to the template...
     # return render_template('ensembl/datacheck/detail.html')
+
+@app.route('/datacheck/download_datacheck_outputs/<int:job_id>')
+def download_dc_outputs(job_id):
+    job = get_hive().get_result_for_job_id(job_id, progress=False)
+    if 'output' in job:
+        base_path = Path(job['output']['output_dir']+'/')
+        data = BytesIO()
+        with ZipFile(data, mode='w') as z:
+            for f_name in base_path.iterdir():
+                filename=str(f_name)
+                filename_no_path = filename[len(str(base_path)) + 1:]
+                z.write(filename,filename_no_path)
+        data.seek(0)
+        return send_file(data, mimetype='application/zip', attachment_filename='Datacheck_output_job_'+str(job_id)+'.zip', as_attachment=True)
 
 
 @app.route('/datacheck/submit', methods=['GET'])
