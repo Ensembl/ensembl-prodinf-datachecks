@@ -274,15 +274,18 @@ def download_dc_outputs(job_id):
     job = get_hive().get_result_for_job_id(job_id, progress=False)
     if 'output' in job:
         base_path = Path(job['output']['output_dir']+'/')
-        data = BytesIO()
-        with ZipFile(data, mode='w') as z:
+        if len(list(base_path.iterdir())) > 1:
+            data = BytesIO()
+            with ZipFile(data, mode='w') as z:
+                for f_name in base_path.iterdir():
+                    filename=str(f_name)
+                    filename_no_path = filename[len(str(base_path)) + 1:]
+                    z.write(filename,filename_no_path)
+            data.seek(0)
+            return send_file(data, mimetype='application/zip', attachment_filename='Datacheck_output_job_'+str(job_id)+'.zip', as_attachment=True)
+        else:
             for f_name in base_path.iterdir():
-                filename=str(f_name)
-                filename_no_path = filename[len(str(base_path)) + 1:]
-                z.write(filename,filename_no_path)
-        data.seek(0)
-        return send_file(data, mimetype='application/zip', attachment_filename='Datacheck_output_job_'+str(job_id)+'.zip', as_attachment=True)
-
+                return send_file(str(f_name), as_attachment=True)
 
 @app.route('/datacheck/submit', methods=['GET'])
 def display_form():
