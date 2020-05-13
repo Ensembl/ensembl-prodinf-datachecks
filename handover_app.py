@@ -31,6 +31,7 @@ cors = CORS(app)
 json_pattern = re.compile("application/json")
 es_host = app.config['ES_HOST']
 es_port = str(app.config['ES_PORT'])
+es_index = app.config['ES_INDEX']
 
 
 @app.route('/', methods=['GET'])
@@ -163,7 +164,7 @@ def handover_result(handover_token):
     """
     es = Elasticsearch([{'host': es_host, 'port': es_port}])
     handover_detail = []
-    res_error = es.search(index="reports", body={"query": {"bool": {
+    res_error = es.search(index=es_index, body={"query": {"bool": {
         "must": [{"term": {"params.handover_token.keyword": str(handover_token)}},
                  {"term": {"report_type.keyword": "ERROR"}}], "must_not": [], "should": []}}, "from": 0, "size": 1,
         "sort": [{"report_time": {"order": "desc"}}], "aggs": {}})
@@ -180,7 +181,7 @@ def handover_result(handover_token):
             result['report_time'] = doc['_source']['report_time']
             handover_detail.append(result)
     else:
-        res = es.search(index="reports", body={"query": {"bool": {
+        res = es.search(index=es_index, body={"query": {"bool": {
             "must": [{"term": {"params.handover_token.keyword": str(handover_token)}},
                      {"term": {"report_type.keyword": "INFO"}}], "must_not": [], "should": []}}, "from": 0,
             "size": 1, "sort": [{"report_time": {"order": "desc"}}], "aggs": {}})
@@ -245,7 +246,7 @@ def handover_results():
     release = request.args.get('release', str(app.config['RELEASE']))
     logger.info("Retrieving all handover report")
     es = Elasticsearch([{'host': es_host, 'port': es_port}])
-    res = es.search(index="reports", body={
+    res = es.search(index=es_index, body={
         "query": {
             "bool": {
                 "must": [{
@@ -272,7 +273,7 @@ def handover_results():
         result['message'] = doc['_source']['message']
         result['comment'] = doc['_source']['params']['comment']
         result['handover_token'] = doc['_source']['params']['handover_token']
-        res_error = es.search(index="reports", body={"query": {"bool": {
+        res_error = es.search(index=es_index, body={"query": {"bool": {
             "must": [{"term": {"params.handover_token.keyword": str(doc['_source']['params']['handover_token'])}},
                      {"term": {"report_type.keyword": "ERROR"}}], "must_not": [], "should": []}}, "from": 0,
             "size": 1, "sort": [{"report_time": {"order": "desc"}}],
@@ -281,7 +282,7 @@ def handover_results():
             for doc_error in res_error['hits']['hits']:
                 result['current_message'] = doc_error['_source']['message']
         else:
-            res2 = es.search(index="reports", body={"query": {"bool": {"must": [
+            res2 = es.search(index=es_index, body={"query": {"bool": {"must": [
                 {"term": {"params.handover_token.keyword": str(doc['_source']['params']['handover_token'])}},
                 {"term": {"report_type.keyword": "INFO"}}], "must_not": [], "should": []}}, "from": 0, "size": 1,
                 "sort": [{"report_time": {"order": "desc"}}], "aggs": {}})
@@ -350,7 +351,7 @@ def delete_handover(handover_token):
     try:
         logger.info("Retrieving handover data with token " + str(handover_token))
         es = Elasticsearch([{'host': es_host, 'port': es_port}])
-        es.delete_by_query(index='reports', doc_type='report', body={
+        es.delete_by_query(index=es_index, doc_type='report', body={
             "query": {"bool": {"must": [{"term": {"params.handover_token.keyword": str(handover_token)}}]}}})
         return jsonify(str(handover_token))
     except NotFoundError as e:
