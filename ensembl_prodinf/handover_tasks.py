@@ -293,11 +293,11 @@ def process_datachecked_db(self, dc_job_id, spec):
         raise self.retry()
     # check results
     if result['status'] == 'failed':
-        get_logger().info("Datachecks found problems, please see: "+cfg.dc_uri + "jobs/" + str(dc_job_id))
+        get_logger().info("Datachecks found problems, you can download the output here: "+cfg.dc_uri + "download_datacheck_outputs/" + str(dc_job_id))
         msg = """
 Running datachecks on %s completed but found problems.
-Please see %s
-""" % (spec['src_uri'], cfg.dc_uri + "jobs/" + str(dc_job_id))
+You can download the output here %s
+""" % (spec['src_uri'], cfg.dc_uri + "download_datacheck_outputs/" + str(dc_job_id))
         send_email(to_address=spec['contact'], subject='Datachecks found problems', body=msg, smtp_server=cfg.smtp_server)
         return
     else:
