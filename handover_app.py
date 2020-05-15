@@ -31,6 +31,7 @@ cors = CORS(app)
 json_pattern = re.compile("application/json")
 es_host = app.config['ES_HOST']
 es_port = str(app.config['ES_PORT'])
+es_index = app.config['ES_INDEX']
 
 
 @app.route('/', methods=['GET'])
@@ -159,11 +160,11 @@ def handover_result(handover_token):
         schema:
           $ref: '#/definitions/handovers'
         examples:
-          [{"comment": "handover new Tiger database", "contact": "maurel@ebi.ac.uk", "handover_token": "605f1191-7a13-11e8-aa7e-005056ab00f0", "id": "X1qcQWQBiZ0vMed2vaAt", "message": "Metadata load complete, Handover successful", "progress_total": 3, "report_time": "2018-06-27T15:19:08.459", "src_uri": "mysql://ensadmin:ensembl@mysql-ens-general-prod-1:4525/panthera_tigris_altaica_core_93_1", "tgt_uri": "mysql://ensadmin:ensembl@mysql-ens-general-dev-1:4484/panthera_tigris_altaica_core_93_1"} ]
+          [{"comment": "handover new Tiger database", "contact": "maurel@ebi.ac.uk", "handover_token": "605f1191-7a13-11e8-aa7e-005056ab00f0", "id": "X1qcQWQBiZ0vMed2vaAt", "message": "Metadata load complete, Handover successful", "progress_total": 3, "report_time": "2018-06-27T15:19:08.459", "src_uri": "mysql://ensro@mysql-ens-general-prod-1:4525/panthera_tigris_altaica_core_93_1", "tgt_uri": "mysql://ensro@mysql-ens-general-dev-1:4484/panthera_tigris_altaica_core_93_1"} ]
     """
     es = Elasticsearch([{'host': es_host, 'port': es_port}])
     handover_detail = []
-    res_error = es.search(index="reports", body={"query": {"bool": {
+    res_error = es.search(index=es_index, body={"query": {"bool": {
         "must": [{"term": {"params.handover_token.keyword": str(handover_token)}},
                  {"term": {"report_type.keyword": "ERROR"}}], "must_not": [], "should": []}}, "from": 0, "size": 1,
         "sort": [{"report_time": {"order": "desc"}}], "aggs": {}})
@@ -180,7 +181,7 @@ def handover_result(handover_token):
             result['report_time'] = doc['_source']['report_time']
             handover_detail.append(result)
     else:
-        res = es.search(index="reports", body={"query": {"bool": {
+        res = es.search(index=es_index, body={"query": {"bool": {
             "must": [{"term": {"params.handover_token.keyword": str(handover_token)}},
                      {"term": {"report_type.keyword": "INFO"}}], "must_not": [], "should": []}}, "from": 0,
             "size": 1, "sort": [{"report_time": {"order": "desc"}}], "aggs": {}})
@@ -240,12 +241,12 @@ def handover_results():
         schema:
           $ref: '#/definitions/handovers'
         examples:
-          [{"comment": "handover new Tiger database", "contact": "maurel@ebi.ac.uk", "handover_token": "605f1191-7a13-11e8-aa7e-005056ab00f0", "id": "QFqRQWQBiZ0vMed2vKDI", "message": "Handling {u'comment': u'handover new Tiger database', 'handover_token': '605f1191-7a13-11e8-aa7e-005056ab00f0', u'contact': u'maurel@ebi.ac.uk', u'src_uri': u'mysql://ensadmin:ensembl@mysql-ens-general-prod-1:4525/panthera_tigris_altaica_core_93_1', 'tgt_uri': 'mysql://ensadmin:ensembl@mysql-ens-general-dev-1:4484/panthera_tigris_altaica_core_93_1'}", "report_time": "2018-06-27T15:07:07.462", "src_uri": "mysql://ensadmin:ensembl@mysql-ens-general-prod-1:4525/panthera_tigris_altaica_core_93_1", "tgt_uri": "mysql://ensadmin:ensembl@mysql-ens-general-dev-1:4484/panthera_tigris_altaica_core_93_1"}, {"comment": "handover new Leopard database", "contact": "maurel@ebi.ac.uk", "handover_token": "5dcb1aca-7a13-11e8-b24e-005056ab00f0", "id": "P1qRQWQBiZ0vMed2rqBh", "message": "Handling {u'comment': u'handover new Leopard database', 'handover_token': '5dcb1aca-7a13-11e8-b24e-005056ab00f0', u'contact': u'maurel@ebi.ac.uk', u'src_uri': u'mysql://ensadmin:ensembl@mysql-ens-general-prod-1:4525/panthera_pardus_core_93_1', 'tgt_uri': 'mysql://ensadmin:ensembl@mysql-ens-general-dev-1:4484/panthera_pardus_core_93_1'}", "report_time": "2018-06-27T15:07:03.145", "src_uri": "mysql://ensadmin:ensembl@mysql-ens-general-prod-1:4525/panthera_pardus_core_93_1", "tgt_uri": "mysql://ensadmin:ensembl@mysql-ens-general-dev-1:4484/panthera_pardus_core_93_1"} ]
+          [{"comment": "handover new Tiger database", "contact": "maurel@ebi.ac.uk", "handover_token": "605f1191-7a13-11e8-aa7e-005056ab00f0", "id": "QFqRQWQBiZ0vMed2vKDI", "message": "Handling {u'comment': u'handover new Tiger database', 'handover_token': '605f1191-7a13-11e8-aa7e-005056ab00f0', u'contact': u'maurel@ebi.ac.uk', u'src_uri': u'mysql://ensro@mysql-ens-general-prod-1:4525/panthera_tigris_altaica_core_93_1', 'tgt_uri': 'mysql://ensro@mysql-ens-general-dev-1:4484/panthera_tigris_altaica_core_93_1'}", "report_time": "2018-06-27T15:07:07.462", "src_uri": "mysql://ensro@mysql-ens-general-prod-1:4525/panthera_tigris_altaica_core_93_1", "tgt_uri": "mysql://ensro@mysql-ens-general-dev-1:4484/panthera_tigris_altaica_core_93_1"}, {"comment": "handover new Leopard database", "contact": "maurel@ebi.ac.uk", "handover_token": "5dcb1aca-7a13-11e8-b24e-005056ab00f0", "id": "P1qRQWQBiZ0vMed2rqBh", "message": "Handling {u'comment': u'handover new Leopard database', 'handover_token': '5dcb1aca-7a13-11e8-b24e-005056ab00f0', u'contact': u'maurel@ebi.ac.uk', u'src_uri': u'mysql://ensro@mysql-ens-general-prod-1:4525/panthera_pardus_core_93_1', 'tgt_uri': 'mysql://ensro@mysql-ens-general-dev-1:4484/panthera_pardus_core_93_1'}", "report_time": "2018-06-27T15:07:03.145", "src_uri": "mysql://ensro@mysql-ens-general-prod-1:4525/panthera_pardus_core_93_1", "tgt_uri": "mysql://ensro@mysql-ens-general-dev-1:4484/panthera_pardus_core_93_1"} ]
     """
     release = request.args.get('release', str(app.config['RELEASE']))
     logger.info("Retrieving all handover report")
     es = Elasticsearch([{'host': es_host, 'port': es_port}])
-    res = es.search(index="reports", body={
+    res = es.search(index=es_index, body={
         "query": {
             "bool": {
                 "must": [{
@@ -272,7 +273,7 @@ def handover_results():
         result['message'] = doc['_source']['message']
         result['comment'] = doc['_source']['params']['comment']
         result['handover_token'] = doc['_source']['params']['handover_token']
-        res_error = es.search(index="reports", body={"query": {"bool": {
+        res_error = es.search(index=es_index, body={"query": {"bool": {
             "must": [{"term": {"params.handover_token.keyword": str(doc['_source']['params']['handover_token'])}},
                      {"term": {"report_type.keyword": "ERROR"}}], "must_not": [], "should": []}}, "from": 0,
             "size": 1, "sort": [{"report_time": {"order": "desc"}}],
@@ -281,7 +282,7 @@ def handover_results():
             for doc_error in res_error['hits']['hits']:
                 result['current_message'] = doc_error['_source']['message']
         else:
-            res2 = es.search(index="reports", body={"query": {"bool": {"must": [
+            res2 = es.search(index=es_index, body={"query": {"bool": {"must": [
                 {"term": {"params.handover_token.keyword": str(doc['_source']['params']['handover_token'])}},
                 {"term": {"report_type.keyword": "INFO"}}], "must_not": [], "should": []}}, "from": 0, "size": 1,
                 "sort": [{"report_time": {"order": "desc"}}], "aggs": {}})
@@ -350,7 +351,7 @@ def delete_handover(handover_token):
     try:
         logger.info("Retrieving handover data with token " + str(handover_token))
         es = Elasticsearch([{'host': es_host, 'port': es_port}])
-        es.delete_by_query(index='reports', doc_type='report', body={
+        es.delete_by_query(index=es_index, doc_type='report', body={
             "query": {"bool": {"must": [{"term": {"params.handover_token.keyword": str(handover_token)}}]}}})
         return jsonify(str(handover_token))
     except NotFoundError as e:
