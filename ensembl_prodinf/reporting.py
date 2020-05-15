@@ -20,7 +20,7 @@ Loggers contain additional context which is added to messages, namely:
 """
 
 """Binding from log level to a routing key for the queue exchange"""
-binding_keys = {
+binding_keys = {    # LEVEL: routing.key
                     'CRITICAL':'report.fatal',
                     'ERROR':'report.error',
                     'INFO':'report.info',
@@ -30,7 +30,6 @@ binding_keys = {
 
 thread_instance = threading.local()
 thread_instance.logger = None
-
 
 class ContextFilter(logging.Filter):
     """Filter for use by logging package that adds context to a report"""
@@ -47,12 +46,12 @@ class ContextFilter(logging.Filter):
         if 'params' in self.context.keys():
             record.params = self.context['params']
         else:
-            record.params = {}            
+            record.params = {}
         return True
 
 
 class JsonFormatter(logging.Formatter):
-    """Class for use by logging package that transforms a dict into JSON for sending to a queue"""        
+    """Class for use by logging package that transforms a dict into JSON for sending to a queue"""
 
     def format(self, record):
         obj = {
@@ -73,9 +72,9 @@ class QueueAppenderHandler(Handler):
 
     def __init__(self, pool, exchange):
         Handler.__init__(self)
-        self.pool = pool   
+        self.pool = pool
         self.exchange = exchange
-    
+
     def emit(self, record):
         record_json = self.format(record)
         with self.pool.acquire() as cxn:
@@ -94,7 +93,7 @@ class QueueAppenderHandler(Handler):
 
 def get_logger(pool, exchange, process, resource, params):
     """
-    Main method to obtain a logger which writes to the 
+    Main method to obtain a logger which writes to the
     Arguments:
       pool : Pika pool (use get_pool())
       exchange : rabbitMQ exchange
@@ -109,7 +108,7 @@ def get_logger(pool, exchange, process, resource, params):
         appender = _get_appender(pool, exchange, process)
         thread_instance.logger.context = appender.context
         thread_instance.logger.addHandler(appender)
-        set_logger_context(thread_instance.logger, resource, params)    
+        set_logger_context(thread_instance.logger, resource, params)
     return thread_instance.logger
 
 def _get_appender(pool, exchange, process):
@@ -133,11 +132,10 @@ def set_logger_context(logger, resource, params):
     """
     logger.context['resource'] = resource
     logger.context['params'] = params
-    return
 
 
 def get_pool(queue_url, **kwargs):
-  
+
     """
     Get an instance of Pika pool. This is a pool of Pika connections which can be used to write messages to RabbitMQ.
     Arguments:
@@ -151,7 +149,7 @@ def get_pool(queue_url, **kwargs):
         recycle
         stale
     """
-    
+
     options = {
         'socket_timeout' : 10,
         'connection_attempts' : 2,
@@ -163,7 +161,7 @@ def get_pool(queue_url, **kwargs):
     }
 
     options.update(kwargs)
-    
+
     """Pika is not thread safe, but 1 connection per thread is wasteful so use a pool instead"""
     params = pika.URLParameters(
             queue_url
@@ -178,3 +176,35 @@ def get_pool(queue_url, **kwargs):
             recycle=options['recycle'],
             stale=options['stale']
         )
+
+
+_HOSTNAME = socket.gethostname()
+
+
+reporting_logger = logging.getLogger(__name__)
+
+
+def make_report(report_type, msg, spec, resource):
+    return {
+        'params': spec,
+        'resource': resource,
+        'report_type': report_type,
+        'msg': msg
+    }
+
+
+class ReportFormatter:
+    def __init__(self, process_name):
+        self.process_name = process_name
+
+    def format(self, report):
+        return {
+            'report_type': report.get('report_type', ''), # CRITICAL, ERROR, INFO, DEBUG, WARN
+            'host': _HOSTNAME,
+            'process': self.process_name,
+            'resource': report.get('resource', ''),
+            'params': report.get('params', {}),
+            'report_time': datetime.now().strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3],
+            'message': report.get('msg', '')
+        }
+
