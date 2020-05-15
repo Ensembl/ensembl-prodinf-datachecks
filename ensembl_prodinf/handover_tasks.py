@@ -241,7 +241,7 @@ def submit_hc(spec, groups, compara_uri, staging_uri, live_uri):
 
 
 def submit_dc(spec, src_url, db_type, db_prefix, release, staging_uri, compara_uri):
-    """Submit the source database for healthchecking. Returns a celery job identifier"""
+    """Submit the source database for checking. Returns a celery job identifier"""
     try:
         src_uri = spec['src_uri']
         tgt_uri = spec['tgt_uri']
@@ -335,36 +335,28 @@ def process_datachecked_db(self, dc_job_id, spec):
     # allow infinite retries
     self.max_retries = None
     src_uri = spec['src_uri']
-    progress_msg = 'DC in progress, please see: %sjobs/%s' % (cfg.dc_uri, dc_job_id)
+    progress_msg = 'Datachecks in progress, please see: %sjobs/%s' % (cfg.dc_uri, dc_job_id)
     log_and_publish(make_report('INFO', progress_msg, spec, src_uri))
     try:
         result = dc_client.retrieve_job(dc_job_id)
     except Exception as e:
-        err_msg = 'Handover failed, cannot retrieve dc job'
+        err_msg = 'Handover failed, cannot retrieve datacheck job'
         log_and_publish(make_report('ERROR', err_msg, spec, src_uri))
-        raise ValueError('Handover failed, cannot retrieve dc job %s' % e) from e
+        raise ValueError('Handover failed, cannot retrieve datacheck job %s' % e) from e
     if result['status'] in ['incomplete', 'running', 'submitted']:
-        log_and_publish(make_report('DEBUG', 'DC Job incomplete, checking again later', spec, src_uri))
+        log_and_publish(make_report('DEBUG', 'Datacheck Job incomplete, checking again later', spec, src_uri))
         raise self.retry()
     # check results
-    if result['status'] == 'failed':
-        failed_msg = 'DCs failed to run, please see: %sjobs/%s' % (cfg.dc_uri, dc_job_id)
-        log_and_publish(make_report('INFO', failed_msg, spec, src_uri))
-        msg = """
-Running datachecks on %s failed to execute.
-Please see %s
-""" % (src_uri, cfg.dc_uri + "jobs/" + str(dc_job_id))
-        send_email(to_address=spec['contact'], subject='DC failed to run', body=msg, smtp_server=cfg.smtp_server, logger=logger)
-    elif result['output']['failed_total'] > 0:
-        prob_msg = 'DCs found problems, please see: %sjobs/%s' % (cfg.dc_uri, dc_job_id)
+    elif result['status'] == 'failed':
+        prob_msg = 'Datachecks found problems, you can download the output here: %sdownload_datacheck_outputs/%s' % (cfg.dc_uri, dc_job_id)
         log_and_publish(make_report('INFO', prob_msg, spec, src_uri))
         msg = """
-Running datachecks on %s completed but found failures.
-Please see %s
-""" % (src_uri, cfg.dc_uri + "jobs/" + str(dc_job_id))
-        send_email(to_address=spec['contact'], subject='DC ran but failed', body=msg, smtp_server=cfg.smtp_server)
+Running datachecks on %s completed but found problems.
+You can download the output here %s
+""" % (src_uri, cfg.dc_uri + "download_datacheck_outputs/" + str(dc_job_id))
+        send_email(to_address=spec['contact'], subject='Datacheck found problems', body=msg, smtp_server=cfg.smtp_server)
     else:
-        log_and_publish(make_report('INFO', 'DCs fine, starting copy', spec, src_uri))
+        log_and_publish(make_report('INFO', 'Datachecks successful, starting copy', spec, src_uri))
         spec['progress_complete'] = 1
         submit_copy(spec)
 
