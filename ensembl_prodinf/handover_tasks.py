@@ -71,13 +71,16 @@ logger = logging.getLogger(__name__)
                                                            #process    #resource  #params
 # logger = reporting.get_logger(pool, cfg.report_exchange, 'handover', None,      {})
 handover_formatter = ReportFormatter('handover')
-publisher = AMQPPublisher(cfg.report_server, cfg.report_exchange, formatter=handover_formatter)
+publisher = AMQPPublisher(cfg.report_server,
+                          cfg.report_exchange,
+                          exchange_type=cfg.report_exchange_type,
+                          formatter=handover_formatter)
 
 
 def log_and_publish(report):
     level = report['report_type']
     routing_key = 'report.%s' % level.lower()
-    logger.log(level, report['msg'])
+    logger.log(getattr(logging, level), report['msg'])
     publisher.publish(report, routing_key)
 
 

@@ -19,9 +19,9 @@ logger = logging.getLogger(__name__)
 
 
 class AMQPPublisher:
-    def __init__(self, uri, exchange_name, routing_key=None, formatter=None, **options):
+    def __init__(self, uri, exchange_name, exchange_type='topic', routing_key=None, formatter=None, **options):
         self.connection = Connection(uri)
-        self.exchange = Exchange(exchange_name)
+        self.exchange = Exchange(exchange_name, type=exchange_type)
         self.routing_key = routing_key
         self.formatter = formatter
         self.options = {**OPTIONS, **options}

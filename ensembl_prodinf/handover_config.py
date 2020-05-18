@@ -84,6 +84,8 @@ report_server = os.environ.get("REPORT_SERVER",
                                                "amqp://guest:guest@localhost:5672/%2F"))
 report_exchange = os.environ.get("REPORT_EXCHANGE",
                                  file_config.get('report_exchange', 'report_exchange'))
+report_exchange_type = os.environ.get("REPORT_EXCHANGE_TYPE",
+                                      file_config.get('report_exchange_type', 'direct'))
 data_files_path = os.environ.get("DATA_FILE_PATH" ,
                                  file_config.get('data_files_path', '/data_files/'))
 allowed_database_types = os.environ.get("ALLOWED_DATABASE_TYPES" ,
