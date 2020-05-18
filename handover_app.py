@@ -17,7 +17,6 @@ from ensembl_prodinf.exceptions import HTTPRequestError
 
 app = Flask(__name__, instance_relative_config=True)
 app.config.from_object('handover_config')
-# app.logger.addHandler(app_logging.file_handler(__name__))
 app.logger.addHandler(app_logging.default_handler())
 app.config['SWAGGER'] = {
     'title': 'Handover App',
@@ -103,15 +102,15 @@ def handovers():
           {src_uri: "mysql://user@server:port/saccharomyces_cerevisiae_core_91_4", contact: "joe.blogg@ebi.ac.uk", comment: "handover new Panda OF"}
     """
     if json_pattern.match(request.headers['Content-Type']):
-        app.logger.debug("Submitting handover request " + str(request.json))
+        app.logger.debug('Submitting handover request %s', request.json)
         spec = request.json
         if 'src_uri' not in spec or 'contact' not in spec or 'comment' not in spec:
             raise HTTPRequestError("Handover specification incomplete - please specify src_uri, contact and comment")
         ticket = handover_database(spec)
-        app.logger.info(ticket)
+        app.logger.info('Ticket: %s', ticket)
         return jsonify(ticket);
     else:
-        raise HTTPRequestError("Could not handle input of type {}".format(request.headers['Content-Type']))
+        raise HTTPRequestError('Could not handle input of type %s' % request.headers['Content-Type'])
 
 
 @app.route('/handovers/<string:handover_token>', methods=['GET'])
@@ -168,7 +167,7 @@ def handover_result(handover_token):
         "must": [{"term": {"params.handover_token.keyword": str(handover_token)}},
                  {"term": {"report_type.keyword": "ERROR"}}], "must_not": [], "should": []}}, "from": 0, "size": 1,
         "sort": [{"report_time": {"order": "desc"}}], "aggs": {}})
-    app.logger.info("Retrieving handover data with token " + str(handover_token))
+    app.logger.info('Retrieving handover data with token %s', handover_token)
     if len(res_error['hits']['hits']) != 0:
         for doc in res_error['hits']['hits']:
             result = {"id": doc['_id']}
@@ -198,7 +197,7 @@ def handover_result(handover_token):
             result['report_time'] = doc['_source']['report_time']
             handover_detail.append(result)
     if len(handover_detail) == 0:
-        raise HTTPRequestError("Handover token {} not found".format(handover_token), 404)
+        raise HTTPRequestError('Handover token %s not found' % handover_token, 404)
     else:
         return jsonify(handover_detail)
 
@@ -349,7 +348,7 @@ def delete_handover(handover_token):
           id: 15ce20fd-68cd-11e8-8117-005056ab00f0
     """
     try:
-        app.logger.info("Retrieving handover data with token " + str(handover_token))
+        app.logger.info('Retrieving handover data with token %s', handover_token)
         es = Elasticsearch([{'host': es_host, 'port': es_port}])
         es.delete_by_query(index=es_index, doc_type='report', body={
             "query": {"bool": {"must": [{"term": {"params.handover_token.keyword": str(handover_token)}}]}}})
@@ -362,7 +361,7 @@ def delete_handover(handover_token):
 @app.errorhandler(TransportError)
 def handle_elastisearch_error(e):
     app.logger.error(str(e))
-    message = 'Elasticsearch Error [{}] {}: {}'.format(e.status_code, e.error, e.info['error']['reason'])
+    message = 'Elasticsearch Error [%s] %s: %s' % (e.status_code, e.error, e.info['error']['reason'])
     return jsonify(error=message), e.status_code
 
 
