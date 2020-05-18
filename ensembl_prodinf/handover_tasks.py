@@ -40,7 +40,6 @@ from ensembl_prodinf.reporting import make_report, ReportFormatter
 
 
 retry_wait = app.conf.get('retry_wait', 60)
-# pool = reporting.get_pool(cfg.report_server)
 hc_client = HcClient(cfg.hc_uri)
 db_copy_client = DbCopyClient(cfg.copy_uri)
 metadata_client = MetadataClient(cfg.meta_uri)

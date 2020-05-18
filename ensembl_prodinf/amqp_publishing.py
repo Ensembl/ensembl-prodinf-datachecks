@@ -62,12 +62,6 @@ class AMQPPublisher:
                                     self.formatter,
                                     self.options)
 
-    def connect(self):
-        self.connection.connect()
-
-    def disconnect(self):
-        self.connection.release()
-
     def publish(self, msg, routing_key=None):
         with self.acquire_producer() as producer:
             producer.publish(msg, routing_key)
