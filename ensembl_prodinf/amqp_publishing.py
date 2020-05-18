@@ -44,23 +44,25 @@ class AMQPPublisher:
                     ))
             self.producer.publish(body,
                                   exchange=self.exchange,
-                                  routing_key=self.routing_key,
+                                  routing_key=key,
                                   declare=(self.exchange,),
                                   **self.options)
             logger.debug('Published AMQP message. Exchange: %s, Routing Key: %s, Body: %s',
                          self.exchange,
-                         self.routing_key,
+                         key,
                          str(body))
 
 
     @contextmanager
     def acquire_producer(self, block=True):
         with producers[self.connection].acquire(block=block) as producer:
+            logger.debug('Acquired producer for connection %s', self.connection.as_uri())
             yield self.AMQPProducer(producer,
                                     self.exchange,
                                     self.routing_key,
                                     self.formatter,
                                     self.options)
+        logger.debug('Released producer for connection %s', self.connection.as_uri())
 
     def publish(self, msg, routing_key=None):
         with self.acquire_producer() as producer:
