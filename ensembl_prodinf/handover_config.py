@@ -85,7 +85,7 @@ report_server = os.environ.get("REPORT_SERVER",
 report_exchange = os.environ.get("REPORT_EXCHANGE",
                                  file_config.get('report_exchange', 'report_exchange'))
 report_exchange_type = os.environ.get("REPORT_EXCHANGE_TYPE",
-                                      file_config.get('report_exchange_type', 'direct'))
+                                      file_config.get('report_exchange_type', 'topic'))
 data_files_path = os.environ.get("DATA_FILE_PATH" ,
                                  file_config.get('data_files_path', '/data_files/'))
 allowed_database_types = os.environ.get("ALLOWED_DATABASE_TYPES" ,
