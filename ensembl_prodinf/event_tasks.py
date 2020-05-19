@@ -20,6 +20,8 @@ publisher = AMQPPublisher(cfg.report_server, cfg.report_exchange, formatter=even
 
 
 def log_and_publish(report):
+    """Handy function to mimick the logger/publisher behaviour.
+    """
     level = report['report_type']
     routing_key = 'report.%s' % level.lower()
     logger.log(getattr(logging, level), report['msg'])

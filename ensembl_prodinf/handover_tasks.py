@@ -68,8 +68,7 @@ blat_species = ['homo_sapiens',
                 'gadus_morhua']
 
 logger = logging.getLogger(__name__)
-                                                           #process    #resource  #params
-# logger = reporting.get_logger(pool, cfg.report_exchange, 'handover', None,      {})
+
 handover_formatter = ReportFormatter('handover')
 publisher = AMQPPublisher(cfg.report_server,
                           cfg.report_exchange,
@@ -78,6 +77,8 @@ publisher = AMQPPublisher(cfg.report_server,
 
 
 def log_and_publish(report):
+    """Handy function to mimick the logger/publisher behaviour.
+    """
     level = report['report_type']
     routing_key = 'report.%s' % level.lower()
     logger.log(getattr(logging, level), report['msg'])
@@ -99,8 +100,7 @@ def handover_database(spec):
     * progress_total - Total number of task to do
     * progress_complete - Total number of task completed
     """
-    # TODO verify dict                     #resource        #params
-    # reporting.set_logger_context(logger, spec['src_uri'], spec)
+    # TODO verify dict
     src_uri = spec['src_uri']
     # create unique identifier
     spec['handover_token'] = str(uuid.uuid1())
@@ -436,7 +436,6 @@ def process_db_metadata(self, metadata_job_id, spec):
     """Wait for metadata update to complete and then respond accordingly:
     * if success, submit event to event handler for further processing
     * if failure, flag error using email"""
-    # reporting.set_logger_context(logger, spec['tgt_uri'], spec)
     # allow infinite retries
     self.max_retries = None
     tgt_uri = spec['tgt_uri']
