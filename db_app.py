@@ -19,8 +19,6 @@ from ensembl_prodinf.server_utils import get_status, get_load
 from ensembl_prodinf.exceptions import HTTPRequestError
 
 
-logger = logging.getLogger(__name__)
-
 app = Flask(__name__, instance_relative_config=True)
 app.config.from_object('db_config')
 app.analysis = app.config["HIVE_ANALYSIS"]
@@ -29,12 +27,13 @@ app.config['SWAGGER'] = {
     'uiversion': 2
 }
 
-print(app.config)
 
 swagger = Swagger(app)
 app.servers = None
-app.logger.addHandler(app_logging.file_handler(__name__))
 app.logger.addHandler(app_logging.default_handler())
+
+
+app.logger.info(app.config)
 
 
 def get_servers():
@@ -145,7 +144,7 @@ def list_databases_endpoint():
     """
     db_uri = request.args.get('db_uri')
     query = request.args.get('query')
-    logger.debug("Finding dbs matching " + query + " on " + db_uri)
+    app.logger.debug('Finding dbs matching %s on %s', query, db_uri)
     try:
         db_list = list_databases(db_uri, query)
     except ValueError as e:
@@ -236,7 +235,7 @@ def database_sizes_endpoint():
     dir_name = request.args.get('dir_name')
     if (dir_name is None):
         dir_name = '/instances'
-    logger.debug("Finding sizes of dbs matching " + str(query) + " on " + db_uri)
+    app.logger.debug('Finding sizes of dbs matching %s on %s', query, db_uri)
     try:
         db_sizes = get_database_sizes(db_uri, query, dir_name)
     except ValueError as e:
@@ -323,7 +322,7 @@ def get_status_endpoint(host):
     dir_name = request.args.get('dir_name')
     if (dir_name is None):
         dir_name = '/instances'
-    logger.debug("Finding status of " + host + " (dir " + dir_name + ")")
+    app.logger.debug('Finding status of %s (dir %s)', host, dir_name)
     try:
         status = get_status(host=host, dir_name=dir_name)
     except OSError as e:
@@ -385,7 +384,7 @@ def get_load_endpoint(host):
           load_1m: 0.05
           load_5m: 0.03
     """
-    logger.debug("Finding load of " + host)
+    app.logger.debug('Finding load of %s', host)
     try:
         load = get_load(host=host)
     except OSError as e:
@@ -462,7 +461,7 @@ def list_servers_endpoint(user):
     if query is None:
         raise HTTPRequestError("Query not specified")
     if user in get_servers():
-        logger.debug("Finding servers matching " + query + " for " + user)
+        app.logger.debug('Finding servers matching %s for %s', query, user)
         user_urls = get_servers()[user] or []
         urls = filter(lambda x: query in x, user_urls)
         return jsonify(list(urls))
@@ -541,7 +540,7 @@ def submit():
           {source_db_uri: "mysql://user@server:port/saccharomyces_cerevisiae_core_91_4", target_db_uri: "mysql://user:password@server:port/saccharomyces_cerevisiae_core_91_4", only_tables: undefined, skip_tables: undefined, update: undefined, drop: 1, convert_innodb: 0, skip_optimize: 0, email: undefined }
     """
     if json_pattern.match(request.headers['Content-Type']):
-        logger.debug("Submitting Database copy " + str(request.json))
+        app.logger.debug('Submitting Database copy %s', request.json)
         try:
             job = get_hive().create_job(app.analysis, request.json)
         except ValueError as e:
@@ -549,14 +548,14 @@ def submit():
         results = {"job_id": job.job_id};
         email = request.json.get('email')
         if email != None and email != '':
-            logger.debug("Submitting email request for  " + email)
+            app.logger.debug('Submitting email request for %s', email)
             email_results = email_when_complete.delay(request.url_root + "jobs/" + str(job.job_id) + "?format=email",
                                                       email)
             results['email_task'] = email_results.id
         return jsonify(results);
     else:
-        logger.error("Could not handle input of type " + request.headers['Content-Type'])
-        raise HTTPRequestError("Could not handle input of type " + request.headers['Content-Type'])
+        app.logger.error('Could not handle input of type %s', request.headers['Content-Type'])
+        raise HTTPRequestError('Could not handle input of type %s' % request.headers['Content-Type'])
 
 
 @app.route('/jobs/<int:job_id>', methods=['GET'])
@@ -631,7 +630,7 @@ def jobs(job_id):
     elif fmt == 'failures':
         return failure(job_id)
     elif fmt is None:
-        logger.info("Retrieving job with ID " + str(job_id))
+        app.logger.info('Retrieving job with ID %s', job_id)
         try:
             job_results = get_hive().get_result_for_job_id(job_id)
         except ValueError as e:
@@ -642,7 +641,7 @@ def jobs(job_id):
 
 
 def failure(job_id):
-    logger.info("Retrieving failure for job with ID " + str(job_id))
+    app.logger.info('Retrieving failure for job with ID %s', job_id)
     try:
         failure = get_hive().get_job_failure_msg_by_id(job_id)
     except ValueError as e:
@@ -651,7 +650,7 @@ def failure(job_id):
 
 
 def job_email(email, job_id):
-    logger.info("Retrieving job with ID " + str(job_id) + " for " + str(email))
+    app.logger.info('Retrieving job with ID %s for %s', job_id, email)
     try:
         job = get_hive().get_job_by_id(job_id)
         results = get_hive().get_result_for_job_id(job_id)
@@ -743,17 +742,17 @@ def delete(job_id):
 
 def kill_job(job_id):
     job = get_hive().get_job_by_id(job_id)
-    logger.debug("Getting worker_id for job_id " + str(job_id))
+    app.logger.debug('Getting worker_id for job_id %s', job_id)
     worker = get_hive().get_worker_id(job.role_id)
-    logger.debug("Getting process_id for worker_id " + str(worker.worker_id))
+    app.logger.debug('Getting process_id for worker_id %s', worker.worker_id)
     process_id = get_hive().get_worker_process_id(worker.worker_id)
-    logger.debug("Process_id is " + str(process_id.process_id))
+    app.logger.debug('Process_id is %s', process_id.process_id)
     os.kill(int(process_id.process_id), signal.SIGTERM)
     time.sleep(5)
     # Check if the process that we killed is alive.
     if (is_running(int(process_id.process_id))):
-        logger.error("Wasn't able to kill the process: " + str(process_id.process_id))
-        raise HTTPRequestError("Wasn't able to kill the process: " + str(process_id.process_id))
+        app.logger.error("Wasn't able to kill the process: %s", process_id.process_id)
+        raise HTTPRequestError("Wasn't able to kill the process: %s" % process_id.process_id)
     else:
         return jsonify({"process_id": process_id.process_id})
 
@@ -821,13 +820,13 @@ def list_jobs():
             total: 1
           status: failed
     """
-    logger.info("Retrieving jobs")
+    app.logger.info('Retrieving jobs')
     return jsonify(get_hive().get_all_results(app.analysis))
 
 
 @app.errorhandler(HTTPRequestError)
 def handle_bad_request_error(e):
-    logger.error(str(e))
+    app.logger.error(str(e))
     return jsonify(error=str(e)), e.status_code
 
 

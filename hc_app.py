@@ -15,8 +15,6 @@ from ensembl_prodinf.email_tasks import email_when_complete
 from ensembl_prodinf.exceptions import HTTPRequestError
 
 
-logger = logging.getLogger(__name__)
-
 app = Flask(__name__, instance_relative_config=True)
 app.config['SWAGGER'] = {
     'title': 'Production healthchecks REST endpoints',
@@ -25,11 +23,11 @@ app.config['SWAGGER'] = {
 app.config.from_object('hc_config')
 app.analysis = app.config["HIVE_ANALYSIS"]
 
-app.logger.addHandler(app_logging.file_handler(__name__))
 app.logger.addHandler(app_logging.default_handler())
 
-logger.info(app.config)
 swagger = Swagger(app)
+
+app.logger.info(app.config)
 
 hive = None
 
@@ -160,7 +158,7 @@ def submit_job():
           {db_uri: "mysql://user@server:port/saccharomyces_cerevisiae_core_91_4", staging_uri: "mysql://user@server:port/", live_uri: "mysql://user@server:port/", production_uri: "mysql://user@server:port/ensembl_production_91", compara_uri: "mysql://user@server:port/ensembl_compara_master", hc_names: ["org.ensembl.healthcheck.testcase.generic.StableID"]}
     """
     if json_pattern.match(request.headers['Content-Type']):
-        logger.debug("Submitting HC " + str(request.json))
+        app.logger.debug('Submitting HC %s', request.json)
         try:
             job = get_hive().create_job(app.analysis, request.json)
         except ValueError as e:
@@ -168,14 +166,14 @@ def submit_job():
         results = {"job_id": job.job_id};
         email = request.json.get('email')
         if email is not None and email != '':
-            logger.debug("Submitting email request for  " + email)
+            app.logger.debug('Submitting email request for %s', email)
             email_results = email_when_complete.delay(request.url_root + "jobs/" + str(job.job_id) + "?format=email",
                                                       email)
             results['email_task'] = email_results.id
         return jsonify(results), 201
     else:
-        logger.error("Could not handle input of type " + request.headers['Content-Type'])
-        raise HTTPRequestError("Could not handle input of type " + request.headers['Content-Type'])
+        app.logger.error('Could not handle input of type %s', request.headers['Content-Type'])
+        raise HTTPRequestError('Could not handle input of type %s' % request.headers['Content-Type'])
 
 
 @app.route('/jobs/<int:job_id>', methods=['GET'])
@@ -259,14 +257,14 @@ def job_result(job_id):
           status: complete
     """
     fmt = request.args.get('format')
-    logger.debug("Format " + str(fmt))
+    app.logger.debug('Format %s', fmt)
     if fmt == 'email':
         email = request.args.get('email')
         return job_email(email, job_id)
     elif fmt == 'failures':
         return job_failures(job_id)
     elif fmt is None:
-        logger.info("Retrieving job with ID " + str(job_id))
+        app.logger.info('Retrieving job with ID %s', job_id)
         try:
             job_result = get_hive().get_result_for_job_id(job_id)
         except ValueError as e:
@@ -277,7 +275,7 @@ def job_result(job_id):
 
 
 def job_email(email, job_id):
-    logger.info("Retrieving job with ID " + str(job_id) + " for " + str(email))
+    app.logger.info('Retrieving job with ID %s for %s', job_id, email)
     try:
         job = get_hive().get_job_by_id(job_id)
         results = get_hive().get_result_for_job_id(job_id)
@@ -304,7 +302,7 @@ def job_email(email, job_id):
 
 
 def job_failures(job_id):
-    logger.info("Retrieving failure for job with ID " + str(job_id))
+    app.logger.info('Retrieving failure for job with ID %s', job_id)
     try:
         job_failures_msg = get_hive().get_jobs_failure_msg(job_id)
     except ValueError as e:
@@ -456,7 +454,7 @@ def jobs():
           status: complete
           subject: 'Healthchecks for ailuropoda_melanoleuca_core_91_1 - failed'
     """
-    logger.info("Retrieving jobs")
+    app.logger.info('Retrieving jobs')
     return jsonify(get_hive().get_all_results(app.analysis))
 
 
@@ -515,7 +513,7 @@ def list_healthchecks_tests_endpoint():
     query = request.args.get('query')
     if query is None:
         return jsonify(get_hc_list())
-    logger.debug("Finding healthchecks tests matching " + query)
+    app.logger.debug('Finding healthchecks tests matching %s', query)
     hc_list = filter(lambda x: str(query).lower() in x.lower(), get_hc_list())
     return jsonify(list(hc_list))
 
@@ -575,7 +573,7 @@ def list_healthchecks_groups_endpoint():
     query = request.args.get('query')
     if query is None:
         return jsonify(get_hc_groups())
-    logger.debug("Finding healthchecks groups matching " + query)
+    app.logger.debug('Finding healthchecks groups matching %s', query)
     hc_groups = filter(lambda x: str(query).lower() in x.lower(), get_hc_groups())
     return jsonify(list(hc_groups))
 
@@ -587,7 +585,7 @@ def healthchecks_endpoint():
 
 @app.errorhandler(HTTPRequestError)
 def handle_bad_request_error(e):
-    logger.error(str(e))
+    app.logger.error(str(e))
     return jsonify(error=str(e)), e.status_code
 
 

@@ -16,5 +16,7 @@ report_server = os.environ.get("REPORT_SERVER",
                                file_config.get('report_server', "amqp://guest:guest@localhost:5672/%2F"))
 report_exchange = os.environ.get("REPORT_EXCHANGE",
                                  file_config.get('report_exchange', 'report_exchange'))
+report_exchange_type = os.environ.get("REPORT_EXCHANGE_TYPE",
+                                      file_config.get('report_exchange_type', 'direct'))
 event_uri = os.environ.get("EVENT_URI",
                            file_config.get('event_uri', 'http://127.0.0.1:5004/'))
