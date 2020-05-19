@@ -13,8 +13,6 @@ from ensembl_prodinf.handover_tasks import handover_database
 from ensembl_prodinf.exceptions import HTTPRequestError
 
 
-# logger = logging.getLogger(__name__)
-
 app = Flask(__name__, instance_relative_config=True)
 app.config.from_object('handover_config')
 app.logger.addHandler(app_logging.default_handler())
