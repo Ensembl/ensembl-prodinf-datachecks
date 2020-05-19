@@ -22,7 +22,7 @@ publisher = AMQPPublisher(cfg.report_server, cfg.report_exchange, formatter=even
 def log_and_publish(report):
     level = report['report_type']
     routing_key = 'report.%s' % level.lower()
-    logger.log(level, report['msg'])
+    logger.log(getattr(logging, level), report['msg'])
     publisher.publish(report, routing_key)
 
 
