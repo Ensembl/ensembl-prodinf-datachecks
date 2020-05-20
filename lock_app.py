@@ -93,7 +93,6 @@ app.config['SWAGGER'] = {
 }
 
 app.config.from_object('lock_config')
-app.logger.addHandler(app_logging.file_handler(__name__))
 app.logger.addHandler(app_logging.default_handler())
 
 if app.config.get("LOCK_URI") is None:
