@@ -49,13 +49,14 @@ class EventNotFoundError(Exception):
     pass
 
 app.logger.info(event_config.event_lookup)
-event_lookup = json.loads(open(event_config.event_lookup).read())
+with open(event_config.event_lookup, 'r') as evt_file:
+    event_lookup = json.load(evt_file)
 
 
 def get_processes_for_event(event):
     event_type = event['type']
-    if event_type not in event_lookup.keys():
-        raise EventNotFoundError("Event type " + str(event_type) + " not known")
+    if event_type not in event_lookup:
+        raise EventNotFoundError('Event type %s not known' % event_type)
     return event_lookup[event_type]
 
 
@@ -63,22 +64,22 @@ class ProcessNotFoundError(Exception):
     """Exception showing process not found"""
     pass
 
-
-process_lookup = json.loads(open(event_config.process_lookup).read())
+with open(event_config.process_lookup, 'r') as proc_file:
+    process_lookup = json.load(proc_file)
 
 
 def get_analysis(process):
-    if process not in process_lookup.keys():
-        raise ProcessNotFoundError("Process " + str(process) + " not known")
+    if process not in process_lookup:
+        raise ProcessNotFoundError('Process %s not known' % process)
     return process_lookup[process]['analysis']
 
 hives = {}
 
 
 def get_hive(process):
-    if process not in hives.keys():
-        if process not in process_lookup.keys():
-            raise ProcessNotFoundError("Process " + str(process) + " not known")
+    if process not in hives:
+        if process not in process_lookup:
+            raise ProcessNotFoundError('Process %s not known' % process)
         hives[process] = HiveInstance(process_lookup[process]['hive_uri'])
     return hives[process]
 
@@ -138,7 +139,7 @@ def submit_job():
             })
         return jsonify(results);
     else:
-        raise HTTPRequestError("Could not handle input of type " + request.headers['Content-Type'])
+        raise HTTPRequestError('Could not handle input of type %s' % request.headers['Content-Type'])
 
 
 @app.route('/jobs/<string:process>/<int:job_id>', methods=['GET'])
@@ -203,7 +204,7 @@ def job(process, job_id):
     elif output_format == None:
         return results(process, job_id)
     else:
-        raise HTTPRequestError("Format {} not known".format(output_format))
+        raise HTTPRequestError('Format %s not known' % output_format)
 
 
 def results(process, job_id):
