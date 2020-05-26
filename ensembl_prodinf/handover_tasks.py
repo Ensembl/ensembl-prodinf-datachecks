@@ -24,7 +24,6 @@ import re
 
 from ensembl_prodinf.handover_celery_app import app
 
-from ensembl_prodinf.hc_client import HcClient
 from ensembl_prodinf.db_copy_client import DbCopyClient
 from ensembl_prodinf.metadata_client import MetadataClient
 from ensembl_prodinf.event_client import EventClient
@@ -39,8 +38,7 @@ from ensembl_prodinf.amqp_publishing import AMQPPublisher
 from ensembl_prodinf.reporting import make_report, ReportFormatter
 
 
-retry_wait = app.conf.get('retry_wait', 60)
-hc_client = HcClient(cfg.hc_uri)
+retry_wait = app.conf.get('retry_wait',60)
 db_copy_client = DbCopyClient(cfg.copy_uri)
 metadata_client = MetadataClient(cfg.meta_uri)
 event_client = EventClient(cfg.event_uri)
@@ -94,7 +92,7 @@ def handover_database(spec):
     * comment - additional information about submission (required)
     The following keys are added during the handover process:
     * handover_token - unique identifier for this particular handover invocation
-    * hc_job_id - job ID for healthcheck process
+    * dc_job_id - job ID for datacheck process
     * db_job_id - job ID for database copy process
     * metadata_job_id - job ID for the metadata loading process
     * progress_total - Total number of task to do
@@ -128,17 +126,11 @@ def handover_database(spec):
         db_division = get_division(src_uri, spec['tgt_uri'], db_type)
     if db_division not in allowed_divisions_list:
         raise ValueError('Database division %s does not match server division list %s' % (db_division, allowed_divisions_list))
-    #Get database hc group and compara_uri
-    groups, compara_uri = hc_groups(db_type, db_prefix, src_uri)
-    #setting compara url to default value for species databases. This value is only used by Compara healthchecks
-    if compara_uri is None:
-        compara_uri = cfg.compara_uri + 'ensembl_compara_master'
     spec['staging_uri'] = staging_uri
     spec['progress_complete'] = 0
     msg = "Handling %s" % spec
     log_and_publish(make_report('INFO', msg, spec, src_uri))
-    submit_dc(spec, src_url, db_type, db_prefix, release, staging_uri, compara_uri)
-    submit_hc(spec, groups, compara_uri, staging_uri, live_uri)
+    submit_dc(spec, src_url, db_type)
     return spec['handover_token']
 
 
@@ -170,43 +162,7 @@ def parse_db_infos(database):
         raise ValueError("Database type for %s is not expected. Please contact the Production team" % database)
 
 
-def hc_groups(db_type, db_prefix, uri):
-    """Find which HC group to run on a given database type. For Compara generate the compara master uri"""
-    if db_type in ['core', 'rnaseq', 'cdna', 'otherfeatures']:
-        return [cfg.core_handover_group], None
-    if db_type == 'variation':
-        return [cfg.variation_handover_group], None
-    if db_type == 'funcgen':
-        return [cfg.funcgen_handover_group], None
-    if db_type == 'ancestral':
-        return [cfg.ancestral_handover_group], None
-    if db_type == 'compara':
-        if db_prefix == 'pan':
-            compara_uri = cfg.compara_uri + db_prefix + '_compara_master'
-            compara_handover_group = cfg.compara_pan_handover_group
-        elif db_prefix == 'plants':
-            compara_uri = cfg.compara_plants_uri + 'ensembl_compara_master_' + db_prefix
-            compara_handover_group = cfg.compara_handover_group
-        elif db_prefix == 'metazoa':
-            compara_uri = cfg.compara_metazoa_uri + 'ensembl_compara_master_' + db_prefix
-            compara_handover_group = cfg.compara_handover_group
-        elif db_prefix == 'vertebrates':
-            compara_uri = cfg.compara_uri + 'ensembl_compara_master'
-            compara_handover_group = cfg.compara_handover_group
-        elif check_grch37(uri, 'homo_sapiens'):
-            compara_uri = cfg.compara_grch37_uri + 'ensembl_compara_master_grch37'
-            compara_handover_group = cfg.compara_handover_group
-        elif db_prefix:
-            compara_uri = cfg.compara_uri + db_prefix + '_compara_master'
-            compara_handover_group = cfg.compara_handover_group
-        else:
-            compara_uri = cfg.compara_uri + 'ensembl_compara_master'
-            compara_handover_group = cfg.compara_handover_group
-        return [compara_handover_group], compara_uri
-    return [], None
-
-
-def check_staging_server(spec, db_type, db_prefix, assembly):
+def check_staging_server(spec,db_type,db_prefix,assembly):
     """Find which staging server should be use. secondary_staging for GRCh37 and Bacteria, staging for the rest"""
     if 'bacteria' in db_prefix:
         staging_uri = cfg.secondary_staging_uri
@@ -226,23 +182,7 @@ def check_staging_server(spec, db_type, db_prefix, assembly):
         live_uri = cfg.live_uri
     return spec, staging_uri, live_uri
 
-
-def submit_hc(spec, groups, compara_uri, staging_uri, live_uri):
-    """Submit the source database for healthchecking. Returns a celery job identifier"""
-    src_uri = spec['src_uri']
-    try:
-        hc_job_id = hc_client.submit_job(src_uri, cfg.production_uri,
-                compara_uri, staging_uri, live_uri, None, groups, cfg.data_files_path, None, spec['handover_token'])
-    except Exception as e:
-        err_msg = "Handover failed, Cannot submit hc job %s" % e
-        log_and_publish(make_report('WARNING', err_msg, spec, src_uri))
-    #spec['hc_job_id'] = hc_job_id
-    #task_id = process_checked_db.delay(hc_job_id, spec)
-    #msg = 'Submitted DB for checking as %s' % task_id
-    #log_and_publish(make_report('DEBUG', err_msg, spec, src_uri))
-
-
-def submit_dc(spec, src_url, db_type, db_prefix, release, staging_uri, compara_uri):
+def submit_dc(spec, src_url, db_type):
     """Submit the source database for checking. Returns a celery job identifier"""
     try:
         src_uri = spec['src_uri']
@@ -282,50 +222,6 @@ def submit_dc(spec, src_url, db_type, db_prefix, release, staging_uri, compara_u
     submitted_dc_msg = 'Submitted DB for checking as %s' % task_id
     log_and_publish(make_report('DEBUG', submitted_dc_msg, spec, src_uri))
     return task_id
-
-
-@app.task(bind=True, default_retry_delay=retry_wait)
-def process_checked_db(self, hc_job_id, spec):
-    """ Task to wait until HCs finish and then respond e.g.
-    * submit copy if HCs succeed
-    * send error email if not
-    """
-    # allow infinite retries
-    self.max_retries = None
-    src_uri = spec['src_uri']
-    hc_progress_msg = 'HCs in progress, please see: %s%s' % (cfg.hc_web_uri, hc_job_id)
-    log_and_publish(make_report('INFO', hc_progress_msg, spec, src_uri))
-    try:
-        result = hc_client.retrieve_job(hc_job_id)
-    except Exception as e:
-        err_msg = 'Handover failed, cannot retrieve hc job'
-        log_and_publish(make_report('ERROR', err_msg, spec, src_uri))
-        raise ValueError("Handover failed, cannot retrieve hc job %s" % e) from e
-    if result['status'] in ['incomplete', 'running', 'submitted']:
-        dbg_msg = 'HC Job incomplete, checking again later'
-        log_and_publish(make_report('DEBUG', dbg_msg, spec, src_uri))
-        raise self.retry()
-    # check results
-    if result['status'] == 'failed':
-        info_msg = 'HCs failed to run, please see: %s%s' % (cfg.hc_web_uri, hc_job_id)
-        log_and_publish(make_report('INFO', info_msg, spec, src_uri))
-        msg = """
-Running healthchecks on %s failed to execute.
-Please see %s
-""" % (src_uri, cfg.hc_web_uri + str(hc_job_id))
-        send_email(to_address=spec['contact'], subject='HC failed to run', body=msg, smtp_server=cfg.smtp_server)
-    elif result['output']['status'] == 'failed':
-        info_msg = 'HCs found problems, please see: %s%s' % (cfg.hc_web_uri, hc_job_id)
-        log_and_publish(make_report('INFO', info_msg, spec, src_uri))
-        msg = """
-Running healthchecks on %s completed but found failures.
-Please see %s
-""" % (src_uri, cfg.hc_web_uri + str(hc_job_id))
-        send_email(to_address=spec['contact'], subject='HC ran but failed', body=msg, smtp_server=cfg.smtp_server)
-    else:
-        log_and_publish(make_report('INFO', "HCs fine, starting copy", spec, src_uri))
-        spec['progress_complete'] = 1
-        submit_copy(spec)
 
 
 @app.task(bind=True, default_retry_delay=retry_wait)
