@@ -1,27 +1,30 @@
 #!/usr/bin/env python
 
+import logging
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import re
 import json
 from flasgger import Swagger
 
-from ensembl_prodinf import reporting
+from ensembl_prodinf.amqp_publishing import AMQPPublisher
+from ensembl_prodinf.reporting import make_report, ReportFormatter
 from ensembl_prodinf.hive import HiveInstance
 from ensembl_prodinf.event_tasks import process_result
 from ensembl_prodinf.exceptions import HTTPRequestError
 import event_config
 
 
-pool = reporting.get_pool(event_config.report_server)
-
-
-def get_logger():
-    return reporting.get_logger(pool, event_config.report_exchange, 'event_handler', None, {})
+event_formatter = ReportFormatter('event_handler')
+publisher = AMQPPublisher(event_config.report_server,
+                          event_config.report_exchange,
+                          exchange_type=event_config.report_exchange_type,
+                          formatter=event_formatter)
 
 
 app = Flask(__name__, instance_relative_config=True)
 app.config.from_object('event_config')
+app.logger.addHandler(app_logging.default_handler())
 app.config['SWAGGER'] = {
     'title': 'Event App',
     'uiversion': 2
@@ -29,21 +32,31 @@ app.config['SWAGGER'] = {
 
 swagger = Swagger(app)
 
-print(app.config)
+app.logger.info(app.config)
+
+
+def log_and_publish(report):
+    """Handy function to mimick the logger/publisher behaviour.
+    """
+    level = report['report_type']
+    routing_key = 'report.%s' % level.lower()
+    app.logger.log(getattr(logging, level), report['msg'])
+    publisher.publish(report, routing_key)
 
 
 class EventNotFoundError(Exception):
     """Exception showing event not found"""
     pass
 
-print(event_config.event_lookup)
-event_lookup = json.loads(open(event_config.event_lookup).read())
+app.logger.info(event_config.event_lookup)
+with open(event_config.event_lookup, 'r') as evt_file:
+    event_lookup = json.load(evt_file)
 
 
 def get_processes_for_event(event):
     event_type = event['type']
-    if event_type not in event_lookup.keys():
-        raise EventNotFoundError("Event type " + str(event_type) + " not known")
+    if event_type not in event_lookup:
+        raise EventNotFoundError('Event type %s not known' % event_type)
     return event_lookup[event_type]
 
 
@@ -51,22 +64,22 @@ class ProcessNotFoundError(Exception):
     """Exception showing process not found"""
     pass
 
-
-process_lookup = json.loads(open(event_config.process_lookup).read())
+with open(event_config.process_lookup, 'r') as proc_file:
+    process_lookup = json.load(proc_file)
 
 
 def get_analysis(process):
-    if process not in process_lookup.keys():
-        raise ProcessNotFoundError("Process " + str(process) + " not known")
+    if process not in process_lookup:
+        raise ProcessNotFoundError('Process %s not known' % process)
     return process_lookup[process]['analysis']
 
 hives = {}
 
 
 def get_hive(process):
-    if process not in hives.keys():
-        if process not in process_lookup.keys():
-            raise ProcessNotFoundError("Process " + str(process) + " not known")
+    if process not in hives:
+        if process not in process_lookup:
+            raise ProcessNotFoundError('Process %s not known' % process)
         hives[process] = HiveInstance(process_lookup[process]['hive_uri'])
     return hives[process]
 
@@ -111,7 +124,7 @@ def submit_job():
         # convert event to processes
         processes = get_processes_for_event(event)
         for process in processes:
-            get_logger().debug("Submitting process " + str(process))
+            log_and_publish(make_report('DEBUG', 'Submitting process %s' % process))
             hive = get_hive(process)
             analysis = get_analysis(process)
             try:
@@ -126,7 +139,7 @@ def submit_job():
             })
         return jsonify(results);
     else:
-        raise HTTPRequestError("Could not handle input of type " + request.headers['Content-Type'])
+        raise HTTPRequestError('Could not handle input of type %s' % request.headers['Content-Type'])
 
 
 @app.route('/jobs/<string:process>/<int:job_id>', methods=['GET'])
@@ -191,11 +204,11 @@ def job(process, job_id):
     elif output_format == None:
         return results(process, job_id)
     else:
-        raise HTTPRequestError("Format {} not known".format(output_format))
+        raise HTTPRequestError('Format %s not known' % output_format)
 
 
 def results(process, job_id):
-    get_logger().info("Retrieving job from " + process + " with ID " + str(job_id))
+    log_and_publish(make_report('INFO', 'Retrieving job from %s with ID %s' % (process, job_id)))
     try:
         job_result = get_hive(process).get_result_for_job_id(job_id)
     except ValueError as e:
@@ -270,7 +283,7 @@ def delete_job(process, job_id):
 
 
 def results_email(email, process, job_id):
-    get_logger().info("Retrieving job with ID " + str(job_id) + " for " + str(email))
+    log_and_publish(make_report('INFO', 'Retrieving job with ID %s for %s' % (job_id, email)))
     hive = get_hive(process)
     try:
         job = hive.get_job_by_id(job_id)
@@ -316,7 +329,7 @@ def jobs(process):
         schema:
           $ref: '#/definitions/job_id'
     """
-    get_logger().info("Retrieving jobs")
+    log_and_publish(make_report('INFO', 'Retrieving jobs'))
     return jsonify(get_hive(process).get_all_results(get_analysis(process)))
 
 
@@ -374,18 +387,18 @@ def processes():
 
 @app.errorhandler(HTTPRequestError)
 def handle_bad_request_error(e):
-    get_logger().error(str(e))
+    app.logger.error(str(e))
     return jsonify(error=str(e)), e.status_code
 
 
 @app.errorhandler(EventNotFoundError)
 def handle_event_not_found_error(e):
-    get_logger().error(str(e))
+    app.logger.error(str(e))
     return jsonify(error=str(e)), 404
 
 
 @app.errorhandler(ProcessNotFoundError)
 def handle_process_not_found_error(e):
-    get_logger().error(str(e))
+    app.logger.error(str(e))
     return jsonify(error=str(e)), 404
 

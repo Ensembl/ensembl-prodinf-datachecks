@@ -14,12 +14,9 @@ from ensembl_prodinf.email_tasks import email_when_complete
 from ensembl_prodinf.exceptions import HTTPRequestError
 
 
-logger = logging.getLogger(__name__)
-
 app = Flask(__name__, instance_relative_config=True)
 app.config.from_object('metadata_config')
 app.analysis = app.config["HIVE_ANALYSIS"]
-app.logger.addHandler(app_logging.file_handler(__name__))
 app.logger.addHandler(app_logging.default_handler())
 app.config['SWAGGER'] = {
     'title': 'Metadata App',
@@ -139,7 +136,7 @@ def submit_job():
     """
     if json_pattern.match(request.headers['Content-Type']):
         request.json["metadata_uri"] = app.config["METADATA_URI"]
-        logger.debug("Submitting metadata job " + str(request.json))
+        app.logger.debug('Submitting metadata job %s', request.json)
         try:
             job = get_hive().create_job(app.analysis, request.json)
         except ValueError as e:
@@ -148,14 +145,14 @@ def submit_job():
         email = request.json.get('email')
         email_notification = request.json.get('email_notification')
         if email != None and email != '' and email_notification != None:
-            logger.debug("Submitting email request for  " + email)
+            app.logger.debug('Submitting email request for %s', email)
             email_results = email_when_complete.delay(request.url_root + "jobs/" + str(job.job_id) + "?format=email",
                                                       email)
             results['email_task'] = email_results.id
         return jsonify(results);
     else:
-        logger.error("Could not handle input of type " + request.headers['Content-Type'])
-        raise HTTPRequestError("Could not handle input of type " + request.headers['Content-Type'])
+        app.logger.error('Could not handle input of type %s', request.headers['Content-Type'])
+        raise HTTPRequestError('Could not handle input of type %s' % request.headers['Content-Type'])
 
 
 @app.route('/jobs/<int:job_id>', methods=['GET'])
@@ -230,14 +227,14 @@ def job_result(job_id):
           status: complete
     """
     fmt = request.args.get('format')
-    logger.debug("Format " + str(fmt))
+    app.logger.debug('Format %s', fmt)
     if fmt == 'email':
         email = request.args.get('email')
         return job_email(email, job_id)
     elif fmt == 'failures':
         return failure(job_id)
     elif fmt is None:
-        logger.info("Retrieving job with ID " + str(job_id))
+        app.logger.info('Retrieving job with ID %s', job_id)
         try:
             job_result = get_hive().get_result_for_job_id(job_id, child=True)
         except ValueError as e:
@@ -248,7 +245,7 @@ def job_result(job_id):
 
 
 def job_email(email, job_id):
-    logger.info("Retrieving job with ID " + str(job_id) + " for " + str(email))
+    app.logger.info('Retrieving job with ID %s for %s', job_id, email)
     try:
         job = get_hive().get_job_by_id(job_id)
         results = get_hive().get_result_for_job_id(job_id, child=True)
@@ -318,7 +315,7 @@ def failure(job_id):
         examples:
           msg: 'Missing table meta in database'
     """
-    logger.info("Retrieving failure for job with ID " + str(job_id))
+    app.logger.info('Retrieving failure for job with ID %s', job_id)
     try:
         failure = get_hive().get_job_failure_msg_by_id(job_id, child=True)
     except ValueError as e:
@@ -447,13 +444,13 @@ def jobs():
             total: 1
           status: failed
     """
-    logger.info("Retrieving jobs")
+    app.logger.info('Retrieving jobs')
     return jsonify(get_hive().get_all_results(app.analysis, child=True))
 
 
 @app.errorhandler(HTTPRequestError)
 def handle_bad_request_error(e):
-    logger.error(str(e))
+    app.logger.error(str(e))
     return jsonify(error=str(e)), e.status_code
 
 
