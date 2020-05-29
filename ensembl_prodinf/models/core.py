@@ -16,7 +16,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 Base = declarative_base()
 
-__all__ = ['CoreInstance', 'get_division']
+__all__ = ['CoreInstance', 'get_division', 'get_release']
 
 class Meta(Base):
     __tablename__ = 'meta'
@@ -37,6 +37,7 @@ Session = sessionmaker()
 class CoreInstance:
 
     __division = None
+    __release = None
 
     def __init__(self, url, timeout=3600):
         self.engine = create_engine(url, pool_recycle=timeout, echo=False)
@@ -56,6 +57,12 @@ class CoreInstance:
             self.__division = self.__get_meta_value('species.division')
         return self.__division
 
+    @property
+    def release(self):
+        if self.__release is None:
+            self.__release = self.__get_meta_value('schema_version')
+        return self.__release
+
 def get_division(src_uri, tgt_uri, db_type):
     uri = src_uri
     if db_type == "variation" or db_type == "funcgen":
@@ -64,3 +71,7 @@ def get_division(src_uri, tgt_uri, db_type):
     division_meta = inst.division
     division = str(division_meta).replace('Ensembl','')
     return division.lower()
+
+def get_release(src_uri):
+    inst = CoreInstance(src_uri)
+    return int(inst.release)

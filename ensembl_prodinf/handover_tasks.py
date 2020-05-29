@@ -26,15 +26,17 @@ from ensembl.datacheck.client import DatacheckClient
 from sqlalchemy_utils.functions import database_exists, drop_database
 from sqlalchemy.engine.url import make_url
 from ensembl_prodinf.utils import send_email
-from ensembl_prodinf.models.compara import check_grch37
-from ensembl_prodinf.models.core import get_division
+from ensembl_prodinf.models.compara import check_grch37, get_release_compara
+from ensembl_prodinf.models.core import get_division, get_release
 from ensembl_prodinf import handover_config as cfg
 import uuid
 import re
 from ensembl_prodinf import reporting
 import json
+import handover_config
 
 retry_wait = app.conf.get('retry_wait',60)
+release = int(handover_config.RELEASE)
 pool = reporting.get_pool(cfg.report_server)
 hc_client = HcClient(cfg.hc_uri)
 db_copy_client = DbCopyClient(cfg.copy_uri)
@@ -44,7 +46,7 @@ dc_client = DatacheckClient(cfg.dc_uri)
 
 db_types_list = [i for i in cfg.allowed_database_types.split(",")]
 allowed_divisions_list = [i for i in cfg.allowed_divisions.split(",")]
-species_pattern = re.compile(r'^(?P<prefix>\w+)_(?P<type>core|rnaseq|cdna|otherfeatures|variation|funcgen)(_\d+)?_(?P<release>\d+)_(?P<assembly>\d+)$')
+species_pattern = re.compile(r'^(?P<prefix>\w+)_(?P<type>core|rnaseq|cdna|otherfeatures|variation|funcgen)(_\d+)?_(\d+)_(?P<assembly>\d+)$')
 compara_pattern = re.compile(r'^ensembl_compara(_(?P<division>[a-z]+|pan)(_homology)?)?(_(\d+))?(_\d+)$')
 ancestral_pattern = re.compile(r'^ensembl_ancestral(_(?P<division>[a-z]+))?(_(\d+))?(_\d+)$')
 blat_species = ['homo_sapiens','mus_musculus','danio_rerio','rattus_norvegicus','gallus_gallus','canis_lupus_familiaris','bos_taurus',
@@ -75,12 +77,23 @@ def handover_database(spec):
     spec['progress_total']=3
     check_db(spec['src_uri'])
     src_url = make_url(spec['src_uri'])
-    #Scan database name and retrieve species or compara name, database type, release number and assembly version
-    (db_prefix, db_type, release, assembly) = parse_db_infos(src_url.database)
+    #Scan database name and retrieve species or compara name, database type, and assembly version
+    (db_prefix, db_type, assembly) = parse_db_infos(src_url.database)
     # Check if the given database can be handed over
     if db_type not in db_types_list:
         get_logger().error("Handover failed, " + spec['src_uri'] + " has been handed over after deadline. Please contact the Production team")
         raise ValueError(spec['src_uri'] + " has been handed over after the deadline. Please contact the Production team")
+    # Check if the database release match the handover service
+    if db_type is 'compara':
+        compara_release = get_release_compara(spec['src_uri'])
+        if release != compara_release:
+            get_logger().error("Handover failed, " + spec['src_uri'] + " database release version "+str(compara_release)+" does not match handover service release version "+str(release))
+            raise ValueError(spec['src_uri'] + " database release version "+str(compara_release)+" does not match handover service release version "+str(release))
+    else:
+        db_release=get_release(spec['src_uri'])
+        if release != db_release:
+            get_logger().error("Handover failed, " + spec['src_uri'] + " database release version "+str(db_release)+" does not match handover service release version "+str(release))
+            raise ValueError(spec['src_uri'] + " database release version "+str(db_release)+" does not match handover service release version "+str(release))
     #Check to which staging server the database need to be copied to
     (spec,staging_uri,live_uri) = check_staging_server(spec,db_type,db_prefix,assembly)
     if 'tgt_uri' not in spec:
@@ -123,9 +136,8 @@ def parse_db_infos(database):
         m = species_pattern.match(database)
         db_prefix = m.group('prefix')
         db_type = m.group('type')
-        release = m.group('release')
         assembly = m.group('assembly')
-        return db_prefix, db_type, release, assembly
+        return db_prefix, db_type, assembly
     elif compara_pattern.match(database):
         m = compara_pattern.match(database)
         division = m.group('division')
@@ -380,6 +392,8 @@ def process_db_metadata(self, metadata_job_id, spec):
         get_logger().debug("Metadata load Job incomplete, checking again later")
         raise self.retry()
     if result['status'] == 'failed':
+        get_logger().info("Dropping " + str(spec['tgt_uri']))
+        drop_database(spec['tgt_uri'])
         get_logger().info("Metadata load failed, please see "+cfg.meta_uri+ 'jobs/' + str(metadata_job_id) + '?format=failures')
         msg = """
 Metadata load of %s failed.
