@@ -115,7 +115,7 @@ def handover_database(spec):
         raise ValueError("%s does not exist" % src_uri)
     src_url = make_url(src_uri)
     #Scan database name and retrieve species or compara name, database type, release number and assembly version
-    db_prefix, db_type, release, assembly = parse_db_infos(src_url.database)
+    db_prefix, db_type, assembly = parse_db_infos(src_url.database)
     # Check if the given database can be handed over
     if db_type not in db_types_list:
         msg = "Handover failed, %s has been handed over after deadline. Please contact the Production team" % src_uri
