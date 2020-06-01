@@ -84,7 +84,7 @@ def handover_database(spec):
         get_logger().error("Handover failed, " + spec['src_uri'] + " has been handed over after deadline. Please contact the Production team")
         raise ValueError(spec['src_uri'] + " has been handed over after the deadline. Please contact the Production team")
     # Check if the database release match the handover service
-    if db_type is 'compara':
+    if db_type == 'compara':
         compara_release = get_release_compara(spec['src_uri'])
         if release != compara_release:
             get_logger().error("Handover failed, " + spec['src_uri'] + " database release version "+str(compara_release)+" does not match handover service release version "+str(release))
