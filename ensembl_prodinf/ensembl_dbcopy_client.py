@@ -84,28 +84,8 @@ class DbCopyRestClient(RestClient):
         """
         logging.info("Source host: " + i['src_host'])
         logging.info("Target hosts: " + i['tgt_host'])
-        if 'src_incl_db' in i:
-            logging.info("List of database to include in the copy. If not defined all the databases from the server will be copied: " + i['src_incl_db'])
-        if 'src_skip_db' in i:
-            logging.info("List of database to exclude from the copy: " + i['skip_tables'])
-        if 'src_incl_tables' in i:
-            logging.info("List of tables to include in the copy: " + i['src_incl_tables'])
-        if 'src_skip_tables' in i:
-            logging.info("List of tables to exclude from the copy: " + i['src_skip_tables'])
-        if 'tgt_db_name' in i:
-            logging.info("Name of database on target server. Used for renaming databases: " + i['tgt_db_name'])
-        if 'tgt_directory' in i:
-            logging.info("Target directory path on the target machine: " + i['tgt_directory'])
-        if 'skip_optimize' in i:
-            logging.info("Skip the database optimization step after the copy. Useful for very large databases: " + i['skip_optimize'])
-        if 'convert_innodb' in i:
-            logging.info("Convert innoDB tables to MyISAM: " + i['convert_innodb'])
-        if 'wipe_target' in i:
-            logging.info("Delete target database before copy: " + i['wipe_target'])
-        if 'email_list' in i:
-            logging.info("List of emails: " + i['email_list'])
-        if 'user' in i:
-            logging.info("User name: " + i['user'])
+            logging.info("Detailed parameters:")
+            logging.info("%s", i)
 
 if __name__ == '__main__':
 
