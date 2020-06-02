@@ -84,8 +84,8 @@ class DbCopyRestClient(RestClient):
         """
         logging.info("Source host: " + i['src_host'])
         logging.info("Target hosts: " + i['tgt_host'])
-            logging.info("Detailed parameters:")
-            logging.info("%s", i)
+        logging.info("Detailed parameters:")
+        logging.info("%s", i)
 
 if __name__ == '__main__':
 
@@ -127,9 +127,9 @@ if __name__ == '__main__':
         args.convert_innodb=0
         
     if args.action == 'submit':
-        logging.info("Submitting " + args.src_host + " -> " + args.tgt_host)
+        logging.info('Submitting % -> %',args.src_host,args.tgt_host)
         job_id = client.submit_job(args.src_host, args.src_incl_db, args.src_skip_db, args.src_incl_tables, args.src_skip_tables, args.tgt_host, args.tgt_db_name, args.tgt_directory, args.skip_optimize, args.wipe_target, args.convert_innodb, args.email_list, args.user)
-        logging.info('Job submitted with ID '+str(job_id))
+        logging.info('Job submitted with ID %',job_id)
 
     elif args.action == 'retrieve':
         job = client.retrieve_job(args.job_id)
