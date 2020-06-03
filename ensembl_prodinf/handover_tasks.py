@@ -213,7 +213,7 @@ def submit_dc(spec, src_url, db_type, db_prefix, release, staging_uri, compara_u
             dc_job_id = dc_client.submit_job(server_url, src_url.database, None, None, db_type, None, db_type, 'critical', None, spec['handover_token'])
         elif db_type == 'ancestral':
             get_logger().debug("Submitting DC for "+src_url.database+ " on server: "+server_url)
-            dc_job_id = dc_client.submit_job(server_url, src_url.database, None, None, db_type, None, 'corelike', 'critical', None, spec['handover_token'])
+            dc_job_id = dc_client.submit_job(server_url, src_url.database, None, None, 'core', None, 'ancestral', 'critical', None, spec['handover_token'])
         elif db_type in ['rnaseq','cdna','otherfeatures']:
             division = get_division(spec['src_uri'],spec['tgt_uri'],db_type)
             get_logger().debug("division: "+division)
