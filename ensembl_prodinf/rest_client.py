@@ -53,6 +53,8 @@ class RestClient(object):
         logging.info("Submitting job")
         logging.debug(payload)
         r = requests.post(self.jobs.format(self.uri), json=payload)
+        if r.status_code != 201:
+            logging.error("failed to submit because: "+r.text)
         r.raise_for_status()
         return r.json()['job_id']
 
@@ -68,6 +70,8 @@ class RestClient(object):
         if kill:
             delete_uri += '?kill=1'
         r = requests.delete(delete_uri)
+        if r.status_code != 200:
+            logging.error("failed to delete job because: "+r.text)
         r.raise_for_status()
         return True
 
@@ -78,6 +82,8 @@ class RestClient(object):
         """
         logging.info("Listing")
         r = requests.get(self.jobs.format(self.uri))
+        if r.status_code != 200:
+            logging.error("failed to list jobs because: "+r.text)
         r.raise_for_status()
         return r.json()
 
@@ -91,6 +97,8 @@ class RestClient(object):
         """
         logging.info("Retrieving job failure for job " + str(job_id))
         r = requests.get(self.jobs_id.format(self.uri, str(job_id)) + '?format=failures')
+        if r.status_code != 200:
+            logging.error("failed to retrieve job failures because: "+r.text)
         r.raise_for_status()
         failure_msg = r.json()
         return failure_msg
@@ -118,6 +126,8 @@ class RestClient(object):
         """
         logging.info("Retrieving results for job " + str(job_id))
         r = requests.get(self.jobs_id.format(self.uri, str(job_id)))
+        if r.status_code != 200:
+            logging.error("failed to retrieve job because: "+r.text)
         r.raise_for_status()
         job = r.json()
         return job
