@@ -266,31 +266,45 @@ def handover_results():
     })
     list_handovers = []
     for doc in res['hits']['hits']:
-        result = {"id": doc['_id']}
-        result['message'] = doc['_source']['message']
-        result['comment'] = doc['_source']['params']['comment']
-        result['handover_token'] = doc['_source']['params']['handover_token']
-        res_error = es.search(index=es_index, body={"query": {"bool": {
-            "must": [{"term": {"params.handover_token.keyword": str(doc['_source']['params']['handover_token'])}},
-                     {"term": {"report_type.keyword": "ERROR"}}], "must_not": [], "should": []}}, "from": 0,
-            "size": 1, "sort": [{"report_time": {"order": "desc"}}],
-            "aggs": {}})
-        if len(res_error['hits']['hits']) != 0:
-            for doc_error in res_error['hits']['hits']:
-                result['current_message'] = doc_error['_source']['message']
-        else:
-            res2 = es.search(index=es_index, body={"query": {"bool": {"must": [
-                {"term": {"params.handover_token.keyword": str(doc['_source']['params']['handover_token'])}},
-                {"term": {"report_type.keyword": "INFO"}}], "must_not": [], "should": []}}, "from": 0, "size": 1,
-                "sort": [{"report_time": {"order": "desc"}}], "aggs": {}})
-            for doc2 in res2['hits']['hits']:
-                result['current_message'] = doc2['_source']['message']
-        result['contact'] = doc['_source']['params']['contact']
-        result['src_uri'] = doc['_source']['params']['src_uri']
-        result['tgt_uri'] = doc['_source']['params']['tgt_uri']
-        result['report_time'] = doc['_source']['report_time']
-        list_handovers.append(result)
+        if valid_handover(doc, release):
+            result = {"id": doc['_id']}
+            result['message'] = doc['_source']['message']
+            result['comment'] = doc['_source']['params']['comment']
+            result['handover_token'] = doc['_source']['params']['handover_token']
+            res_error = es.search(index=es_index, body={"query": {"bool": {
+                "must": [{"term": {"params.handover_token.keyword": str(doc['_source']['params']['handover_token'])}},
+                         {"term": {"report_type.keyword": "ERROR"}}], "must_not": [], "should": []}}, "from": 0,
+                "size": 1, "sort": [{"report_time": {"order": "desc"}}],
+                "aggs": {}})
+            if len(res_error['hits']['hits']) != 0:
+                for doc_error in res_error['hits']['hits']:
+                    result['current_message'] = doc_error['_source']['message']
+            else:
+                res2 = es.search(index=es_index, body={"query": {"bool": {"must": [
+                    {"term": {"params.handover_token.keyword": str(doc['_source']['params']['handover_token'])}},
+                    {"term": {"report_type.keyword": "INFO"}}], "must_not": [], "should": []}}, "from": 0, "size": 1,
+                    "sort": [{"report_time": {"order": "desc"}}], "aggs": {}})
+                for doc2 in res2['hits']['hits']:
+                    result['current_message'] = doc2['_source']['message']
+            result['contact'] = doc['_source']['params']['contact']
+            result['src_uri'] = doc['_source']['params']['src_uri']
+            result['tgt_uri'] = doc['_source']['params']['tgt_uri']
+            result['report_time'] = doc['_source']['report_time']
+            list_handovers.append(result)
     return jsonify(list_handovers)
+
+
+def valid_handover(doc, release):
+    src_uri = doc['_source']['params']['src_uri']
+    match = re.match(r'^.*?_(?P<first>\d+)(_(?P<second>\d+))?(_(\d+))?$', src_uri)
+    if match:
+        first = match.group('first')
+        second = match.group('second')
+        if (first == release):
+            return True
+        if (second == release) and (int(second) - int(first) == 53):
+            return True
+    return False
 
 
 @app.route('/handovers/<string:handover_token>', methods=['DELETE'])
