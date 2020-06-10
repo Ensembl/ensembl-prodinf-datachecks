@@ -300,10 +300,7 @@ def valid_handover(doc, release):
     if match:
         first = match.group('first')
         second = match.group('second')
-        if (first == release):
-            return True
-        if (second == release) and (int(second) - int(first) == 53):
-            return True
+        return (first == release) or ((second == release) and (int(second) - int(first) == 53))
     return False
 
 
