@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-
-import json
 import logging
 import os
 import re
@@ -17,11 +14,13 @@ from ensembl_prodinf.db_utils import list_databases, get_database_sizes
 from ensembl_prodinf.email_tasks import email_when_complete
 from ensembl_prodinf.server_utils import get_status, get_load
 from ensembl_prodinf.exceptions import HTTPRequestError
+from ensembl_prodinf.config import load_config_json
 
 
 app = Flask(__name__, instance_relative_config=True)
 app.config.from_object('db_config')
 app.analysis = app.config["HIVE_ANALYSIS"]
+app.blacklisted_status_hosts = set(app.config['BLACKLISTED_STATUS_HOSTS'])
 app.config['SWAGGER'] = {
     'title': 'Database copy REST endpoints',
     'uiversion': 2
@@ -29,28 +28,13 @@ app.config['SWAGGER'] = {
 
 
 swagger = Swagger(app)
-app.servers = None
+app.hive = HiveInstance(app.config["HIVE_URI"])
+app.logger.addHandler(app_logging.file_handler(__name__))
 app.logger.addHandler(app_logging.default_handler())
-
 
 app.logger.info(app.config)
 
-
-def get_servers():
-    if app.servers is None:
-        with open(app.config["SERVER_URIS_FILE"], 'r') as f:
-            app.servers = json.loads(f.read())
-    return app.servers
-
-
-hive = None
-
-
-def get_hive():
-    global hive
-    if hive is None:
-        hive = HiveInstance(app.config["HIVE_URI"])
-    return hive
+app.servers = load_config_json(app.config['SERVER_URIS_FILE'])
 
 
 def is_running(pid):
@@ -323,6 +307,8 @@ def get_status_endpoint(host):
     if (dir_name is None):
         dir_name = '/instances'
     app.logger.debug('Finding status of %s (dir %s)', host, dir_name)
+    if host in app.blacklisted_status_hosts:
+        return jsonify(error='Cannot retrieve status of: %s' % host), 400
     try:
         status = get_status(host=host, dir_name=dir_name)
     except OSError as e:
@@ -385,6 +371,8 @@ def get_load_endpoint(host):
           load_5m: 0.03
     """
     app.logger.debug('Finding load of %s', host)
+    if host in app.blacklisted_status_hosts:
+        return jsonify(error='Cannot retrieve load of: %s' % host), 400
     try:
         load = get_load(host=host)
     except OSError as e:
@@ -459,14 +447,14 @@ def list_servers_endpoint(user):
     """
     query = request.args.get('query')
     if query is None:
-        raise HTTPRequestError("Query not specified")
-    if user in get_servers():
+        raise HTTPRequestError('Query not specified')
+    if user in app.servers:
         app.logger.debug('Finding servers matching %s for %s', query, user)
-        user_urls = get_servers()[user] or []
+        user_urls = app.servers[user] or []
         urls = filter(lambda x: query in x, user_urls)
         return jsonify(list(urls))
     else:
-        raise HTTPRequestError("User " + user + " not found", 404)
+        raise HTTPRequestError("User %s not found" % user, 404)
 
 
 @app.route('/jobs', methods=['POST'])
@@ -542,7 +530,7 @@ def submit():
     if json_pattern.match(request.headers['Content-Type']):
         app.logger.debug('Submitting Database copy %s', request.json)
         try:
-            job = get_hive().create_job(app.analysis, request.json)
+            job = app.hive.create_job(app.analysis, request.json)
         except ValueError as e:
             raise HTTPRequestError(str(e))
         results = {"job_id": job.job_id};
@@ -632,18 +620,18 @@ def jobs(job_id):
     elif fmt is None:
         app.logger.info('Retrieving job with ID %s', job_id)
         try:
-            job_results = get_hive().get_result_for_job_id(job_id)
+            job_results = app.hive.get_result_for_job_id(job_id)
         except ValueError as e:
             raise HTTPRequestError(str(e), 404)
         return jsonify(job_results)
     else:
-        raise HTTPRequestError("Format " + str(fmt) + " not known")
+        raise HTTPRequestError("Format %s not known" % fmt)
 
 
 def failure(job_id):
     app.logger.info('Retrieving failure for job with ID %s', job_id)
     try:
-        failure = get_hive().get_job_failure_msg_by_id(job_id)
+        failure = app.hive.get_job_failure_msg_by_id(job_id)
     except ValueError as e:
         raise HTTPRequestError(str(e), 404)
     return jsonify({"msg": failure.msg})
@@ -652,8 +640,8 @@ def failure(job_id):
 def job_email(email, job_id):
     app.logger.info('Retrieving job with ID %s for %s', job_id, email)
     try:
-        job = get_hive().get_job_by_id(job_id)
-        results = get_hive().get_result_for_job_id(job_id)
+        job = app.hive.get_job_by_id(job_id)
+        results = app.hive.get_result_for_job_id(job_id)
         if results['status'] == 'complete':
             results['subject'] = 'Copy database from %s to %s successful' % (
             results['output']['source_db_uri'], results['output']['target_db_uri'])
@@ -661,7 +649,7 @@ def job_email(email, job_id):
             results['output']['source_db_uri'], results['output']['target_db_uri'])
             results['body'] += 'Copy took %s' % (results['output']['runtime'])
         elif results['status'] == 'failed':
-            failure = get_hive().get_job_failure_msg_by_id(job_id)
+            failure = app.hive.get_job_failure_msg_by_id(job_id)
             results['subject'] = 'Copy database from %s to %s failed' % (
             results['input']['source_db_uri'], results['input']['target_db_uri'])
             results['body'] = 'Copy failed with following message:\n'
@@ -733,7 +721,7 @@ def delete(job_id):
     try:
         if 'kill' in request.args.keys() and request.args['kill'] == 1:
             kill_job(job_id)
-        job = get_hive().get_job_by_id(job_id)
+        job = app.hive.get_job_by_id(job_id)
         hive.delete_job(job)
     except ValueError as e:
         raise HTTPRequestError(str(e), 404)
@@ -741,11 +729,11 @@ def delete(job_id):
 
 
 def kill_job(job_id):
-    job = get_hive().get_job_by_id(job_id)
+    job = app.hive.get_job_by_id(job_id)
     app.logger.debug('Getting worker_id for job_id %s', job_id)
-    worker = get_hive().get_worker_id(job.role_id)
+    worker = app.hive.get_worker_id(job.role_id)
     app.logger.debug('Getting process_id for worker_id %s', worker.worker_id)
-    process_id = get_hive().get_worker_process_id(worker.worker_id)
+    process_id = app.hive.get_worker_process_id(worker.worker_id)
     app.logger.debug('Process_id is %s', process_id.process_id)
     os.kill(int(process_id.process_id), signal.SIGTERM)
     time.sleep(5)
@@ -821,7 +809,7 @@ def list_jobs():
           status: failed
     """
     app.logger.info('Retrieving jobs')
-    return jsonify(get_hive().get_all_results(app.analysis))
+    return jsonify(app.hive.get_all_results(app.analysis))
 
 
 @app.errorhandler(HTTPRequestError)
