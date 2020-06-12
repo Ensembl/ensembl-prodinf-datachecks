@@ -217,7 +217,7 @@ def database_sizes_endpoint():
     db_uri = request.args.get('db_uri')
     query = request.args.get('query')
     dir_name = request.args.get('dir_name')
-    if (dir_name is None):
+    if dir_name is None:
         dir_name = '/instances'
     app.logger.debug('Finding sizes of dbs matching %s on %s', query, db_uri)
     try:
@@ -304,7 +304,7 @@ def get_status_endpoint(host):
           n_cpus: 16
     """
     dir_name = request.args.get('dir_name')
-    if (dir_name is None):
+    if dir_name is None:
         dir_name = '/instances'
     app.logger.debug('Finding status of %s (dir %s)', host, dir_name)
     if host in app.blacklisted_status_hosts:
@@ -738,7 +738,7 @@ def kill_job(job_id):
     os.kill(int(process_id.process_id), signal.SIGTERM)
     time.sleep(5)
     # Check if the process that we killed is alive.
-    if (is_running(int(process_id.process_id))):
+    if is_running(int(process_id.process_id)):
         app.logger.error("Wasn't able to kill the process: %s", process_id.process_id)
         raise HTTPRequestError("Wasn't able to kill the process: %s" % process_id.process_id)
     else:
