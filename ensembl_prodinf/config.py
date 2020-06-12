@@ -15,7 +15,7 @@ def load_config_yaml(file_path, strict=False):
         if strict:
             raise ValueError('Invalid config file path: %s' % file_path)
         else:
-            logger.warning('Using default configuration. Config file path was: %s' % file_path)
+            logger.warning('Using default configuration. Config file path was: %s', file_path)
             return {}
 
 
