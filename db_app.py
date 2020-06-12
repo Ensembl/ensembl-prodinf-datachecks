@@ -722,7 +722,7 @@ def delete(job_id):
         if 'kill' in request.args.keys() and request.args['kill'] == 1:
             kill_job(job_id)
         job = app.hive.get_job_by_id(job_id)
-        hive.delete_job(job)
+        app.hive.delete_job(job)
     except ValueError as e:
         raise HTTPRequestError(str(e), 404)
     return jsonify({"id": job_id})
