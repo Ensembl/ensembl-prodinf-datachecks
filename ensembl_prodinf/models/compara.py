@@ -16,7 +16,19 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 Base = declarative_base()
 
-__all__ = ['ComparaInstance', 'check_grch37']
+__all__ = ['ComparaInstance', 'check_grch37', 'get_release_compara']
+
+class Meta(Base):
+    __tablename__ = 'meta'
+
+    meta_id = Column(Integer, primary_key=True)
+    meta_key = Column(String)
+    meta_value = Column(String)
+
+    def __repr__(self):
+        return "<Meta(meta_id='%s',meta_key='%s', meta_value='%s')>" % (
+            self.meta_id, self.meta_key, self.meta_value)
+
 
 class GenomeDb(Base):
     __tablename__ = 'genome_db'
@@ -34,6 +46,7 @@ Session = sessionmaker()
 
 
 class ComparaInstance:
+    __release = None
 
     def __init__(self, url, timeout=3600):
         self.engine = create_engine(url, pool_recycle=timeout, echo=False)
@@ -54,6 +67,16 @@ class ComparaInstance:
         else:
             return 0
 
+    @property
+    def release(self):
+        if self.__release is None:
+            self.__release = self.__get_meta_value('schema_version')
+        return self.__release
+
 def check_grch37(uri, species):
     inst = ComparaInstance(uri)
     return inst.is_GRCh37(species)
+
+def get_release_compara(src_uri):
+    inst = ComparaInstance(src_uri)
+    return int(inst.release)
