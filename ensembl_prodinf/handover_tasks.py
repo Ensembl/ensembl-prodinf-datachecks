@@ -216,7 +216,7 @@ def submit_dc(spec, src_url, db_type):
         elif db_type == 'ancestral':
             log_and_publish(submitting_dc_report)
             dc_job_id = dc_client.submit_job(server_url, src_url.database, None, None,
-                    db_type, None, 'corelike', 'critical', None, handover_token)
+                    'core', None, 'ancestral', 'critical', None, handover_token)
         elif db_type in ['rnaseq', 'cdna', 'otherfeatures']:
             division_msg = 'division: %s' % get_division(src_uri, tgt_uri, db_type)
             log_and_publish(make_report('DEBUG', division_msg, spec, src_uri))
