@@ -5,16 +5,18 @@ import logging
 import re
 from ensembl_prodinf.rest_client import RestClient
 
-class DbCopyRestClient(RestClient):
 
+class DbCopyRestClient(RestClient):
     """
     Client for submitting database copy jobs to the db copy REST API
     """
-    
+
     jobs = '{}'
     jobs_id = '{}/{}'
 
-    def submit_job(self, src_host, src_incl_db, src_skip_db, src_incl_tables, src_skip_tables, tgt_host, tgt_db_name, tgt_directory, skip_optimize, wipe_target, convert_innodb, email_list, user):
+    def submit_job(self, src_host, src_incl_db, src_skip_db, src_incl_tables,
+                   src_skip_tables, tgt_host, tgt_db_name, tgt_directory,
+                   skip_optimize, wipe_target, convert_innodb, email_list, user):
         """
         Submit a new job
         Arguments:
@@ -61,34 +63,37 @@ class DbCopyRestClient(RestClient):
         if 'url' in job:
             if user:
                 if user == job['user']:
-                    logging.info("Job %s from (%s) to (%s) by %s - status: %s" % (job['url'], job['src_host'], job['tgt_host'], job['user'], job['overall_status']))
+                    logging.info("Job %s from (%s) to (%s) by %s - status: %s",
+                                 job['url'], job['src_host'], job['tgt_host'], job['user'], job['overall_status'])
             else:
-                logging.info("Job %s from (%s) to (%s) by %s - status: %s" % (job['url'], job['src_host'], job['tgt_host'], job['user'], job['overall_status']))
+                logging.info("Job %s from (%s) to (%s) by %s - status: %s",
+                             job['url'], job['src_host'], job['tgt_host'], job['user'], job['overall_status'])
         else:
             if user:
                 if user == job['user']:
-                    logging.info("Job %s from (%s) to (%s) by %s - status: %s" % (job['job_id'], job['src_host'], job['tgt_host'], job['user'], job['overall_status']))
+                    logging.info("Job %s from (%s) to (%s) by %s - status: %s",
+                                 job['job_id'], job['src_host'], job['tgt_host'], job['user'], job['overall_status'])
             else:
-                logging.info("Job %s from (%s) to (%s) by %s - status: %s" % (job['job_id'], job['src_host'], job['tgt_host'], job['user'], job['overall_status']))
+                logging.info("Job %s from (%s) to (%s) by %s - status: %s",
+                             job['job_id'], job['src_host'], job['tgt_host'], job['user'], job['overall_status'])
         if job['overall_status'] == 'Running':
             if print_results == True:
-                logging.info("Copy status: " + str(job['overall_status']))
-                logging.info(str(job['detailed_status']['progress'])+" % complete")
+                logging.info("Copy status: %s", job['overall_status'])
+                logging.info("%s complete", job['detailed_status']['progress'])
 
     def print_inputs(self, i):
-
         """
         Print out details of job input
         Arguments:
           i : job input
         """
-        logging.info("Source host: " + i['src_host'])
-        logging.info("Target hosts: " + i['tgt_host'])
+        logging.info("Source host: %s", i['src_host'])
+        logging.info("Target hosts: %s", i['tgt_host'])
         logging.info("Detailed parameters:")
         logging.info("%s", i)
 
-if __name__ == '__main__':
 
+if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Copy Databases via a REST service')
 
     parser.add_argument('-u', '--uri', help='Copy database REST service URI', required=True)
@@ -109,7 +114,6 @@ if __name__ == '__main__':
     parser.add_argument('-e', '--email_list', help='Email where to send the report')
     parser.add_argument('-r', '--user', help='User name')
 
-
     args = parser.parse_args()
 
     if args.verbose == True:
@@ -118,18 +122,20 @@ if __name__ == '__main__':
         logging.basicConfig(level=logging.INFO, format='%(message)s')
 
     client = DbCopyRestClient(args.uri)
-    
+
     if args.skip_optimize == None:
-        args.skip_optimize=0
+        args.skip_optimize = 0
     if args.wipe_target == None:
-        args.wipe_target=0
+        args.wipe_target = 0
     if args.convert_innodb == None:
-        args.convert_innodb=0
-        
+        args.convert_innodb = 0
+
     if args.action == 'submit':
-        logging.info('Submitting % -> %',args.src_host,args.tgt_host)
-        job_id = client.submit_job(args.src_host, args.src_incl_db, args.src_skip_db, args.src_incl_tables, args.src_skip_tables, args.tgt_host, args.tgt_db_name, args.tgt_directory, args.skip_optimize, args.wipe_target, args.convert_innodb, args.email_list, args.user)
-        logging.info('Job submitted with ID %',job_id)
+        logging.info('Submitting %s -> %s', args.src_host, args.tgt_host)
+        job_id = client.submit_job(args.src_host, args.src_incl_db, args.src_skip_db, args.src_incl_tables,
+                                   args.src_skip_tables, args.tgt_host, args.tgt_db_name, args.tgt_directory,
+                                   args.skip_optimize, args.wipe_target, args.convert_innodb, args.email_list, args.user)
+        logging.info('Job submitted with ID %s', job_id)
 
     elif args.action == 'retrieve':
         job = client.retrieve_job(args.job_id)
