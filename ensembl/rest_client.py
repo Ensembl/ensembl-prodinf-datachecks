@@ -5,31 +5,8 @@ import requests
 import argparse
 import time
 from ensembl.server_utils import assert_http_uri
-from requests.exceptions import HTTPError
-
-
-def retry_requests(test_func):
-  """
-  Decorator for retrying calls to API in case of Network issues
-  :param api_func: Api client function to call
-  :return:
-  """
-
-  def retry_call_api(*args, **kwargs):
-    retry = 1
-    max_retry = 6
-    while retry <= max_retry:
-      try:
-        return test_func(*args, **kwargs)
-      except HTTPError as e:
-        logging.warning('Call retry (%s/%s): ', retry, max_retry)
-        retry += 1
-        time.sleep(2)
-        if retry > max_retry:
-          logging.error('API unrecoverable error after %s retry', retry - 1)
-          raise e
-
-  return retry_call_api
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.util.retry import Retry
 
 
 class RestClient(object):
@@ -44,8 +21,18 @@ class RestClient(object):
   def __init__(self, uri):
     assert_http_uri(uri)
     self.uri = uri
+    self._session = self._make_session()
 
-  @retry_requests
+  def _make_session(self):
+      retries = Retry(total=3, backoff_factor=1,
+                      status_forcelist=[429, 500, 502, 503, 504],
+                      method_whitelist=["GET", "PUT", "POST", "DELETE"])
+      adapter = HTTPAdapter(max_retries=retries)
+      http = requests.Session()
+      http.mount("https://", adapter)
+      http.mount("http://", adapter)
+      return http
+
   def submit_job(self, payload):
     """
     Submit a job using the supplied dict as payload. No checking is carried out on the payload
@@ -54,11 +41,10 @@ class RestClient(object):
     """
     logging.info("Submitting job")
     logging.debug(payload)
-    r = requests.post(self.jobs.format(self.uri), json=payload)
+    r = self._session.post(self.jobs.format(self.uri), json=payload)
     r.raise_for_status()
     return r.json()['job_id']
 
-  @retry_requests
   def delete_job(self, job_id, kill=False):
     """
     Delete job
@@ -68,22 +54,26 @@ class RestClient(object):
     """
     delete_uri = self.jobs_id.format(self.uri, str(job_id))
     if kill:
-      delete_uri += '?kill=1'
-    r = requests.delete(delete_uri)
+        params = {'kill': '1'}
+    else:
+        params = {}
+    r = self._session.delete(delete_uri, params=params)
+    if r.status_code != 200:
+        logging.error("failed to delete job because: %s", r.text)
     r.raise_for_status()
     return True
 
-  @retry_requests
   def list_jobs(self):
     """
     Find all current jobs
     """
     logging.info("Listing")
-    r = requests.get(self.jobs.format(self.uri))
+    r = self._session.get(self.jobs.format(self.uri))
+    if r.status_code != 200:
+        logging.error("failed to list jobs because: %s", r.text)
     r.raise_for_status()
     return r.json()
 
-  @retry_requests
   def retrieve_job_failure(self, job_id):
     """
     Retrieve information on a job using the special format "failure" which renders failures from the supplied job.
@@ -91,13 +81,14 @@ class RestClient(object):
     Arguments:
       job_id - ID of job to retrieve
     """
-    logging.info("Retrieving job failure for job " + str(job_id))
-    r = requests.get(self.jobs_id.format(self.uri, str(job_id)) + '?format=failures')
+    logging.info("Retrieving job failure for job %s", job_id)
+    r = self._session.get(self.jobs_id.format(self.uri, str(job_id)), params={'format': 'failures'})
+    if r.status_code != 200:
+        logging.error("failed to retrieve job failures because: %s", r.text)
     r.raise_for_status()
     failure_msg = r.json()
     return failure_msg
 
-  @retry_requests
   def retrieve_job_email(self, job_id):
     """
     Retrieve information on a job using the special format "email" which renders the supplied job in a format suitable
@@ -106,25 +97,26 @@ class RestClient(object):
     Arguments:
       job_id - ID of job to retrieve
     """
-    logging.info("Retrieving job as email for job " + str(job_id))
-    r = requests.get(self.jobs_id.format(self.uri, str(job_id)) + '?format=email')
+    logging.info("Retrieving job as email for job %s", job_id)
+    r = self._session.get(self.jobs_id.format(self.uri, str(job_id)), params={'format': 'email'})
     r.raise_for_status()
     return r.json()
 
-  @retry_requests
   def retrieve_job(self, job_id):
     """
     Retrieve information on a job.
     Arguments:
       job_id - ID of job to retrieve
     """
-    logging.info("Retrieving results for job " + str(job_id))
-    r = requests.get(self.jobs_id.format(self.uri, str(job_id)))
+    logging.info("Retrieving results for job %s", job_id)
+    r = self._session.get(self.jobs_id.format(self.uri, str(job_id)))
+    if r.status_code != 200:
+        logging.error("failed to retrieve job because: %s", r.text)
     r.raise_for_status()
     job = r.json()
     return job
 
-  def print_job(self, job, print_results=False, print_input=False):
+  def print_job(self, job, **kwargs):
     """
     Stub utility to print job to logging
     Arguments:
@@ -182,4 +174,4 @@ if __name__ == '__main__':
     client.delete_job(args.job_id)
 
   else:
-    logging.error("Unknown action {}".format(args.action))
+    logging.error("Unknown action %s", args.action)
