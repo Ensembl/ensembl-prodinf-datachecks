@@ -21,7 +21,7 @@ class RestClient(object):
     def __init__(self, uri):
         assert_http_uri(uri)
         self.uri = uri
-        self._HTTPAdapter = self._make_HTTPAdapter()
+        self._http_adapter = self._make_HTTPAdapter()
 
     def _make_HTTPAdapter(self):
         retries = Retry(total=3, backoff_factor=1,
@@ -32,7 +32,7 @@ class RestClient(object):
 
     def _session(self):
         http = requests.Session()
-        http.mount("http://", self._HTTPAdapter)
+        http.mount("http://", self._http_adapter)
         return http
 
     def submit_job(self, payload):
@@ -143,7 +143,7 @@ class RestClient(object):
           job - response object
           output_file - output file handle
         """
-        if(output_file != None):
+        if output_file is not None:
             with output_file as f:
                 f.write(r.text)
 
@@ -162,12 +162,12 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    if args.verbose == True:
+    if args.verbose:
         logging.basicConfig(level=logging.DEBUG, format='%(message)s')
     else:
         logging.basicConfig(level=logging.INFO, format='%(message)s')
 
-    if args.uri.endswith('/') == False:
+    if not args.uri.endswith('/'):
         args.uri = args.uri + '/'
 
     client = RestClient(args.uri)
@@ -175,12 +175,9 @@ if __name__ == '__main__':
     if args.action == 'retrieve':
         job = client.retrieve_job(args.job_id)
         client.print_job(job, print_results=True, print_input=True)
-
     elif args.action == 'list':
         jobs = client.list_jobs()
-
     elif args.action == 'delete':
         client.delete_job(args.job_id)
-
     else:
         logging.error("Unknown action %s", args.action)
