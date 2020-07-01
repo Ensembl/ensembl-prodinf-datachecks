@@ -21,16 +21,18 @@ class RestClient(object):
     def __init__(self, uri):
         assert_http_uri(uri)
         self.uri = uri
-        self._session = self._make_session()
+        self._HTTPAdapter = self._make_HTTPAdapter()
 
-    def _make_session(self):
+    def _make_HTTPAdapter(self):
         retries = Retry(total=3, backoff_factor=1,
                         status_forcelist=[429, 500, 502, 503, 504],
                         method_whitelist=["GET", "PUT", "POST", "DELETE"])
         adapter = HTTPAdapter(max_retries=retries)
+        return adapter
+
+    def _session(self):
         http = requests.Session()
-        http.mount("https://", adapter)
-        http.mount("http://", adapter)
+        http.mount("http://", self._HTTPAdapter)
         return http
 
     def submit_job(self, payload):
@@ -41,7 +43,8 @@ class RestClient(object):
         """
         logging.info("Submitting job")
         logging.debug(payload)
-        r = self._session.post(self.jobs.format(self.uri), json=payload)
+        with self._session() as session:
+            r = session.post(self.jobs.format(self.uri), json=payload)
         if r.status_code != 201:
             logging.error("failed to submit because: %s", r.text)
         r.raise_for_status()
@@ -59,7 +62,8 @@ class RestClient(object):
             params = {'kill': '1'}
         else:
             params = {}
-        r = self._session.delete(delete_uri, params=params)
+        with self._session() as session:
+            r = session.delete(delete_uri, params=params)
         if r.status_code != 200:
             logging.error("failed to delete job because: %s", r.text)
         r.raise_for_status()
@@ -70,7 +74,8 @@ class RestClient(object):
         Find all current jobs
         """
         logging.info("Listing")
-        r = self._session.get(self.jobs.format(self.uri))
+        with self._session() as session:
+            r = session.get(self.jobs.format(self.uri))
         if r.status_code != 200:
             logging.error("failed to list jobs because: %s", r.text)
         r.raise_for_status()
@@ -84,7 +89,8 @@ class RestClient(object):
           job_id - ID of job to retrieve
         """
         logging.info("Retrieving job failure for job %s", job_id)
-        r = self._session.get(self.jobs_id.format(self.uri, str(job_id)), params={'format': 'failures'})
+        with self._session() as session:
+            r = session.get(self.jobs_id.format(self.uri, str(job_id)), params={'format': 'failures'})
         if r.status_code != 200:
             logging.error("failed to retrieve job failures because: %s", r.text)
         r.raise_for_status()
@@ -100,7 +106,8 @@ class RestClient(object):
           job_id - ID of job to retrieve
         """
         logging.info("Retrieving job as email for job %s", job_id)
-        r = self._session.get(self.jobs_id.format(self.uri, str(job_id)), params={'format': 'email'})
+        with self._session() as session:
+            r = session.get(self.jobs_id.format(self.uri, str(job_id)), params={'format': 'email'})
         r.raise_for_status()
         return r.json()
 
@@ -111,7 +118,8 @@ class RestClient(object):
           job_id - ID of job to retrieve
         """
         logging.info("Retrieving results for job %s", job_id)
-        r = self._session.get(self.jobs_id.format(self.uri, str(job_id)))
+        with self._session() as session:
+            r = session.get(self.jobs_id.format(self.uri, str(job_id)))
         if r.status_code != 200:
             logging.error("failed to retrieve job because: %s", r.text)
         r.raise_for_status()
