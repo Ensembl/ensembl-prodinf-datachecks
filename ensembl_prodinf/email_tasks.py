@@ -1,11 +1,27 @@
+import json
+from celery.utils.log import get_task_logger
+from celery.exceptions import Reject
 import requests
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.util.retry import Retry
 from ensembl_prodinf.email_celery_app import app
 from ensembl_prodinf.utils import send_email
 
 
+logger = get_task_logger(__name__)
+
 smtp_server = app.conf['smtp_server']
 from_email_address = app.conf['from_email_address']
 retry_wait = app.conf['retry_wait']
+
+http_adapter = HTTPAdapter(max_retries=Retry(total=3, backoff_factor=1,
+                                             status_forcelist=[429, 500, 502, 503, 504],
+                                             method_whitelist=["GET", "PUT", "POST", "DELETE"]))
+
+def http_session():
+    http = requests.Session()
+    http.mount("http://", http_adapter)
+    return http
 
 
 @app.task(bind=True)
@@ -19,7 +35,15 @@ def email_when_complete(self, url, address):
     """
     # allow infinite retries
     self.max_retries = None
-    result = requests.get(url).json()
+    with http_session() as session:
+        response = session.get(url)
+    try:
+        result = response.json()
+    except json.JSONDecodeError as e:
+        logger.error('Invalid response. URL: %s Status: %s Body: %s',
+                     response.status_code, response.url, response.text)
+        raise Reject(e, requeue=False)
+
     if (result['status'] == 'incomplete') or (result['status'] == 'running') or (result['status'] == 'submitted'):
         # job incomplete so retry task after waiting
         raise self.retry(countdown=retry_wait)
