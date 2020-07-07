@@ -24,7 +24,7 @@ def http_session():
     return http
 
 
-@app.task(bind=True)
+@app.task(bind=True, acks_late=True)
 def email_when_complete(self, url, address):
     """ Task to check a URL and send an email once the result has a non-incomplete status
     Used for periodically checking whether a hive job has finished. If status is not complete,
@@ -39,16 +39,27 @@ def email_when_complete(self, url, address):
         response = session.get(url)
     try:
         result = response.json()
-    except json.JSONDecodeError as e:
-        logger.error('Invalid response. URL: %s Status: %s Body: %s',
-                     response.status_code, response.url, response.text)
-        raise Reject(e, requeue=False)
-
-    if (result['status'] == 'incomplete') or (result['status'] == 'running') or (result['status'] == 'submitted'):
+    except json.JSONDecodeError:
+        err = 'Invalid response. Status: {} URL: {}'.format(response.status_code, response.url)
+        logger.error('%s Body: %s', err, response.text)
+        raise Reject(err, requeue=False)
+    try:
+        status = result['status']
+        subject = result['subject']
+        body = result['body']
+    except KeyError as e:
+        err = 'Invalid response. Missing parameter "{}". URL: {}'.format(str(e), response.url)
+        logger.error('%s Body: %s', err, response.text)
+        raise Reject(err, requeue=False)
+    if status == 'incomplete' or status == 'running' or status == 'submitted':
         # job incomplete so retry task after waiting
         raise self.retry(countdown=retry_wait)
     # job complete so send email and complete task
-    send_email(smtp_server=smtp_server, from_email_address=from_email_address, to_address=address, subject=result['subject'], body=result['body'])
+    send_email(smtp_server=smtp_server,
+               from_email_address=from_email_address,
+               to_address=address,
+               subject=subject,
+               body=body)
     return result
 
 
