@@ -45,19 +45,21 @@ def email_when_complete(self, url, address):
         raise Reject(err, requeue=False)
     try:
         status = result['status']
-    except KeyError:
-        err = 'Invalid response. Missing parameter "status". URL: {}'.format(response.url)
+        if status in ('incomplete', 'running', 'submitted'):
+            # job incomplete so retry task after waiting
+            raise self.retry(countdown=retry_wait)
+        subject = result['subject']
+        body = result['body']
+    except KeyError as e:
+        err = 'Invalid response. Missing parameter "{}". URL: {}'.format(str(e), response.url)
         logger.error('%s Body: %s', err, response.text)
         raise Reject(err, requeue=False)
-    if status in ('incomplete', 'running', 'submitted'):
-        # job incomplete so retry task after waiting
-        raise self.retry(countdown=retry_wait)
     # job complete so send email and complete task
     send_email(smtp_server=smtp_server,
                from_email_address=from_email_address,
                to_address=address,
-               subject=result['subject'],
-               body=result['body'])
+               subject=subject,
+               body=body)
     return result
 
 
