@@ -35,14 +35,18 @@ def email_when_complete(self, url, address):
     """
     # allow infinite retries
     self.max_retries = None
-    with http_session() as session:
-        response = session.get(url)
     try:
+        with http_session() as session:
+            response = session.get(url)
         result = response.json()
+    except requests.RequestException as e:
+        logger.error('RequestsException: %s', e)
+        raise self.retry(countdown=retry_wait, max_retries=120)
     except json.JSONDecodeError:
         err = 'Invalid response. Status: {} URL: {}'.format(response.status_code, response.url)
         logger.error('%s Body: %s', err, response.text)
         raise self.retry(countdown=retry_wait, max_retries=120)
+
     try:
         status = result['status']
         if status in ('incomplete', 'running', 'submitted'):
