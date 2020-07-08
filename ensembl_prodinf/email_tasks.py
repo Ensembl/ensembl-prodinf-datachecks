@@ -45,10 +45,8 @@ def email_when_complete(self, url, address):
         raise Reject(err, requeue=False)
     try:
         status = result['status']
-        subject = result['subject']
-        body = result['body']
-    except KeyError as e:
-        err = 'Invalid response. Missing parameter "{}". URL: {}'.format(str(e), response.url)
+    except KeyError:
+        err = 'Invalid response. Missing parameter "status". URL: {}'.format(response.url)
         logger.error('%s Body: %s', err, response.text)
         raise Reject(err, requeue=False)
     if status in ('incomplete', 'running', 'submitted'):
@@ -58,8 +56,8 @@ def email_when_complete(self, url, address):
     send_email(smtp_server=smtp_server,
                from_email_address=from_email_address,
                to_address=address,
-               subject=subject,
-               body=body)
+               subject=result['subject'],
+               body=result['body'])
     return result
 
 
