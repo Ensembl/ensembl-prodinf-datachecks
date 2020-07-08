@@ -42,7 +42,7 @@ def email_when_complete(self, url, address):
     except json.JSONDecodeError:
         err = 'Invalid response. Status: {} URL: {}'.format(response.status_code, response.url)
         logger.error('%s Body: %s', err, response.text)
-        raise Reject(err, requeue=False)
+        raise self.retry(countdown=retry_wait, max_retries=120)
     try:
         status = result['status']
         if status in ('incomplete', 'running', 'submitted'):
