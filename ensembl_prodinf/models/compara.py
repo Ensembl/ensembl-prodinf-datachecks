@@ -52,6 +52,14 @@ class ComparaInstance:
         self.engine = create_engine(url, pool_recycle=timeout, echo=False)
         Session.configure(bind=self.engine)
 
+    def __get_meta_value(self, meta_key):
+        s = Session()
+        try:
+            meta = s.query(Meta).filter(Meta.meta_key == meta_key).first()
+            return meta.meta_value
+        finally:
+            s.close()
+
     def get_compara_species_assembly(self,species):
         s = Session()
         try:
