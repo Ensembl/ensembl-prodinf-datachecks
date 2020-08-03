@@ -170,12 +170,12 @@ def parse_db_infos(database):
         m = compara_pattern.match(database)
         division = m.group('division')
         db_prefix = division if division else 'vertebrates'
-        return db_prefix, 'compara', None, None
+        return db_prefix, 'compara', None
     elif ancestral_pattern.match(database):
         m = ancestral_pattern.match(database)
         division = m.group('division')
         db_prefix = division if division else 'vertebrates'
-        return db_prefix, 'ancestral', None, None
+        return db_prefix, 'ancestral', None
     else:
         raise ValueError("Database type for %s is not expected. Please contact the Production team" % database)
 
