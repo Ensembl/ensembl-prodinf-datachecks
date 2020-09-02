@@ -108,7 +108,7 @@ def index():
 @app.route('/gifts/update_ensembl/', methods=['POST'])
 def update_ensembl(payload=None):
     analysis = app.config['HIVE_UPDATE_ENSEMBL_ANALYSIS']
-    return submit_job(payload, analysis, __name__)
+    return submit_job(payload, analysis, 'update_ensembl')
 
 
 @app.route('/gifts/update_ensembl/', methods=['GET'])
@@ -134,7 +134,7 @@ def update_ensembl_result(job_id):
 @app.route('/gifts/process_mapping/', methods=['POST'])
 def process_mapping(payload=None):
     analysis = app.config['HIVE_PROCESS_MAPPING_ANALYSIS']
-    return submit_job(payload, analysis, __name__)
+    return submit_job(payload, analysis, 'process_mapping')
 
 
 @app.route('/gifts/process_mapping/', methods=['GET'])
@@ -161,7 +161,7 @@ def process_mapping_result(job_id):
 @app.route('/gifts/publish_mapping/', methods=['POST'])
 def publish_mapping(payload=None):
     analysis = app.config['HIVE_PUBLISH_MAPPING_ANALYSIS']
-    return submit_job(payload, analysis, __name__)
+    return submit_job(payload, analysis, 'publish_mapping')
 
 
 @app.route('/gifts/publish_mapping/', methods=['GET'])
