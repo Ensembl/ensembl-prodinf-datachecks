@@ -236,7 +236,7 @@ def job_submit(payload=None):
 @app.route('/datacheck/jobs', methods=['GET'])
 def job_list():
 
-    format = request.args.get('format') 
+    format = request.args.get('format', None) 
     jobs = get_hive().get_all_results(app.analysis)
     # Handle case where submission is marked as complete,
     # but where output has not been created.
@@ -247,29 +247,26 @@ def job_list():
             job['status'] = 'failed'
 
     # if request.is_json:
-    if format and format=='json': 
+    if format=='json': 
         return jsonify(jobs)
 
     return render_template('ensembl/datacheck/list.html')
-    # else:
-    # Need to pass some data to the template...
-    # return render_template('ensembl/datacheck/list.html')
 
 
 @app.route('/datacheck/jobs/details', methods=['GET'])
 def job_details():
 
-  output_dir = request.args.get('output_dir')
-  db_name    = request.args.get('db_name')
+  output_dir = request.args.get('output_dir', None)
+  db_name    = request.args.get('db_name', None)
 
-
+  #code to get datcheckoutput created from pipeline will be added 
   file_data = open('/home/ensprod/vinay/web_datacheck/test/by_species.json', 'r').read()
   return jsonify(json.loads(file_data))
 
 @app.route('/datacheck/jobs/<int:job_id>', methods=['GET'])
 def job_result(job_id):
     job = get_hive().get_result_for_job_id(job_id, progress=False)
-    format = request.args.get('format')
+    format = request.args.get('format', None)
     # Handle case where submission is marked as complete,
     # but where output has not been created.
     if 'output' not in job.keys():
@@ -277,14 +274,10 @@ def job_result(job_id):
     elif job['output']['failed_total'] > 0:
         job['status'] = 'failed'
     
-    if format and format=='json':
-    # if request.is_json:
+    if format=='json':
         return jsonify([job])
 
     return render_template('ensembl/datacheck/detail_list.html', job_id=job_id)   
-    # else:
-    # Need to pass some data to the template...
-    # return render_template('ensembl/datacheck/detail.html')
 
 @app.route('/datacheck/download_datacheck_outputs/<int:job_id>')
 def download_dc_outputs(job_id):
