@@ -7,6 +7,8 @@
 {% block content %}
 
 <div class="container" >
+  <div class="row" style="padding-top:20px">
+  </div>
 <div class="row table-responsive">
 <div class="col-12">
 <table id="table"
@@ -27,13 +29,14 @@
   data-detail-view-by-click="false"
   data-detail-view-icon="true"
   data-detail-formatter="detailFormatter"
-  data-url="/datacheck/jobs?format=json"
+  data-buttons-toolbar=""
+  data-buttons-class="primary"
+  data-url="/datacheck/jobs/{{job_id}}?format=json"
   data-show-columns="true">
   <thead>
-   <!-- data-url="http://ensprod-dev-01.ebi.ac.uk/api/production/dc/jobs" -->
     <tr style="cursor: pointer">
       <!--<th data-formatter="expandIcon"></th>-->
-      <th data-field="id" data-sortable="true" data-formatter="detailPage">ID</th>
+      <th data-field="id" data-sortable="true" data-formatter="downloadFormat">ID</th>
       <th data-field="input.db_type" data-sortable="true">DB Type</th>
       <th data-field="status" data-sortable="true" data-formatter="statusFormat">Status</th>
       <th data-field="input.tag" data-sortable="true" >Tag</th>
