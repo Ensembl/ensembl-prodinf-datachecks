@@ -3,6 +3,7 @@
 import argparse
 import logging
 import re
+import sys
 from ensembl_prodinf.rest_client import RestClient
 
 
@@ -92,8 +93,20 @@ class DbCopyRestClient(RestClient):
         logging.info("Detailed parameters:")
         logging.info("%s", i)
 
+    def check_host(self, host_type, url):
+        hosts = self.retrieve_host_list(host_type)['results']
+        host_port_map = dict(list(map(lambda x: (x['name'], x['port']), hosts)))
+        host, port = url.split(':')
+        actual_port = host_port_map.get(host.split('.')[0])
+        if actual_port is None:
+            return False, 'Invalid hostname: {}'.format(host)
+        if int(port) != int(actual_port):
+            return False, 'Invalid port for hostname: {}. Please use port: {}'.format(host, actual_port)
+        if int(port) == int(actual_port):
+            return True, ''
 
-if __name__ == '__main__':
+
+def main():
     parser = argparse.ArgumentParser(description='Copy Databases via a REST service')
 
     parser.add_argument('-u', '--uri', help='Copy database REST service URI', required=True)
@@ -113,6 +126,7 @@ if __name__ == '__main__':
     parser.add_argument('-c', '--convert_innodb', help='Email where to send the report')
     parser.add_argument('-e', '--email_list', help='Email where to send the report')
     parser.add_argument('-r', '--user', help='User name')
+    parser.add_argument('--skip-check', action='store_true', default=False, help='Skip host:port server validation')
 
     args = parser.parse_args()
 
@@ -132,6 +146,16 @@ if __name__ == '__main__':
 
     if args.action == 'submit':
         logging.info('Submitting %s -> %s', args.src_host, args.tgt_host)
+        if not args.skip_check:
+            logging.info('Checking source and target hostname validity...')
+            source_valid, source_msg = client.check_host('source', args.src_host)
+            target_valid, target_msg = client.check_host('target', args.tgt_host)
+            if not source_valid:
+                logging.error('Source hostname error: %s', source_msg)
+            if not target_valid:
+                logging.error('Target hostname error: %s', target_msg)
+            if not (source_valid and target_valid):
+                sys.exit(1)
         job_id = client.submit_job(args.src_host, args.src_incl_db, args.src_skip_db, args.src_incl_tables,
                                    args.src_skip_tables, args.tgt_host, args.tgt_db_name, args.tgt_directory,
                                    args.skip_optimize, args.wipe_target, args.convert_innodb, args.email_list, args.user)
@@ -145,3 +169,7 @@ if __name__ == '__main__':
         jobs = client.list_jobs()
         for job in jobs:
             client.print_job(job, args.user)
+
+
+if __name__ == '__main__':
+    main()
