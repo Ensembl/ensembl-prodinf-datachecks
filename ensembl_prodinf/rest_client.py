@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
 import logging
+from urllib.parse import urlsplit, urlunsplit
+import os
 import requests
 import argparse
 import time
@@ -17,6 +19,9 @@ class RestClient(object):
 
     jobs = '{}jobs'
     jobs_id = '{}jobs/{}'
+    src_host_list_url = 'src_host'
+    tgt_host_list_url = 'tgt_host'
+
 
     def __init__(self, uri):
         assert_http_uri(uri)
@@ -146,6 +151,28 @@ class RestClient(object):
         if output_file is not None:
             with output_file as f:
                 f.write(r.text)
+
+    def retrieve_host_list(self, host_type):
+        if host_type == 'source':
+            url = self.src_host_list_url
+        elif host_type == 'target':
+            url = self.tgt_host_list_url
+        else:
+            raise ValueError('Invalid host_type: %s. Use "source" or "target"' % host_type)
+        # Deconstruct the url in order to work with new endpoints.
+        # TODO: Refactor when the old db_copy service is retired.
+        uri = urlsplit(self.uri)
+        endpoint = urlunsplit((uri.scheme,
+                               uri.netloc,
+                               os.path.join(os.path.dirname(uri.path), url),
+                               uri.query,
+                               uri.fragment))
+        with self._session() as session:
+            r = session.get(endpoint)
+        if r.status_code != 200:
+            logging.error("Failed to retrieve host list: %s", r.text)
+        r.raise_for_status()
+        return r.json()
 
 
 if __name__ == '__main__':
