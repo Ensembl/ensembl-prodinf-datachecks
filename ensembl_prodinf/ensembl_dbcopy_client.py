@@ -35,7 +35,6 @@ class DbCopyRestClient(RestClient):
           email_list: List of emails
           user: user name
         """
-        logging.info("Submitting job")
         payload = {
             'src_host':src_host,
             'src_incl_db':src_incl_db,
@@ -97,7 +96,12 @@ class DbCopyRestClient(RestClient):
         hosts = self.retrieve_host_list(host_type)['results']
         host_port_map = dict(list(map(lambda x: (x['name'], x['port']), hosts)))
         host, port = url.split(':')
-        actual_port = host_port_map.get(host.split('.')[0])
+        host_parts = host.split('.')
+        if len(host_parts) > 1:
+            if not host.endswith('.ebi.ac.uk'):
+                return False, 'Invalid hostname: {}'.format(host)
+        hostname = host_parts[0]
+        actual_port = host_port_map.get(hostname)
         if actual_port is None:
             return False, 'Invalid hostname: {}'.format(host)
         if int(port) != int(actual_port):
