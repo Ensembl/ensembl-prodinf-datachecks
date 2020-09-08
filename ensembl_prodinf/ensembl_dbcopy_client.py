@@ -99,15 +99,15 @@ class DbCopyRestClient(RestClient):
         host_parts = host.split('.')
         if len(host_parts) > 1:
             if not host.endswith('.ebi.ac.uk'):
-                return False, 'Invalid hostname: {}'.format(host)
+                return 'Invalid domain: {}'.format(host)
         hostname = host_parts[0]
         actual_port = host_port_map.get(hostname)
         if actual_port is None:
-            return False, 'Invalid hostname: {}'.format(host)
+            return 'Invalid hostname: {}'.format(host)
         if int(port) != int(actual_port):
-            return False, 'Invalid port for hostname: {}. Please use port: {}'.format(host, actual_port)
+            return 'Invalid port for hostname: {}. Please use port: {}'.format(host, actual_port)
         if int(port) == int(actual_port):
-            return True, ''
+            return None
 
 
 def main():
@@ -152,13 +152,13 @@ def main():
         logging.info('Submitting %s -> %s', args.src_host, args.tgt_host)
         if not args.skip_check:
             logging.info('Checking source and target hostname validity...')
-            source_valid, source_msg = client.check_host('source', args.src_host)
-            target_valid, target_msg = client.check_host('target', args.tgt_host)
-            if not source_valid:
-                logging.error('Source hostname error: %s', source_msg)
-            if not target_valid:
-                logging.error('Target hostname error: %s', target_msg)
-            if not (source_valid and target_valid):
+            source_err = client.check_host('source', args.src_host)
+            target_err = client.check_host('target', args.tgt_host)
+            if source_err:
+                logging.error('Source hostname error: %s', source_err)
+            if target_err:
+                logging.error('Target hostname error: %s', target_err)
+            if source_err or target_err:
                 sys.exit(1)
         job_id = client.submit_job(args.src_host, args.src_incl_db, args.src_skip_db, args.src_incl_tables,
                                    args.src_skip_tables, args.tgt_host, args.tgt_db_name, args.tgt_directory,
