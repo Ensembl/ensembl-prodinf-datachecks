@@ -3,6 +3,7 @@
 import argparse
 import logging
 import re
+import sys
 from ensembl_prodinf.rest_client import RestClient
 
 
@@ -34,7 +35,6 @@ class DbCopyRestClient(RestClient):
           email_list: List of emails
           user: user name
         """
-        logging.info("Submitting job")
         payload = {
             'src_host':src_host,
             'src_incl_db':src_incl_db,
@@ -92,27 +92,52 @@ class DbCopyRestClient(RestClient):
         logging.info("Detailed parameters:")
         logging.info("%s", i)
 
+    def check_hosts(self, host_type, urls):
+        hosts = self.retrieve_host_list(host_type)['results']
+        # Create dict with valid hostnames as keys and respective valid ports as values
+        host_port_map = dict(list(map(lambda x: (x['name'], x['port']), hosts)))
+        errs = []
+        for url in urls:
+            err = self._check_host(url, host_port_map)
+            if err:
+                errs.append(err)
+        return errs
 
-if __name__ == '__main__':
+    def _check_host(self, url, host_port_map):
+        host, port = url.split(':')
+        host_parts = host.split('.')
+        if len(host_parts) > 1:
+            if not host.endswith('.ebi.ac.uk'):
+                return 'Invalid domain: {}'.format(host)
+        hostname = host_parts[0]
+        actual_port = host_port_map.get(hostname)
+        if actual_port is None:
+            return 'Invalid hostname: {}'.format(host)
+        if int(port) != int(actual_port):
+            return 'Invalid port for hostname: {}. Please use port: {}'.format(host, actual_port)
+
+
+def main():
     parser = argparse.ArgumentParser(description='Copy Databases via a REST service')
 
     parser.add_argument('-u', '--uri', help='Copy database REST service URI', required=True)
     parser.add_argument('-a', '--action', help='Action to take', choices=['submit', 'retrieve', 'list', 'delete', 'email', 'kill_job'], required=True)
     parser.add_argument('-j', '--job_id', help='Copy job identifier to retrieve')
     parser.add_argument('-v', '--verbose', help='Verbose output', action='store_true')
-    parser.add_argument('-s', '--src_host', help='Source host for the copy')
-    parser.add_argument('-t', '--tgt_host', help='Target hosts for the copy')
-    parser.add_argument('-i', '--src_incl_db', help='List of tables to copy')
-    parser.add_argument('-k', '--src_skip_db', help='List of tables to skip')
-    parser.add_argument('-p', '--src_incl_tables', help='Incremental database update using rsync checksum')
-    parser.add_argument('-d', '--src_skip_tables', help='Drop database on Target server before copy')
-    parser.add_argument('-n', '--tgt_db_name', help='Convert InnoDB tables to MyISAM after copy')
-    parser.add_argument('-g', '--tgt_directory', help='Skip the database optimization step after the copy. Useful for very large databases')
-    parser.add_argument('-o', '--skip_optimize', help='Email where to send the report')
+    parser.add_argument('-s', '--src_host', help='Source host for the copy in the form host:port')
+    parser.add_argument('-t', '--tgt_host', help='List of hosts to copy to in the form host:port,host:port')
+    parser.add_argument('-i', '--src_incl_db',
+        help='List of databases to include in the copy. If not defined all the databases from the server will be copied')
+    parser.add_argument('-k', '--src_skip_db', help='List of database to exclude from the copy')
+    parser.add_argument('-p', '--src_incl_tables', help='List of tables to include in the copy')
+    parser.add_argument('-d', '--src_skip_tables', help='List of tables to exclude from the copy')
+    parser.add_argument('-n', '--tgt_db_name', help='Database name on target server. Used for renaming databases')
+    parser.add_argument('-o', '--skip_optimize', help='Skip database optimization step after the copy. Useful for very large databases')
     parser.add_argument('-w', '--wipe_target', help='Delete target database before copy')
-    parser.add_argument('-c', '--convert_innodb', help='Email where to send the report')
+    parser.add_argument('-c', '--convert_innodb', help='Convert InnoDB tables to MyISAM after copy')
     parser.add_argument('-e', '--email_list', help='Email where to send the report')
     parser.add_argument('-r', '--user', help='User name')
+    parser.add_argument('--skip-check', action='store_true', default=False, help='Skip host:port server validation')
 
     args = parser.parse_args()
 
@@ -132,6 +157,16 @@ if __name__ == '__main__':
 
     if args.action == 'submit':
         logging.info('Submitting %s -> %s', args.src_host, args.tgt_host)
+        if not args.skip_check:
+            logging.info('Checking source and target hostname validity...')
+            source_errs = client.check_hosts('source', (args.src_host,))
+            target_errs = client.check_hosts('target', args.tgt_host.split(','))
+            for err in source_errs:
+                logging.error('Source hostname error: %s', err)
+            for err in target_errs:
+                logging.error('Target hostname error: %s', err)
+            if source_errs or target_errs:
+                sys.exit(1)
         job_id = client.submit_job(args.src_host, args.src_incl_db, args.src_skip_db, args.src_incl_tables,
                                    args.src_skip_tables, args.tgt_host, args.tgt_db_name, args.tgt_directory,
                                    args.skip_optimize, args.wipe_target, args.convert_innodb, args.email_list, args.user)
@@ -145,3 +180,7 @@ if __name__ == '__main__':
         jobs = client.list_jobs()
         for job in jobs:
             client.print_job(job, args.user)
+
+
+if __name__ == '__main__':
+    main()
