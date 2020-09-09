@@ -92,7 +92,7 @@ class DbCopyRestClient(RestClient):
         logging.info("Detailed parameters:")
         logging.info("%s", i)
 
-    def check_host(self, host_type, urls):
+    def check_hosts(self, host_type, urls):
         hosts = self.retrieve_host_list(host_type)['results']
         host_port_map = dict(list(map(lambda x: (x['name'], x['port']), hosts)))
         errs = []
