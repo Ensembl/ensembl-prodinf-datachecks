@@ -92,22 +92,23 @@ class DbCopyRestClient(RestClient):
         logging.info("Detailed parameters:")
         logging.info("%s", i)
 
-    def check_host(self, host_type, url):
+    def check_host(self, host_type, urls):
         hosts = self.retrieve_host_list(host_type)['results']
         host_port_map = dict(list(map(lambda x: (x['name'], x['port']), hosts)))
-        host, port = url.split(':')
-        host_parts = host.split('.')
-        if len(host_parts) > 1:
-            if not host.endswith('.ebi.ac.uk'):
-                return 'Invalid domain: {}'.format(host)
-        hostname = host_parts[0]
-        actual_port = host_port_map.get(hostname)
-        if actual_port is None:
-            return 'Invalid hostname: {}'.format(host)
-        if int(port) != int(actual_port):
-            return 'Invalid port for hostname: {}. Please use port: {}'.format(host, actual_port)
-        if int(port) == int(actual_port):
-            return None
+        errs = []
+        for url in urls:
+            host, port = url.split(':')
+            host_parts = host.split('.')
+            if len(host_parts) > 1:
+                if not host.endswith('.ebi.ac.uk'):
+                    errs.append('Invalid domain: {}'.format(host))
+            hostname = host_parts[0]
+            actual_port = host_port_map.get(hostname)
+            if actual_port is None:
+                errs.append('Invalid hostname: {}'.format(host))
+            if int(port) != int(actual_port):
+                errs.append('Invalid port for hostname: {}. Please use port: {}'.format(host, actual_port))
+        return errs
 
 
 def main():
@@ -152,13 +153,15 @@ def main():
         logging.info('Submitting %s -> %s', args.src_host, args.tgt_host)
         if not args.skip_check:
             logging.info('Checking source and target hostname validity...')
-            source_err = client.check_host('source', args.src_host)
-            target_err = client.check_host('target', args.tgt_host)
-            if source_err:
-                logging.error('Source hostname error: %s', source_err)
-            if target_err:
-                logging.error('Target hostname error: %s', target_err)
-            if source_err or target_err:
+            source_errs = client.check_hosts('source', (args.src_host,))
+            target_errs = client.check_hosts('target', args.tgt_host.split(','))
+            if source_errs:
+                for err in source_errs:
+                    logging.error('Source hostname error: %s', err)
+            if target_errs:
+                for err in target_errs:
+                    logging.error('Target hostname error: %s', err)
+            if source_errs or target_errs:
                 sys.exit(1)
         job_id = client.submit_job(args.src_host, args.src_incl_db, args.src_skip_db, args.src_incl_tables,
                                    args.src_skip_tables, args.tgt_host, args.tgt_db_name, args.tgt_directory,
