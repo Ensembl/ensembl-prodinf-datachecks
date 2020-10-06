@@ -69,7 +69,7 @@ class RestClient(object):
             params = {}
         with self._session() as session:
             r = session.delete(delete_uri, params=params)
-        if r.status_code != 200:
+        if r.status_code != 204:
             logging.error("failed to delete job because: %s", r.text)
         r.raise_for_status()
         return True
