@@ -16,8 +16,8 @@ class DbCopyRestClient(RestClient):
     jobs_id = '{}/{}'
 
     def submit_job(self, src_host, src_incl_db, src_skip_db, src_incl_tables,
-                   src_skip_tables, tgt_host, tgt_db_name, tgt_directory,
-                   skip_optimize, wipe_target, convert_innodb, email_list, user):
+                   src_skip_tables, tgt_host, tgt_db_name, skip_optimize,
+                   wipe_target, convert_innodb, email_list, user):
         """
         Submit a new job
         Arguments:
@@ -28,7 +28,6 @@ class DbCopyRestClient(RestClient):
           src_skip_tables : List of tables to exclude from the copy.
           tgt_host : List of hosts to copy to (host:port,host:port)
           tgt_db_name : Name of database on target server. Used for renaming databases
-          tgt_directory: Target directory path on the target machine
           skip_optimize : Skip the database optimization step after the copy. Useful for very large databases
           wipe_target: Delete database on target before copy
           convert_innodb: Convert innoDB tables to MyISAM
@@ -43,7 +42,6 @@ class DbCopyRestClient(RestClient):
             'src_skip_tables':src_skip_tables,
             'tgt_host':tgt_host,
             'tgt_db_name':tgt_db_name,
-            'tgt_directory':tgt_directory,
             'skip_optimize':skip_optimize,
             'wipe_target':wipe_target,
             'convert_innodb':convert_innodb,
@@ -168,8 +166,8 @@ def main():
             if source_errs or target_errs:
                 sys.exit(1)
         job_id = client.submit_job(args.src_host, args.src_incl_db, args.src_skip_db, args.src_incl_tables,
-                                   args.src_skip_tables, args.tgt_host, args.tgt_db_name, args.tgt_directory,
-                                   args.skip_optimize, args.wipe_target, args.convert_innodb, args.email_list, args.user)
+                                   args.src_skip_tables, args.tgt_host, args.tgt_db_name, args.skip_optimize,
+                                   args.wipe_target, args.convert_innodb, args.email_list, args.user)
         logging.info('Job submitted with ID %s', job_id)
 
     elif args.action == 'retrieve':
