@@ -35,14 +35,6 @@ def get_hive():
     return hive
 
 
-def is_running(pid):
-    try:
-        os.kill(pid, 0)
-    except OSError as err:
-        return False
-    return True
-
-
 cors = CORS(app)
 
 # use re to support different charsets
