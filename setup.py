@@ -16,6 +16,6 @@ setup(
     url='https://github.com/Ensembl/ensembl-prodinf-srv',
     license=license,
     install_requires=[
-        'ensembl_prodinf @ git+https://github.com/Ensembl/ensembl-prodinf-core@v3.2.6',
+        'ensembl_prodinf @ git+https://github.com/Ensembl/ensembl-prodinf-core@v3.2.7',
     ]
 )
