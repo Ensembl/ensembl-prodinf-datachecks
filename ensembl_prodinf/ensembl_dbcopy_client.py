@@ -16,8 +16,8 @@ class DbCopyRestClient(RestClient):
     jobs_id = '{}/{}'
 
     def submit_job(self, src_host, src_incl_db, src_skip_db, src_incl_tables,
-                   src_skip_tables, tgt_host, tgt_db_name, tgt_directory,
-                   skip_optimize, wipe_target, convert_innodb, email_list, user):
+                   src_skip_tables, tgt_host, tgt_db_name, skip_optimize,
+                   wipe_target, convert_innodb, email_list, user):
         """
         Submit a new job
         Arguments:
@@ -28,7 +28,6 @@ class DbCopyRestClient(RestClient):
           src_skip_tables : List of tables to exclude from the copy.
           tgt_host : List of hosts to copy to (host:port,host:port)
           tgt_db_name : Name of database on target server. Used for renaming databases
-          tgt_directory: Target directory path on the target machine
           skip_optimize : Skip the database optimization step after the copy. Useful for very large databases
           wipe_target: Delete database on target before copy
           convert_innodb: Convert innoDB tables to MyISAM
@@ -43,7 +42,6 @@ class DbCopyRestClient(RestClient):
             'src_skip_tables':src_skip_tables,
             'tgt_host':tgt_host,
             'tgt_db_name':tgt_db_name,
-            'tgt_directory':tgt_directory,
             'skip_optimize':skip_optimize,
             'wipe_target':wipe_target,
             'convert_innodb':convert_innodb,
@@ -120,24 +118,33 @@ class DbCopyRestClient(RestClient):
 def main():
     parser = argparse.ArgumentParser(description='Copy Databases via a REST service')
 
-    parser.add_argument('-u', '--uri', help='Copy database REST service URI', required=True)
-    parser.add_argument('-a', '--action', help='Action to take', choices=['submit', 'retrieve', 'list', 'delete', 'email', 'kill_job'], required=True)
+    parser.add_argument('-u', '--uri', required=True,
+                        help='Copy database REST service URI')
+    parser.add_argument('-a', '--action', choices=['submit', 'retrieve', 'list', 'delete', 'email', 'kill_job'],
+                        required=True, help='Action to take')
     parser.add_argument('-j', '--job_id', help='Copy job identifier to retrieve')
-    parser.add_argument('-v', '--verbose', help='Verbose output', action='store_true')
-    parser.add_argument('-s', '--src_host', help='Source host for the copy in the form host:port')
-    parser.add_argument('-t', '--tgt_host', help='List of hosts to copy to in the form host:port,host:port')
+    parser.add_argument('-v', '--verbose', action='store_true', help='Verbose output')
+    parser.add_argument('-s', '--src_host', required=True,
+                        help='Source host for the copy in the form host:port')
+    parser.add_argument('-t', '--tgt_host', required=True,
+                        help='List of hosts to copy to in the form host:port,host:port')
     parser.add_argument('-i', '--src_incl_db',
         help='List of databases to include in the copy. If not defined all the databases from the server will be copied')
     parser.add_argument('-k', '--src_skip_db', help='List of database to exclude from the copy')
     parser.add_argument('-p', '--src_incl_tables', help='List of tables to include in the copy')
     parser.add_argument('-d', '--src_skip_tables', help='List of tables to exclude from the copy')
     parser.add_argument('-n', '--tgt_db_name', help='Database name on target server. Used for renaming databases')
-    parser.add_argument('-o', '--skip_optimize', help='Skip database optimization step after the copy. Useful for very large databases')
-    parser.add_argument('-w', '--wipe_target', help='Delete target database before copy')
-    parser.add_argument('-c', '--convert_innodb', help='Convert InnoDB tables to MyISAM after copy')
-    parser.add_argument('-e', '--email_list', help='Email where to send the report')
-    parser.add_argument('-r', '--user', help='User name')
-    parser.add_argument('--skip-check', action='store_true', default=False, help='Skip host:port server validation')
+    parser.add_argument('-o', '--skip_optimize', default=0,
+                        help='Skip database optimization step after the copy. Useful for very large databases')
+    parser.add_argument('-w', '--wipe_target', default=0,
+                        help='Delete target database before copy')
+    parser.add_argument('-c', '--convert_innodb', default=0,
+                        help='Convert InnoDB tables to MyISAM after copy')
+    parser.add_argument('-e', '--email_list', required=True,
+                        help='Email where to send the report')
+    parser.add_argument('-r', '--user', required=True, help='User name')
+    parser.add_argument('--skip-check', action='store_true', default=False,
+                        help='Skip host:port server validation')
 
     args = parser.parse_args()
 
@@ -147,13 +154,6 @@ def main():
         logging.basicConfig(level=logging.INFO, format='%(message)s')
 
     client = DbCopyRestClient(args.uri)
-
-    if args.skip_optimize == None:
-        args.skip_optimize = 0
-    if args.wipe_target == None:
-        args.wipe_target = 0
-    if args.convert_innodb == None:
-        args.convert_innodb = 0
 
     if args.action == 'submit':
         logging.info('Submitting %s -> %s', args.src_host, args.tgt_host)
@@ -168,8 +168,8 @@ def main():
             if source_errs or target_errs:
                 sys.exit(1)
         job_id = client.submit_job(args.src_host, args.src_incl_db, args.src_skip_db, args.src_incl_tables,
-                                   args.src_skip_tables, args.tgt_host, args.tgt_db_name, args.tgt_directory,
-                                   args.skip_optimize, args.wipe_target, args.convert_innodb, args.email_list, args.user)
+                                   args.src_skip_tables, args.tgt_host, args.tgt_db_name, args.skip_optimize,
+                                   args.wipe_target, args.convert_innodb, args.email_list, args.user)
         logging.info('Job submitted with ID %s', job_id)
 
     elif args.action == 'retrieve':
