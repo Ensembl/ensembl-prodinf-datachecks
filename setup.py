@@ -8,7 +8,7 @@ with open('LICENSE') as f:
 
 setup(
     name='ensembl_srv',
-    version='3.1.7',
+    version='3.1.8',
     description='Server libraries for Ensembl Production infrastructure services',
     long_description=readme,
     author='Dan Staines',
