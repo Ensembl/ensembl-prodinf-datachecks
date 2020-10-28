@@ -235,8 +235,9 @@ def job_submit(payload=None):
 
 @app.route('/datacheck/jobs', methods=['GET'])
 def job_list():
-    jobs = get_hive().get_all_results(app.analysis)
 
+    format = request.args.get('format', None) 
+    jobs = get_hive().get_all_results(app.analysis)
     # Handle case where submission is marked as complete,
     # but where output has not been created.
     for job in jobs:
@@ -246,31 +247,34 @@ def job_list():
             job['status'] = 'failed'
 
     # if request.is_json:
-    return jsonify(jobs)
-    # else:
-    # Need to pass some data to the template...
-    # return render_template('ensembl/datacheck/list.html')
+    if format=='json': 
+        return jsonify(jobs)
 
+    return render_template('ensembl/datacheck/list.html')
+
+
+@app.route('/datacheck/jobs/details', methods=['GET'])
+def job_details():
+
+  jsonfile = request.args.get('jsonfile', None)
+  file_data = open(jsonfile, 'r').read()
+  return jsonify(json.loads(file_data))
 
 @app.route('/datacheck/jobs/<int:job_id>', methods=['GET'])
 def job_result(job_id):
     job = get_hive().get_result_for_job_id(job_id, progress=False)
-
+    format = request.args.get('format', None)
     # Handle case where submission is marked as complete,
     # but where output has not been created.
     if 'output' not in job.keys():
         job['status'] = 'incomplete'
     elif job['output']['failed_total'] > 0:
         job['status'] = 'failed'
-    elif job['output']['passed_total'] == 0:
-        job['status'] = 'failed'
+    
+    if format=='json':
+        return jsonify([job])
 
-    # if request.is_json:
-    return jsonify(job)
-    # else:
-    # Need to pass some data to the template...
-    # return render_template('ensembl/datacheck/detail.html')
-
+    return render_template('ensembl/datacheck/detail_list.html', job_id=job_id)   
 
 @app.route('/datacheck/download_datacheck_outputs/<int:job_id>')
 def download_dc_outputs(job_id):
@@ -291,20 +295,13 @@ def download_dc_outputs(job_id):
             for f_path in paths:
                 return send_file(str(f_path), as_attachment=True)
 
-
 @app.route('/datacheck/submit', methods=['GET'])
 def display_form():
     form = DatacheckSubmissionForm(request.form)
 
     server_name_choices = [('', '')]
-    server_name_dict = {}
-
     for i, j in get_servers_dict().items():
-        server_name_dict[j['server_name']] = i
-
-    for name in sorted(server_name_dict):
-        server_name_choices.append((server_name_dict[name], name))
-
+        server_name_choices.append((i, j['server_name']))
     form.server.server_name.choices = server_name_choices
 
     return render_template(
