@@ -255,10 +255,12 @@ def job_list():
 
 @app.route('/datacheck/jobs/details', methods=['GET'])
 def job_details():
-
-  jsonfile = request.args.get('jsonfile', None)
-  file_data = open(jsonfile, 'r').read()
-  return jsonify(json.loads(file_data))
+  try :
+    jsonfile = request.args.get('jsonfile', None)
+    file_data = open(jsonfile, 'r').read()
+    return jsonify(json.loads(file_data))
+  except Exception :
+    return jsonify({})
 
 @app.route('/datacheck/jobs/<int:job_id>', methods=['GET'])
 def job_result(job_id):
