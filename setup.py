@@ -8,7 +8,7 @@ with open('LICENSE') as f:
 
 setup(
     name='ensembl_srv',
-    version='3.1.8',
+    version='3.1.1',
     description='Server libraries for Ensembl Production infrastructure services',
     long_description=readme,
     author='Dan Staines',
@@ -16,6 +16,6 @@ setup(
     url='https://github.com/Ensembl/ensembl-prodinf-srv',
     license=license,
     install_requires=[
-        'ensembl_prodinf @ git+https://github.com/Ensembl/ensembl-prodinf-core@v3.2.7',
+        'ensembl_prodinf @ git+https://github.com/Ensembl/ensembl-prodinf-core@v3.1',
     ]
 )
