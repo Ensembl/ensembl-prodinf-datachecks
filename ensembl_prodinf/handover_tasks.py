@@ -170,12 +170,12 @@ def parse_db_infos(database):
         m = compara_pattern.match(database)
         division = m.group('division')
         db_prefix = division if division else 'vertebrates'
-        return db_prefix, 'compara', None, None
+        return db_prefix, 'compara', None
     elif ancestral_pattern.match(database):
         m = ancestral_pattern.match(database)
         division = m.group('division')
         db_prefix = division if division else 'vertebrates'
-        return db_prefix, 'ancestral', None, None
+        return db_prefix, 'ancestral', None
     else:
         raise ValueError("Database type for %s is not expected. Please contact the Production team" % database)
 
@@ -212,17 +212,17 @@ def submit_dc(spec, src_url, db_type):
         if db_type == 'compara':
             log_and_publish(submitting_dc_report)
             dc_job_id = dc_client.submit_job(server_url, src_url.database, None, None,
-                    db_type, None, db_type, 'critical', None, handover_token)
+                                             db_type, None, db_type, 'critical', None, handover_token)
         elif db_type == 'ancestral':
             log_and_publish(submitting_dc_report)
             dc_job_id = dc_client.submit_job(server_url, src_url.database, None, None,
-                    'core', None, 'ancestral', 'critical', None, handover_token)
+                                             'core', None, 'ancestral', 'critical', None, handover_token)
         elif db_type in ['rnaseq', 'cdna', 'otherfeatures']:
             division_msg = 'division: %s' % get_division(src_uri, tgt_uri, db_type)
             log_and_publish(make_report('DEBUG', division_msg, spec, src_uri))
             log_and_publish(submitting_dc_report)
             dc_job_id = dc_client.submit_job(server_url, src_url.database, None, None,
-                    db_type, None, 'corelike', 'critical', None, handover_token)
+                                             db_type, None, 'corelike', 'critical', None, handover_token)
         else:
             db_msg = 'src_uri: %s dbtype %s server_url %s' % (src_uri, db_type, server_url)
             log_and_publish(make_report('DEBUG', db_msg, spec, src_uri))
@@ -230,7 +230,7 @@ def submit_dc(spec, src_url, db_type):
             log_and_publish(make_report('DEBUG', division_msg, spec, src_uri))
             log_and_publish(submitting_dc_report)
             dc_job_id = dc_client.submit_job(server_url, src_url.database, None, None,
-                    db_type, None, db_type, 'critical', None, handover_token)
+                                             db_type, None, db_type, 'critical', None, handover_token)
     except Exception as e:
         err_msg = 'Handover failed, Cannot submit dc job'
         log_and_publish(make_report('ERROR', err_msg, spec, src_uri))
@@ -266,11 +266,21 @@ def process_datachecked_db(self, dc_job_id, spec):
     elif result['status'] == 'failed':
         prob_msg = 'Datachecks found problems, you can download the output here: %sdownload_datacheck_outputs/%s' % (cfg.dc_uri, dc_job_id)
         log_and_publish(make_report('INFO', prob_msg, spec, src_uri))
+        # Check if data checks has outputs
+        # if yes: provide link to download
+        # if now: retrieve last message?
         msg = """
 Running datachecks on %s completed but found problems.
 You can download the output here %s
 """ % (src_uri, cfg.dc_uri + "download_datacheck_outputs/" + str(dc_job_id))
         send_email(to_address=spec['contact'], subject='Datacheck found problems', body=msg, smtp_server=cfg.smtp_server)
+    elif result['status'] == 'dc-failures':
+        log_and_publish(make_report('INFO', "Datachecks run issue, see: " + cfg.dc_uri + "jobs/" + str(dc_job_id)))
+
+        msg = """
+Datachecks didn't complete successfully.
+Please see %s
+""" % (spec['src_uri'], cfg.dc_uri + "jobs/" + str(dc_job_id))
     else:
         log_and_publish(make_report('INFO', 'Datachecks successful, starting copy', spec, src_uri))
         spec['progress_complete'] = 1
@@ -334,7 +344,7 @@ def submit_metadata_update(spec):
     src_uri = spec['src_uri']
     try:
         metadata_job_id = metadata_client.submit_job(spec['tgt_uri'], None, None, None,
-                None, spec['contact'], spec['comment'], 'Handover', None)
+                                                     None, spec['contact'], spec['comment'], 'Handover', None)
     except Exception as e:
         log_and_publish(make_report('ERROR', 'Handover failed, cannot submit metadata job', spec, src_uri))
         raise ValueError('Handover failed, cannot submit metadata job %s' % e) from e
