@@ -269,16 +269,13 @@ def process_datachecked_db(self, dc_job_id, spec):
         prob_msg = 'Datachecks found problems, you can download the output here: %sdownload_datacheck_outputs/%s' % (
             cfg.dc_uri, dc_job_id)
         log_and_publish(make_report('INFO', prob_msg, spec, src_uri))
-        # Check if data checks has outputs
-        # if yes: provide link to download
-        # if now: retrieve last message?
         msg = """Running datachecks on %s completed but found problems. You can download the output here %s""" % (
         src_uri, cfg.dc_uri + "download_datacheck_outputs/" + str(dc_job_id))
         send_email(to_address=spec['contact'], subject='Datacheck found problems', body=msg,
                    smtp_server=cfg.smtp_server)
-    elif result['status'] == 'dc-failures':
+    elif result['status'] == 'dc-run-error':
 
-        msg = """Datachecks didn't complete successfully. Please see %s""" % (cfg.dc_uri + "jobs/" + str(dc_job_id))
+        msg = """Datachecks didn't run successfully. Please see %s""" % (cfg.dc_uri + "jobs/" + str(dc_job_id))
         log_and_publish(make_report('INFO', msg, spec, src_uri))
         send_email(to_address=spec['contact'], subject='Datacheck run issue', body=msg, smtp_server=cfg.smtp_server)
     else:
