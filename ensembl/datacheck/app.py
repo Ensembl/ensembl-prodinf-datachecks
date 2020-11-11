@@ -263,7 +263,7 @@ def job_result(job_id):
     elif job['output']['failed_total'] > 0:
         job['status'] = 'failed'
     elif job['output']['passed_total'] == 0:
-        job['status'] = 'dc-failures'
+        job['status'] = 'dc-run-error'
 
     # if request.is_json:
     return jsonify(job)
