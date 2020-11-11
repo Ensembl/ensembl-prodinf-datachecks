@@ -41,7 +41,6 @@ from ensembl.datacheck.client import DatacheckClient
 retry_wait = app.conf.get('retry_wait', 60)
 release = int(handover_config.RELEASE)
 
-retry_wait = app.conf.get('retry_wait', 60)
 db_copy_client = DbCopyClient(cfg.copy_uri)
 metadata_client = MetadataClient(cfg.meta_uri)
 event_client = EventClient(cfg.event_uri)
