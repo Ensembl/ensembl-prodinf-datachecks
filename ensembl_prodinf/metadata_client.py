@@ -11,11 +11,6 @@ from ensembl_prodinf.server_utils import assert_mysql_uri, assert_mysql_db_uri
 
 class MetadataClient(RestClient):
 
-    def write_output(r, output_file):
-        if(output_file != None):
-            with output_file as f:
-                f.write(r.text)  
-        
     def submit_job(self, database_uri, e_release, eg_release, release_date, current_release, email, comment, source, email_notification):
         assert_mysql_db_uri(database_uri)
 
@@ -36,7 +31,7 @@ class MetadataClient(RestClient):
     def print_job(self, job, print_results=False, print_input=False):
         logging.info("Job %s (%s) to (%s) - %s" % (job['id'], job['input']['metadata_uri'], job['input']['database_uri'], job['status']))
         if print_input == True:
-            print_inputs(job['input'])
+            self.print_inputs(job['input'])
         if job['status'] == 'complete':
             if print_results == True:
                 logging.info("Load result: " + str(job['status']))
@@ -47,7 +42,7 @@ class MetadataClient(RestClient):
                 logging.info(str(job['progress']['complete'])+"/"+str(job['progress']['total'])+" task complete")
                 logging.info("Status: "+str(job['progress']['message']))
         elif job['status'] == 'failed':
-            failure_msg = retrieve_job_failure(uri, job['id'])
+            failure_msg = self.retrieve_job_failure(job['id'])
             logging.info("Job failed with error: "+ str(failure_msg['msg']))
 
     def print_inputs(self,i):
@@ -99,17 +94,17 @@ if __name__ == '__main__':
     if args.action == 'submit':
         if args.input_file == None and args.email_notification == None:
             logging.info("Submitting " + args.database_uri + " for metadata load")
-            job_id = client.submit_job( args.database_uri, args.e_release, args.eg_release, args.release_date, args.current_release, args.email, args.comment, args.source, None)
+            job_id = client.submit_job(args.database_uri, args.e_release, args.eg_release, args.release_date, args.current_release, args.email, args.comment, args.source, None)
             logging.info('Job submitted with ID '+str(job_id))
         elif args.input_file == None:
             logging.info("Submitting " + args.database_uri + " for metadata load")
-            job_id = client.submit_job( args.database_uri, args.e_release, args.eg_release, args.release_date, args.current_release, args.email, args.update_type, args.comment, args.source, args.email_notification)
+            job_id = client.submit_job(args.database_uri, args.e_release, args.eg_release, args.release_date, args.current_release, args.email, args.comment, args.source, args.email_notification)
             logging.info('Job submitted with ID '+str(job_id))
         else:
             for line in args.input_file:
                 uris = line.split()
                 logging.info("Submitting " + uris[0] + " for metadata load")
-                job_id = client.submit_job(uris[0], args.e_release, args.eg_release, args.release_date, args.current_release, args.email, args.update_type, args.comment, args.source, None)
+                job_id = client.submit_job(uris[0], args.e_release, args.eg_release, args.release_date, args.current_release, args.email, args.comment, args.source, None)
                 logging.info('Job submitted with ID '+str(job_id))
     
     elif args.action == 'retrieve':
