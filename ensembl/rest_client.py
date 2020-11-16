@@ -75,7 +75,7 @@ class RestClient(object):
         """
         logging.info("Listing")
         with self._session() as session:
-            r = session.get(self.jobs.format(self.uri))
+            r = session.get(self.jobs.format(self.uri), params={'format': 'json'})
         if r.status_code != 200:
             logging.error("failed to list jobs because: %s", r.text)
         r.raise_for_status()
@@ -122,11 +122,12 @@ class RestClient(object):
         """
         logging.info("Retrieving results for job %s", job_id)
         with self._session() as session:
-            r = session.get(self.jobs_id.format(self.uri, str(job_id)))
+            r = session.get(self.jobs_id.format(self.uri, str(job_id)), params={'format': 'json'})
         if r.status_code != 200:
             logging.error("failed to retrieve job because: %s", r.text)
         r.raise_for_status()
         job = r.json()
+
         return job
 
     def print_job(self, job, **kwargs):
