@@ -235,9 +235,9 @@ def job_submit(payload=None):
 
 @app.route('/datacheck/jobs', methods=['GET'])
 def job_list():
-
-    format = request.args.get('format', None) 
     jobs = get_hive().get_all_results(app.analysis)
+    fmt = request.args.get('format', None)
+
     # Handle case where submission is marked as complete,
     # but where output has not been created.
     for job in jobs:
@@ -246,8 +246,7 @@ def job_list():
         elif job['output']['failed_total'] > 0:
             job['status'] = 'failed'
 
-    # if request.is_json:
-    if format=='json': 
+    if request.is_json or fmt == 'json':
         return jsonify(jobs)
 
     return render_template('ensembl/datacheck/list.html')
@@ -255,28 +254,31 @@ def job_list():
 
 @app.route('/datacheck/jobs/details', methods=['GET'])
 def job_details():
-  try :
-    jsonfile = request.args.get('jsonfile', None)
-    file_data = open(jsonfile, 'r').read()
-    return jsonify(json.loads(file_data))
-  except Exception :
-    return jsonify({})
+    try:
+        jsonfile = request.args.get('jsonfile', None)
+        file_data = open(jsonfile, 'r').read()
+        return jsonify(json.loads(file_data))
+    except Exception:
+        return jsonify({'Could not retrieve results'})
+
 
 @app.route('/datacheck/jobs/<int:job_id>', methods=['GET'])
 def job_result(job_id):
     job = get_hive().get_result_for_job_id(job_id, progress=False)
-    format = request.args.get('format', None)
+    fmt = request.args.get('format', None)
+
     # Handle case where submission is marked as complete,
     # but where output has not been created.
     if 'output' not in job.keys():
         job['status'] = 'incomplete'
     elif job['output']['failed_total'] > 0:
         job['status'] = 'failed'
-    
-    if format=='json':
+
+    if request.is_json or fmt == 'json':
         return jsonify([job])
 
-    return render_template('ensembl/datacheck/detail_list.html', job_id=job_id)   
+    return render_template('ensembl/datacheck/detail_list.html', job_id=job_id)
+
 
 @app.route('/datacheck/download_datacheck_outputs/<int:job_id>')
 def download_dc_outputs(job_id):
@@ -296,6 +298,7 @@ def download_dc_outputs(job_id):
         else:
             for f_path in paths:
                 return send_file(str(f_path), as_attachment=True)
+
 
 @app.route('/datacheck/submit', methods=['GET'])
 def display_form():
