@@ -29,6 +29,7 @@
   data-detail-formatter="detailFormatter"
   data-buttons-class="btn bg-purple"
   data-url="/datacheck/jobs?format=json"
+  data-query-params="queryParams"
   data-show-columns="true">
   <thead>
     <tr style="cursor: pointer">
@@ -54,5 +55,15 @@
   {{ super() }}
   <script src="{{ url_for('static', filename='datachecks/js/bootstrap-table.min.js') }}"></script>
  <script src="{{ url_for('static', filename='datachecks/js/datacheck_jobs.js') }}"></script>
+
+ <script>
+  function queryParams(params) {
+    {% if job_id %}
+      params.job_id = {{ job_id }}
+    {% endif %}
+     return params
+  }
+</script>
+
 {% endblock scripts %}
 

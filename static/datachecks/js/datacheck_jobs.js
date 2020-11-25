@@ -21,7 +21,13 @@ function downloadFormat(value, row){
 
 
 function detailPage(value, row){
-  return '<a title="More details " style="cursor: pointer"  href="/datacheck/jobs/'+ row.id  +' ">'+ row.id +'</a>'
+
+   let download = '<i class="fa fa-download" aria-hidden="true">';
+   if(row.status == 'incomplete'){
+       download = '';
+    }
+
+  return '<a title="More details " style="cursor: pointer"  >'+ row.id +'</a> ' + '<a title="Download Datacheck output " style="cursor: pointer"  href="/datacheck/download_datacheck_outputs/' + row.id  +'">'+ download +'</a>'
 }
 
 function statusFormat(value, row){
@@ -110,7 +116,7 @@ function parseDatabases(row){
                 '</h2>' +
                 '</div>');
 
-      html.push('<div id="collapseOneDB' + row.id +'" class="collapse " aria-labelledby="DB' + row.id  + '" data-parent="#accordionDB">');    
+      html.push('<div id="collapseOneDB' + row.id +'" class="collapse in show" aria-labelledby="DB' + row.id  + '" data-parent="#accordionDB">');    
       html.push('<div class="card ">')
       html.push('<div class="card-body">')
       html.push('<h5 class="card-title">DataBase  :</h5>')
@@ -161,10 +167,10 @@ function detailFormatter(index, row) {
     var html = []
     if(row.status == 'incomplete'){ 
        html.push(parseJobs(row, 'input'));
-    }else{
+    }else if( row.status == 'failed'){
 
-      html.push(parseJobs(row, 'input'));
-      html.push(parseJobs(row, 'output'));
+      //html.push(parseJobs(row, 'input'));
+      //html.push(parseJobs(row, 'output'));
       html.push(parseDatabases(row));
     }
     return html.join('')
@@ -218,7 +224,7 @@ function parse_details(db_name, result){
         html.push('<div class="card m-2'+ card_header +' mb-3"> <div class="card-header" id="'+ species + 'headingOne"><h5 class="mb-0">');
         html.push('<button class="btn btn-link" data-toggle="collapse" data-target="#' + species + '"  aria-expanded="true" aria-controls="'+ species + '">');
         html.push(species + '</button>'+ failed_badge +'</h5></div>');
-        html.push('<div id= "' + species + '"class="collapse"   aria-labelledby="'+ species + 'headingOne" data-parent="#accordion_species">');
+        html.push('<div id= "' + species + '"class="collapse in show"   aria-labelledby="'+ species + 'headingOne" data-parent="#accordion_species">');
         //html.push('<h4>Datachecks::</h4><hr>') 
         html.push(datacheck_html.join(''));
         html.push('</div>');	    
