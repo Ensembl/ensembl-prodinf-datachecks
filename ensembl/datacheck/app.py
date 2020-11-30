@@ -1,18 +1,18 @@
 import os
 import re
-import time
+from io import BytesIO
+from pathlib import Path
+from zipfile import ZipFile
+
+from flasgger import Swagger
 from flask import Flask, json, jsonify, redirect, render_template, request, send_file
 from flask_bootstrap import Bootstrap
 from flask_cors import CORS
-from flasgger import Swagger
-from io import BytesIO
-from zipfile import ZipFile
-from pathlib import Path
 
 from ensembl.datacheck.config import DatacheckConfig
+from ensembl.db_utils import get_databases_list, get_db_type
 from ensembl.forms import DatacheckSubmissionForm
 from ensembl.hive import HiveInstance
-from ensembl.db_utils import get_databases_list, get_db_type
 from ensembl.server_utils import assert_mysql_uri, assert_mysql_db_uri
 
 # Go up two levels to get to root, where we will find the static and template files
@@ -277,9 +277,12 @@ def job_result(job_id):
     elif job['output']['failed_total'] > 0:
         job['status'] = 'failed'
     elif job['output']['passed_total'] == 0:
-        job['status'] = 'failed'
+        job['status'] = 'dc-run-error'
 
     return jsonify(job)
+    # else:
+    # Need to pass some data to th  e template...
+    # return render_template('ensembl/datacheck/detail.html')
 
 @app.route('/datacheck/download_datacheck_outputs/<int:job_id>')
 def download_dc_outputs(job_id):
@@ -293,7 +296,7 @@ def download_dc_outputs(job_id):
                 for f_path in paths:
                     z.write(str(f_path), f_path.name)
             data.seek(0)
-            filename = 'Datacheck_output_job_%s.zip' % job_id
+            filename = 'dc_job_%s.zip' % job_id
             return send_file(data, mimetype='application/zip',
                              attachment_filename=filename, as_attachment=True)
         else:
