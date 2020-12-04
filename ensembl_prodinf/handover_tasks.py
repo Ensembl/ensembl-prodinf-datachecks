@@ -136,8 +136,8 @@ def handover_database(spec):
         if db_prefix == 'homo_sapiens' and assembly == '37':
             logger.debug("It's 37 assembly - no metadata update")
             spec['progress_total'] = 2
-        elif db_type in handover_tasks_config.dispatch_targets.keys() and \
-                any(db_prefix in val for val in handover_tasks_config.compara_species.values()):
+        elif db_type in cfg.dispatch_targets.keys() and \
+                any(db_prefix in val for val in cfg.compara_species.values()):
             logger.debug("Adding dispatch step to total")
             spec['progress_total'] = 4
     if release != db_release:
@@ -406,14 +406,14 @@ Please see %s
                                body=msg)
         spec['progress_complete'] = 3
         log_and_publish(make_report('INFO', 'Metadata load complete, Handover successful', spec, tgt_uri))
-        dispatch_to = handover_tasks_config.dispatch_targets.get(spec['db_type'], None)
+        dispatch_to = cfg.dispatch_targets.get(spec['db_type'], None)
         if dispatch_to is not None:
             # if core db
             log_and_publish(make_report('INFO', 'Dispatching Database to compara hosts'))
             # retrieve species list from genome division
-            if spec['genome'] in handover_tasks_config.compara_species[spec['db_division']]:
+            if spec['genome'] in cfg.compara_species[spec['db_division']]:
                 # if species in species_list trigger a supplementary copy to vertannot-staging
-                spec['tgt_uri'] = handover_tasks_config.dispatch_targets[spec['db_type']]
+                spec['tgt_uri'] = cfg.dispatch_targets[spec['db_type']]
                 submit_dispatch(spec)
 
         # log_and_publish(make_report('INFO', 'Metadata load complete, submitting event', spec, tgt_uri))
@@ -476,7 +476,7 @@ def process_dispatch_db(self, copy_job_id, spec):
     """
     self.max_retries = None
     src_uri = spec['src_uri']
-    copy_in_progress_msg = 'Dispatching in progress, please see: %s%s' % (handover_tasks_config.copy_web_uri, copy_job_id)
+    copy_in_progress_msg = 'Dispatching in progress, please see: %s%s' % (cfg.copy_web_uri, copy_job_id)
     log_and_publish(make_report('INFO', copy_in_progress_msg, spec, src_uri))
     try:
         result = db_copy_client.retrieve_job(copy_job_id)
