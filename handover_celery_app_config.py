@@ -16,7 +16,6 @@ from_email_address = os.environ.get("FROM_EMAIL_ADDRESS",
 retry_wait = int(os.environ.get("RETRY_WAIT",
                                 file_config.get('retry_wait', 60)))
 
-ens_release = int(file_config.get('ens_release', None))
 task_routes = {
     os.environ.get("ROUTING_KEY",
                    file_config.get('routing_key', 'ensembl_prodinf.handover_tasks.*')): {
