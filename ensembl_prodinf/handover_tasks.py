@@ -113,7 +113,7 @@ def handover_database(spec):
     # Scan database name and retrieve species or compara name, database type, release number and assembly version
     db_prefix, db_type, assembly = parse_db_infos(src_url.database)
     # Check if the given database can be handed over
-    app.logger.debug("Retrieved %s %s %s ", db_prefix, db_type, assembly)
+    logger.debug("Retrieved %s %s %s ", db_prefix, db_type, assembly)
     if db_type not in db_types_list:
         msg = "Handover failed, %s has been handed over after deadline. Please contact the Production team" % src_uri
         log_and_publish(make_report('ERROR', msg, spec, src_uri))
@@ -125,13 +125,13 @@ def handover_database(spec):
         db_release = get_release_compara(src_uri)
     else:
         db_release = get_release(src_uri)
-        app.logger.debug("Db_release %s %s", db_type, db_release)
+        logger.debug("Db_release %s %s", db_type, db_release)
         if db_prefix == 'homo_sapiens' and assembly == '37':
-            app.logger.debug("It's 37 assembly - no metadata update")
+            logger.debug("It's 37 assembly - no metadata update")
             spec['progress_total'] = 2
         elif db_type in handover_config.dispatch_targets.keys() and \
                 any(db_prefix in val for val in handover_config.compara_species.values()):
-            app.logger.debug("Adding dispatch step to total")
+            logger.debug("Adding dispatch step to total")
             spec['progress_total'] = 4
     if release != db_release:
         msg = "Handover failed, %s database release version %s does not match handover service " \
