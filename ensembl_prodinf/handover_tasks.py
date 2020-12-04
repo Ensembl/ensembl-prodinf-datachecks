@@ -38,7 +38,10 @@ from ensembl_prodinf.reporting import make_report, ReportFormatter
 from ensembl_prodinf.utils import send_email
 
 retry_wait = app.conf.get('retry_wait', 60)
-release = int(app.conf.get('ens_release', 99))
+release = app.conf.get('ens_release')
+
+if release is None:
+    raise RuntimeError("Can't figure out expected release, can't start, please review handover_celery config files")
 
 db_copy_client = DbCopyClient(handover_config.copy_uri)
 metadata_client = MetadataClient(handover_config.meta_uri)
