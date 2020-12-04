@@ -110,3 +110,4 @@ ENV/
 # SQLite
 *.db
 *.db.sqlite3
+/ensembl_prodinf/handover_config.dev.yaml
