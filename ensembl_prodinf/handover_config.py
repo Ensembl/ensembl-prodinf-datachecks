@@ -8,8 +8,6 @@ import os
 from ensembl_prodinf.config import load_config_yaml
 
 config_file_path = os.environ.get('HANDOVER_CORE_CONFIG_PATH', os.path.join(os.path.dirname(__file__), 'handover_config.dev.yaml'))
-print(config_file_path)
-exit()
 file_config = load_config_yaml(config_file_path)
 
 dc_uri = os.environ.get("DC_URI",
