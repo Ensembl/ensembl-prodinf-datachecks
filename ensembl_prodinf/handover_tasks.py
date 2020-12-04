@@ -26,7 +26,7 @@ from sqlalchemy.engine.url import make_url
 from sqlalchemy_utils.functions import database_exists, drop_database
 
 from ensembl.datacheck.client import DatacheckClient
-from ensembl_prodinf import handover_config as cfg, handover_config
+from ensembl_prodinf import handover_config
 from ensembl_prodinf.amqp_publishing import AMQPPublisher
 from ensembl_prodinf.db_copy_client import DbCopyClient
 from ensembl_prodinf.event_client import EventClient
@@ -38,15 +38,15 @@ from ensembl_prodinf.reporting import make_report, ReportFormatter
 from ensembl_prodinf.utils import send_email
 
 retry_wait = app.conf.get('retry_wait', 60)
-release = int(handover_config.RELEASE)
+release = int(app.conf.get('ens_release', 99))
 
-db_copy_client = DbCopyClient(cfg.copy_uri)
-metadata_client = MetadataClient(cfg.meta_uri)
-event_client = EventClient(cfg.event_uri)
-dc_client = DatacheckClient(cfg.dc_uri)
+db_copy_client = DbCopyClient(handover_config.copy_uri)
+metadata_client = MetadataClient(handover_config.meta_uri)
+event_client = EventClient(handover_config.event_uri)
+dc_client = DatacheckClient(handover_config.dc_uri)
 
-db_types_list = [i for i in cfg.allowed_database_types.split(",")]
-allowed_divisions_list = [i for i in cfg.allowed_divisions.split(",")]
+db_types_list = [i for i in handover_config.allowed_database_types.split(",")]
+allowed_divisions_list = [i for i in handover_config.allowed_divisions.split(",")]
 species_pattern = re.compile(
     r'^(?P<prefix>\w+)_(?P<type>core|rnaseq|cdna|otherfeatures|variation|funcgen)(_\d+)?_(\d+)_(?P<assembly>\d+)$')
 compara_pattern = re.compile(r'^ensembl_compara(_(?P<division>[a-z]+|pan)(_homology)?)?(_(\d+))?(_\d+)$')
@@ -70,9 +70,9 @@ blat_species = ['homo_sapiens',
 logger = logging.getLogger(__name__)
 
 handover_formatter = ReportFormatter('handover')
-publisher = AMQPPublisher(cfg.report_server,
-                          cfg.report_exchange,
-                          exchange_type=cfg.report_exchange_type,
+publisher = AMQPPublisher(handover_config.report_server,
+                          handover_config.report_exchange,
+                          exchange_type=handover_config.report_exchange_type,
                           formatter=handover_formatter)
 
 
@@ -191,21 +191,21 @@ def parse_db_infos(database):
 def check_staging_server(spec, db_type, db_prefix, assembly):
     """Find which staging server should be use. secondary_staging for GRCh37 and Bacteria, staging for the rest"""
     if 'bacteria' in db_prefix:
-        staging_uri = cfg.secondary_staging_uri
-        live_uri = cfg.secondary_live_uri
+        staging_uri = handover_config.secondary_staging_uri
+        live_uri = handover_config.secondary_live_uri
     elif db_prefix == 'homo_sapiens' and assembly == '37':
-        staging_uri = cfg.secondary_staging_uri
-        live_uri = cfg.secondary_live_uri
+        staging_uri = handover_config.secondary_staging_uri
+        live_uri = handover_config.secondary_live_uri
         spec['GRCh37'] = 1
         spec['progress_total'] = 2
     elif db_type == 'compara' and check_grch37(spec['src_uri'], 'homo_sapiens'):
-        staging_uri = cfg.secondary_staging_uri
-        live_uri = cfg.secondary_live_uri
+        staging_uri = handover_config.secondary_staging_uri
+        live_uri = handover_config.secondary_live_uri
         spec['GRCh37'] = 1
         spec['progress_total'] = 2
     else:
-        staging_uri = cfg.staging_uri
-        live_uri = cfg.live_uri
+        staging_uri = handover_config.staging_uri
+        live_uri = handover_config.live_uri
     return spec, staging_uri, live_uri
 
 
@@ -260,7 +260,7 @@ def process_datachecked_db(self, dc_job_id, spec):
     # allow infinite retries
     self.max_retries = None
     src_uri = spec['src_uri']
-    progress_msg = 'Datachecks in progress, please see: %sjobs/%s' % (cfg.dc_uri, dc_job_id)
+    progress_msg = 'Datachecks in progress, please see: %sjobs/%s' % (handover_config.dc_uri, dc_job_id)
     log_and_publish(make_report('INFO', progress_msg, spec, src_uri))
     try:
         result = dc_client.retrieve_job(dc_job_id)
@@ -274,14 +274,14 @@ def process_datachecked_db(self, dc_job_id, spec):
     # check results
     elif result['status'] == 'failed':
         prob_msg = 'Datachecks found problems, you can download the output here: %sdownload_datacheck_outputs/%s' % (
-            cfg.dc_uri, dc_job_id)
+            handover_config.dc_uri, dc_job_id)
         log_and_publish(make_report('INFO', prob_msg, spec, src_uri))
         msg = """
 Running datachecks on %s completed but found problems.
 You can download the output here %s
-""" % (src_uri, cfg.dc_uri + "download_datacheck_outputs/" + str(dc_job_id))
+""" % (src_uri, handover_config.dc_uri + "download_datacheck_outputs/" + str(dc_job_id))
         send_email(to_address=spec['contact'], subject='Datacheck found problems', body=msg,
-                   smtp_server=cfg.smtp_server)
+                   smtp_server=handover_config.smtp_server)
     else:
         log_and_publish(make_report('INFO', 'Datachecks successful, starting copy', spec, src_uri))
         spec['progress_complete'] = 1
@@ -312,7 +312,7 @@ def process_copied_db(self, copy_job_id, spec):
     # allow infinite retries
     self.max_retries = None
     src_uri = spec['src_uri']
-    copy_in_progress_msg = 'Copying in progress, please see: %s%s' % (cfg.copy_web_uri, copy_job_id)
+    copy_in_progress_msg = 'Copying in progress, please see: %s%s' % (handover_config.copy_web_uri, copy_job_id)
     log_and_publish(make_report('INFO', copy_in_progress_msg, spec, src_uri))
     try:
         result = db_copy_client.retrieve_job(copy_job_id)
@@ -323,13 +323,13 @@ def process_copied_db(self, copy_job_id, spec):
         log_and_publish(make_report('DEBUG', 'Database copy job incomplete, checking again later', spec, src_uri))
         raise self.retry()
     if result['status'] == 'failed':
-        copy_failed_msg = 'Copy failed, please see: %s%s' % (cfg.copy_web_uri, copy_job_id)
+        copy_failed_msg = 'Copy failed, please see: %s%s' % (handover_config.copy_web_uri, copy_job_id)
         log_and_publish(make_report('INFO', copy_failed_msg, spec, src_uri))
         msg = """
 Copying %s to %s failed.
 Please see %s
-""" % (src_uri, spec['tgt_uri'], cfg.copy_web_uri + str(copy_job_id))
-        send_email(to_address=spec['contact'], subject='Database copy failed', body=msg, smtp_server=cfg.smtp_server)
+""" % (src_uri, spec['tgt_uri'], handover_config.copy_web_uri + str(copy_job_id))
+        send_email(to_address=spec['contact'], subject='Database copy failed', body=msg, smtp_server=handover_config.smtp_server)
         return
     elif 'GRCh37' in spec:
         log_and_publish(make_report('INFO', 'Copying complete, Handover successful', spec, src_uri))
@@ -364,7 +364,7 @@ def process_db_metadata(self, metadata_job_id, spec):
     # allow infinite retries
     self.max_retries = None
     tgt_uri = spec['tgt_uri']
-    loading_msg = 'Loading into metadata database, please see: %sjobs/%s' % (cfg.meta_uri, metadata_job_id)
+    loading_msg = 'Loading into metadata database, please see: %sjobs/%s' % (handover_config.meta_uri, metadata_job_id)
     log_and_publish(make_report('INFO', loading_msg, spec, tgt_uri))
     try:
         result = metadata_client.retrieve_job(metadata_job_id)
@@ -380,15 +380,15 @@ def process_db_metadata(self, metadata_job_id, spec):
         drop_msg = 'Dropping %s' % tgt_uri
         log_and_publish(make_report('INFO', drop_msg, spec, tgt_uri))
         drop_database(spec['tgt_uri'])
-        failed_msg = 'Metadata load failed, please see %sjobs/%s?format=failures' % (cfg.meta_uri, metadata_job_id)
+        failed_msg = 'Metadata load failed, please see %sjobs/%s?format=failures' % (handover_config.meta_uri, metadata_job_id)
         log_and_publish(make_report('INFO', failed_msg, spec, tgt_uri))
         msg = """
 Metadata load of %s failed.
 Please see %s
-""" % (tgt_uri, cfg.meta_uri + 'jobs/' + str(metadata_job_id) + '?format=failures')
+""" % (tgt_uri, handover_config.meta_uri + 'jobs/' + str(metadata_job_id) + '?format=failures')
         send_email(to_address=spec['contact'],
-                   subject='Metadata load failed, please see: ' + cfg.meta_uri + 'jobs/' + str(
-                       metadata_job_id) + '?format=failures', body=msg, smtp_server=cfg.smtp_server)
+                   subject='Metadata load failed, please see: ' + handover_config.meta_uri + 'jobs/' + str(
+                       metadata_job_id) + '?format=failures', body=msg, smtp_server=handover_config.smtp_server)
     else:
         # Cleaning up old assembly or old genebuild databases for Wormbase when database suffix has changed
         if 'events' in result['output'] and result['output']['events']:
@@ -402,7 +402,7 @@ Please see %s
                           'https://github.com/Ensembl/ensembl-production/blob/master/modules/Bio/EnsEMBL/' \
                           'Production/Pipeline/PipeConfig/DumpCore_conf.pm#L107' % \
                           event['genome']
-                    send_email(to_address=cfg.production_email,
+                    send_email(to_address=handover_config.production_email,
                                subject='BLAT species list needs updating in FTP Dumps config',
                                body=msg)
         spec['progress_complete'] = 3
@@ -477,7 +477,7 @@ def process_dispatch_db(self, copy_job_id, spec):
     """
     self.max_retries = None
     src_uri = spec['src_uri']
-    copy_in_progress_msg = 'Dispatching in progress, please see: %s%s' % (cfg.copy_web_uri, copy_job_id)
+    copy_in_progress_msg = 'Dispatching in progress, please see: %s%s' % (handover_config.copy_web_uri, copy_job_id)
     log_and_publish(make_report('INFO', copy_in_progress_msg, spec, src_uri))
     try:
         result = db_copy_client.retrieve_job(copy_job_id)
