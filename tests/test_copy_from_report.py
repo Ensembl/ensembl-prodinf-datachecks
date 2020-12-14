@@ -1,13 +1,16 @@
 from collections import namedtuple
 import unittest
-from ensembl_prodinf.copy_from_report import make_jobs, Job, ALL_DIVISIONS, STATUSES
+from ensembl_prodinf.copy_from_report import make_jobs, parse_species, Job, Database
 
 
-Args = namedtuple('Args', 'source_server target_server convert_innodb skip_optimize email')
+SpeciesArgs = namedtuple('SpeciesArgs',
+                         'include_divisions exclude_divisions statuses')
+JobArgs = namedtuple('JobArgs',
+                     'source_server target_server convert_innodb skip_optimize email')
 
 
 class TestCopyFromReport(unittest.TestCase):
-    def test_make_jobs(self):
+    def test_parse_species(self):
         report = {
            "metazoa" : {
               "new_genomes" : {
@@ -74,8 +77,24 @@ class TestCopyFromReport(unittest.TestCase):
               "updated_annotations" : {}
            }
         }
-        divisions = ALL_DIVISIONS
-        statuses = STATUSES
+        args = SpeciesArgs(
+            include_divisions=None,
+            exclude_divisions=None,
+            statuses=None
+        )
+        parsed_species = parse_species(report, args)
+        expected_species = {
+            'ailuropoda_melanoleuca',
+            'drosophila_grimshawi',
+            'anabas_testudineus',
+            'bemisia_tabaci_ssa1ug',
+            'panicum_hallii',
+            'drosophila_virilis',
+            'bemisia_tabaci_sweetpotug'
+        }
+        self.assertSetEqual(expected_species, parsed_species)
+
+    def test_make_jobs(self):
         servers = {
             'vertebrates': {
                 'sta-a': 'vert-server-a',
@@ -86,14 +105,30 @@ class TestCopyFromReport(unittest.TestCase):
                 'sta-b': 'nonvert-server-b'
             }
         }
-        args = Args(
+        args = JobArgs(
             source_server='sta-a',
             target_server='sta-b',
             convert_innodb=None,
             skip_optimize=None,
             email='email@ebi.ac.uk'
         )
-        jobs = make_jobs(report, divisions, statuses, servers, args)
+        databases = set([
+            Database(name='anabas_testudineus_core_103_12',
+                division='EnsemblVertebrates'),
+            Database(name='ailuropoda_melanoleuca_core_103_2',
+                division='EnsemblVertebrates'),
+            Database(name='panicum_hallii_core_50_103_1',
+                division='EnsemblPlants'),
+            Database(name='bemisia_tabaci_ssa1ug_core_50_103_1',
+                division='EnsemblMetazoa'),
+            Database(name='bemisia_tabaci_sweetpotug_core_50_103_1',
+                division='EnsemblMetazoa'),
+            Database(name='drosophila_grimshawi_core_50_103_2',
+                division='EnsemblMetazoa'),
+            Database(name='drosophila_virilis_core_50_103_2',
+                division='EnsemblMetazoa')
+        ])
+        jobs = make_jobs(databases, servers, args)
         expected_jobs = set([
             Job(source_db_uri='vert-server-a/anabas_testudineus_core_103_12',
                 target_db_uri='vert-server-b/anabas_testudineus_core_103_12',
