@@ -9,8 +9,8 @@ from ensembl_prodinf.db_copy_client import DbCopyClient
 from ensembl_prodinf.db_utils import validate_mysql_url
 
 
-Job = namedtuple('Job',
-                 'source_db_uri target_db_uri only_tables skip_tables update drop convert_innodb skip_optimize email')
+CopyJob = namedtuple('CopyJob',
+    'source_db_uri target_db_uri only_tables skip_tables update drop convert_innodb skip_optimize email')
 
 
 Database = namedtuple('Database', 'name division')
@@ -144,7 +144,7 @@ def make_jobs(databases, servers, args):
     for database in databases:
         src_serv = select_serv(servers, database.division, args.source_server)
         tgt_serv = select_serv(servers, database.division, args.target_server)
-        job = Job(
+        job = CopyJob(
             source_db_uri='{}/{}'.format(src_serv, database.name),
             target_db_uri='{}/{}'.format(tgt_serv, database.name),
             only_tables=None,
