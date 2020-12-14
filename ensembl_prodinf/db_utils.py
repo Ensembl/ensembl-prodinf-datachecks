@@ -32,7 +32,7 @@ def list_databases(db_uri, query):
     else:
         s = text("select schema_name from information_schema.schemata where schema_name rlike :q")
     with engine.connect() as con:
-        return [str(r[0]) for r in con.execute(s, {"q": query}).fetchall()]
+        return [str(r[0]) for r in con.execute(s, q=query).fetchall()]
 
 
 def get_database_sizes(db_uri, query, dir_name):
