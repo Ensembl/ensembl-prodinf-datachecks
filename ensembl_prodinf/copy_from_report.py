@@ -49,9 +49,9 @@ def parse_arguments():
     parser.add_argument('-f', '--report-file', type=argparse.FileType('r'), required=True,
                         help='Report file in JSON format')
     parser.add_argument('-s', '--source-server', required=True,
-                        help='Source type (e.g. sta-a, sta-b) or server name (e.g. mysql-ens-general-prod-1:4525)')
+                        help='Source type (e.g. sta-a, sta-b) or server name (e.g. mysql://user[:password]@server:port)')
     parser.add_argument('-t', '--target-server', required=True,
-                        help='Source type (e.g. sta-a, sta-b) or server name (e.g. mysql-ens-general-prod-1:4525)')
+                        help='Source type (e.g. sta-a, sta-b) or server name (e.g. mysql://user[:password]@server:port))')
     parser.add_argument('-e', '--email', required=True,
                         help='Email where to send the report')
     parser.add_argument('-c', '--config-file', type=argparse.FileType('r'), required=True,
