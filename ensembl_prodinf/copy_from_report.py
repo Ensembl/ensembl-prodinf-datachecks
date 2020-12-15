@@ -4,6 +4,7 @@
 import argparse
 from collections import namedtuple
 import json
+import os
 import sqlalchemy as sa
 from ensembl_prodinf.db_copy_client import DbCopyClient
 from ensembl_prodinf.db_utils import validate_mysql_url
@@ -145,8 +146,8 @@ def make_jobs(databases, servers, args):
         src_serv = select_serv(servers, database.division, args.source_server)
         tgt_serv = select_serv(servers, database.division, args.target_server)
         job = CopyJob(
-            source_db_uri='{}/{}'.format(src_serv, database.name),
-            target_db_uri='{}/{}'.format(tgt_serv, database.name),
+            source_db_uri=os.path.join(src_serv, database.name),
+            target_db_uri=os.path.join(tgt_serv, database.name),
             only_tables=None,
             skip_tables=None,
             update=None,
