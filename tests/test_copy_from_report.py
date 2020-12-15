@@ -1,6 +1,6 @@
 from collections import namedtuple
 import unittest
-from ensembl_prodinf.copy_from_report import make_jobs, parse_species, CopyJob, Database
+from ensembl_prodinf.copy_from_report import make_jobs, parse_species, CopyJob, Database, ALL_DIVISIONS
 
 
 SpeciesArgs = namedtuple('SpeciesArgs',
@@ -82,7 +82,8 @@ class TestCopyFromReport(unittest.TestCase):
             exclude_divisions=None,
             statuses=None
         )
-        parsed_species = parse_species(report, args)
+        divisions = ALL_DIVISIONS
+        parsed_species = parse_species(report, divisions, args)
         expected_species = {
             'ailuropoda_melanoleuca',
             'drosophila_grimshawi',

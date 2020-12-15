@@ -17,13 +17,19 @@ CopyJob = namedtuple('CopyJob',
 Database = namedtuple('Database', 'name division')
 
 
-ALL_DIVISIONS = ['vertebrates', 'protists', 'plants', 'fungi', 'metazoa', 'bacteria']
-
-
-DB_TYPES = ['core', 'funcgen', 'variation', 'otherfeatures', 'rnaseq', 'cdna', 'vega']
-
-
-NONVERT_DIVISIONS = {'plants', 'metazoa', 'fungi', 'protists'}
+DB_TYPES = [
+    'core',
+    'funcgen',
+    'variation',
+    'otherfeatures',
+    'rnaseq',
+    'cdna',
+    'vega',
+    'mart',
+    'ontology',
+    'ids',
+    'other'
+]
 
 
 ENS_DIVISION_MAP = {
@@ -32,9 +38,21 @@ ENS_DIVISION_MAP = {
     'EnsemblFungi': 'nonvertebrates',
     'EnsemblMetazoa': 'nonvertebrates',
     'EnsemblPlants': 'nonvertebrates',
-    'EnsemblPan': 'nonvertebrates',
     'EnsemblBacteria': 'bacteria'
 }
+
+
+DIVISION_ENS_MAP = {
+    'vertebrates': 'EnsemblVertebrates',
+    'protists': 'EnsemblProtists',
+    'fungi': 'EnsemblFungi',
+    'metazoa': 'EnsemblMetazoa',
+    'plants': 'EnsemblPlants',
+    'bacteria': 'EnsemblBacteria'
+}
+
+
+ALL_DIVISIONS = DIVISION_ENS_MAP.keys()
 
 
 STATUSES = [
@@ -85,12 +103,12 @@ def parse_arguments():
 
 def select_serv(servers, ens_division, name):
     division = ENS_DIVISION_MAP[ens_division]
-    server = servers[division].get(name.lower())
-    return server if server else name
+    url = servers[division].get(name.lower())
+    return url if url else name
 
 
 def select_divisions(include_divisions, exclude_divisions):
-    divisions = NONVERT_DIVISIONS | set(ALL_DIVISIONS)
+    divisions = set(ALL_DIVISIONS)
     if include_divisions:
         divisions = divisions & set(include_divisions)
     if exclude_divisions:
@@ -107,19 +125,18 @@ def select_dbtypes(include_dbtypes, exclude_dbtypes):
     return dbtypes
 
 
-def parse_species(report, args):
-    divisions = select_divisions(args.include_divisions, args.exclude_divisions)
+def parse_species(report, divisions, args):
     statuses = args.statuses if args.statuses else STATUSES
     species = set()
     for division in divisions:
         for status in statuses:
-            for name in report[division][status]:
+            for name in report.get(division, {}).get(status, {}):
                 species.add(name)
     return species
 
 
-def get_databases(metadata_engine, species, args):
-    sql = """
+def get_databases(metadata_engine, species, divisions, args):
+    species_sql = """
         SELECT gd.dbname, d.name
         FROM genome g
         JOIN organism o ON g.organism_id = o.organism_id
@@ -130,13 +147,27 @@ def get_databases(metadata_engine, species, args):
         AND gd.type IN :db_types
         AND o.name IN :species;
     """
+    divisions_sql = """
+        SELECT drd.dbname, d.name
+        FROM data_release_database drd
+        JOIN division d ON drd.division_id = d.division_id
+        JOIN data_release dr ON  drd.data_release_id = dr.data_release_id
+        WHERE dr.ensembl_version = :ens_version
+        AND drd.type IN :db_types
+        AND d.name IN :ens_divisions;
+    """
     dbtypes = select_dbtypes(args.include_dbtypes, args.exclude_dbtypes)
+    ens_divisions = [DIVISION_ENS_MAP[division] for division in divisions]
     with metadata_engine.connect() as conn:
-        query = conn.execute(sa.text(sql),
-                             ens_version=args.ens_version,
-                             db_types=tuple(dbtypes),
-                             species=tuple(species))
-        result = query.fetchall()
+        species_dbs = conn.execute(sa.text(species_sql),
+                                   ens_version=args.ens_version,
+                                   db_types=tuple(dbtypes),
+                                   species=tuple(species)).fetchall()
+        divisions_dbs = conn.execute(sa.text(divisions_sql),
+                                     ens_version=args.ens_version,
+                                     db_types=tuple(dbtypes),
+                                     ens_divisions=tuple(ens_divisions)).fetchall()
+    result = species_dbs + divisions_dbs
     return set(map(lambda x: Database(x[0], x[1]), result))
 
 
@@ -178,8 +209,9 @@ def main():
     metadata_url = validate_mysql_url(metadata_url)
     metadata_engine = sa.create_engine(metadata_url)
     copy_client = DbCopyClient(dbcopy_url)
-    species = parse_species(report, args)
-    databases = get_databases(metadata_engine, species, args)
+    divisions = select_divisions(args.include_divisions, args.exclude_divisions)
+    species = parse_species(report, divisions, args)
+    databases = get_databases(metadata_engine, species, divisions, args)
     jobs = make_jobs(databases, servers, args)
     submit_jobs(copy_client, jobs, args)
 
