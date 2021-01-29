@@ -17,28 +17,26 @@ The data flow is:
 @author: dstaines
 '''
 
-import logging
 import json
-import uuid
+import logging
 import re
 import uuid
 
-from ensembl_prodinf.handover_celery_app import app
-
+from ensembl_prodinf import handover_config as cfg
+from ensembl_prodinf.amqp_publishing import AMQPPublisher
 from ensembl_prodinf.db_copy_client import DbCopyClient
-from ensembl_prodinf.metadata_client import MetadataClient
 from ensembl_prodinf.event_client import EventClient
-from ensembl.datacheck.client import DatacheckClient
-from sqlalchemy_utils.functions import database_exists, drop_database
-from sqlalchemy.engine.url import make_url
-from ensembl_prodinf.utils import send_email
+from ensembl_prodinf.handover_celery_app import app
+from ensembl_prodinf.metadata_client import MetadataClient
 from ensembl_prodinf.models.compara import check_grch37, get_release_compara
 from ensembl_prodinf.models.core import get_division, get_release
-from ensembl_prodinf import handover_config as cfg
-from ensembl_prodinf import reporting
-from ensembl_prodinf.amqp_publishing import AMQPPublisher
 from ensembl_prodinf.reporting import make_report, ReportFormatter
+from ensembl_prodinf.utils import send_email
+from sqlalchemy.engine.url import make_url
+from sqlalchemy_utils.functions import database_exists, drop_database
+
 import handover_config
+from ensembl.datacheck.client import DatacheckClient
 
 retry_wait = app.conf.get('retry_wait', 60)
 release = int(handover_config.RELEASE)
@@ -280,13 +278,18 @@ def process_datachecked_db(self, dc_job_id, spec):
         raise self.retry()
     # check results
     elif result['status'] == 'failed':
-        prob_msg = 'Datachecks found problems, you can download the output here: %sdownload_datacheck_outputs/%s' % (cfg.dc_uri, dc_job_id)
+        prob_msg = 'Datachecks found problems, you can download the output here: %sdownload_datacheck_outputs/%s' % (
+            cfg.dc_uri, dc_job_id)
         log_and_publish(make_report('INFO', prob_msg, spec, src_uri))
-        msg = """
-Running datachecks on %s completed but found problems.
-You can download the output here %s
-""" % (src_uri, cfg.dc_uri + "download_datacheck_outputs/" + str(dc_job_id))
-        send_email(to_address=spec['contact'], subject='Datacheck found problems', body=msg, smtp_server=cfg.smtp_server)
+        msg = """Running datachecks on %s completed but found problems. You can download the output here %s""" % (
+        src_uri, cfg.dc_uri + "download_datacheck_outputs/" + str(dc_job_id))
+        send_email(to_address=spec['contact'], subject='Datacheck found problems', body=msg,
+                   smtp_server=cfg.smtp_server)
+    elif result['status'] == 'dc-run-error':
+
+        msg = """Datachecks didn't run successfully. Please see %s""" % (cfg.dc_uri + "jobs/" + str(dc_job_id))
+        log_and_publish(make_report('INFO', msg, spec, src_uri))
+        send_email(to_address=spec['contact'], subject='Datacheck run issue', body=msg, smtp_server=cfg.smtp_server)
     else:
         log_and_publish(make_report('INFO', 'Datachecks successful, starting copy', spec, src_uri))
         spec['progress_complete'] = 1
@@ -391,7 +394,9 @@ def process_db_metadata(self, metadata_job_id, spec):
 Metadata load of %s failed.
 Please see %s
 """ % (tgt_uri, cfg.meta_uri + 'jobs/' + str(metadata_job_id) + '?format=failures')
-        send_email(to_address=spec['contact'], subject='Metadata load failed, please see: '+cfg.meta_uri+ 'jobs/' + str(metadata_job_id) + '?format=failures', body=msg, smtp_server=cfg.smtp_server)
+        send_email(to_address=spec['contact'],
+                   subject='Metadata load failed, please see: ' + cfg.meta_uri + 'jobs/' + str(
+                       metadata_job_id) + '?format=failures', body=msg, smtp_server=cfg.smtp_server)
     else:
         # Cleaning up old assembly or old genebuild databases for Wormbase when database suffix has changed
         if 'events' in result['output'] and result['output']['events']:
@@ -400,7 +405,8 @@ Please see %s
                 if 'current_database_list' in details:
                     drop_current_databases(details['current_database_list'], spec)
                 if event['genome'] in blat_species and event['type'] == 'new_assembly':
-                    msg = 'The following species %s has a new assembly, please update the port number for this species here and communicate to Web: https://github.com/Ensembl/ensembl-production/blob/master/modules/Bio/EnsEMBL/Production/Pipeline/PipeConfig/DumpCore_conf.pm#L107' % event['genome']
+                    msg = 'The following species %s has a new assembly, please update the port number for this species here and communicate to Web: https://github.com/Ensembl/ensembl-production/blob/master/modules/Bio/EnsEMBL/Production/Pipeline/PipeConfig/DumpCore_conf.pm#L107' % \
+                          event['genome']
                     send_email(to_address=cfg.production_email,
                                subject='BLAT species list needs updating in FTP Dumps config',
                                body=msg)
