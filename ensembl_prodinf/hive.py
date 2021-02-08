@@ -277,7 +277,7 @@ class HiveInstance:
         finally:
             s.close()
 
-    def get_result_for_job_id(self, id, child=False):
+    def get_result_for_job_id(self, id, child=False, progress=True):
 
         """ Get result for a given job id. If child flag is turned on and job child exist, get result for child job"""
 
@@ -287,11 +287,12 @@ class HiveInstance:
         if child:
             child_job = self.get_job_child(job)
             if child_job != None:
-                return self.get_result_for_job(child_job, progress=True)
+                return self.get_result_for_job(child_job, progress=progress)
             else:
-                return self.get_result_for_job(job, progress=True)
+                return self.get_result_for_job(job, progress=progress)
         else:
-            return self.get_result_for_job(job, progress=True)
+            return self.get_result_for_job(job, progress=progress)
+
 
     def get_result_for_job(self, job, progress=False):
 
@@ -316,6 +317,17 @@ class HiveInstance:
         except ValueError as e:
             raise ValueError('Cannot retrieve results for job: {}'.format(job.job_id)) from e
         return result
+
+
+    def get_last_job_progress(self, job):
+        """ Return last job progress line if exists, else None """
+        s = Session()
+        try:
+            last_job_progress_msg = s.query(JobProgress).filter(JobProgress.job_id == job.job_id).order_by(
+                JobProgress.job_progress_id.desc()).first()
+            return last_job_progress_msg
+        finally:
+            s.close()
 
     def get_jobs_progress(self, job):
 
