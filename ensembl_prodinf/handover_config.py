@@ -7,8 +7,10 @@ import os
 
 from ensembl_prodinf.config import load_config_yaml
 
-config_file_path = os.environ.get('HANDOVER_CORE_CONFIG_PATH', os.path.join(os.path.dirname(__file__), 'handover_config.dev.yaml'))
+config_file_path = os.environ.get('HANDOVER_CORE_CONFIG_PATH', os.path.join(os.path.dirname(__file__),
+                                                                            'handover_config.dev.yaml'))
 file_config = load_config_yaml(config_file_path)
+
 
 dc_uri = os.environ.get("DC_URI",
                         file_config.get('dc_uri', "http://127.0.0.1:5006/"))
@@ -31,13 +33,13 @@ staging_uri = os.environ.get("STAGING_URI",
                                              "mysql://user@staging:3306/"))
 secondary_staging_uri = os.environ.get("SECONDARY_STAGING_URI",
                                        file_config.get('secondary_staging_uri',
-                                                       "mysql://user@staging2:3306/"))
+                                                       "mysql://ensembl@127.0.0.1:3306/"))
 live_uri = os.environ.get("LIVE_URI",
                           file_config.get('live_uri',
                                           "mysql://user@127.0.0.1:3306/"))
 secondary_live_uri = os.environ.get("SECONDARY_LIVE_URI",
                                     file_config.get('secondary_live_uri',
-                                                    "mysql://user@127.0.0.1:3306/"))
+                                                    "mysql://ensembl@127.0.0.1:3306/"))
 smtp_server = os.environ.get("SMTP_SERVER",
                              file_config.get('smtp_server', 'smtp.ebi.ac.uk'))
 report_server = os.environ.get("REPORT_SERVER",
