@@ -22,6 +22,11 @@ import logging
 import re
 import uuid
 
+from sqlalchemy.engine.url import make_url
+from sqlalchemy_utils.functions import database_exists, drop_database
+
+import handover_config
+from ensembl.datacheck.client import DatacheckClient
 from ensembl_prodinf import handover_config as cfg
 from ensembl_prodinf.amqp_publishing import AMQPPublisher
 from ensembl_prodinf.db_copy_client import DbCopyClient
@@ -32,11 +37,6 @@ from ensembl_prodinf.models.compara import check_grch37, get_release_compara
 from ensembl_prodinf.models.core import get_division, get_release
 from ensembl_prodinf.reporting import make_report, ReportFormatter
 from ensembl_prodinf.utils import send_email
-from sqlalchemy.engine.url import make_url
-from sqlalchemy_utils.functions import database_exists, drop_database
-
-import handover_config
-from ensembl.datacheck.client import DatacheckClient
 
 retry_wait = app.conf.get('retry_wait', 60)
 release = int(handover_config.RELEASE)
@@ -44,7 +44,7 @@ release = int(handover_config.RELEASE)
 if release is None:
     raise RuntimeError("Can't figure out expected release, can't start, please review handover_celery config files")
 
-retry_wait = app.conf.get('retry_wait',60)
+retry_wait = app.conf.get('retry_wait', 60)
 db_copy_client = DbCopyClient(cfg.copy_uri)
 metadata_client = MetadataClient(cfg.meta_uri)
 event_client = EventClient(cfg.event_uri)
@@ -282,7 +282,7 @@ def process_datachecked_db(self, dc_job_id, spec):
             cfg.dc_uri, dc_job_id)
         log_and_publish(make_report('INFO', prob_msg, spec, src_uri))
         msg = """Running datachecks on %s completed but found problems. You can download the output here %s""" % (
-        src_uri, cfg.dc_uri + "download_datacheck_outputs/" + str(dc_job_id))
+            src_uri, cfg.dc_uri + "download_datacheck_outputs/" + str(dc_job_id))
         send_email(to_address=spec['contact'], subject='Datacheck found problems', body=msg,
                    smtp_server=cfg.smtp_server)
     elif result['status'] == 'dc-run-error':
@@ -405,7 +405,9 @@ Please see %s
                 if 'current_database_list' in details:
                     drop_current_databases(details['current_database_list'], spec)
                 if event['genome'] in blat_species and event['type'] == 'new_assembly':
-                    msg = 'The following species %s has a new assembly, please update the port number for this species here and communicate to Web: https://github.com/Ensembl/ensembl-production/blob/master/modules/Bio/EnsEMBL/Production/Pipeline/PipeConfig/DumpCore_conf.pm#L107' % \
+                    msg = 'The following species %s has a new assembly, please update the port number for this ' \
+                          'species here and communicate to Web: https://github.com/Ensembl/ensembl-production/blob/' \
+                          'master/modules/Bio/EnsEMBL/Production/Pipeline/PipeConfig/DumpCore_conf.pm#L107' % \
                           event['genome']
                     send_email(to_address=cfg.production_email,
                                subject='BLAT species list needs updating in FTP Dumps config',
