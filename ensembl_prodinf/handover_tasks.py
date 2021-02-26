@@ -22,6 +22,11 @@ import logging
 import re
 import uuid
 
+from sqlalchemy.engine.url import make_url
+from sqlalchemy_utils.functions import database_exists, drop_database
+
+import handover_config
+from ensembl.datacheck.client import DatacheckClient
 from ensembl_prodinf import handover_config as cfg
 from ensembl_prodinf.amqp_publishing import AMQPPublisher
 from ensembl_prodinf.db_copy_client import DbCopyClient
@@ -32,15 +37,14 @@ from ensembl_prodinf.models.compara import check_grch37, get_release_compara
 from ensembl_prodinf.models.core import get_division, get_release
 from ensembl_prodinf.reporting import make_report, ReportFormatter
 from ensembl_prodinf.utils import send_email
-from sqlalchemy.engine.url import make_url
-from sqlalchemy_utils.functions import database_exists, drop_database
-
-import handover_config
-from ensembl.datacheck.client import DatacheckClient
 
 retry_wait = app.conf.get('retry_wait', 60)
 release = int(handover_config.RELEASE)
 
+if release is None:
+    raise RuntimeError("Can't figure out expected release, can't start, please review handover_celery config files")
+
+retry_wait = app.conf.get('retry_wait', 60)
 db_copy_client = DbCopyClient(cfg.copy_uri)
 metadata_client = MetadataClient(cfg.meta_uri)
 event_client = EventClient(cfg.event_uri)
@@ -114,25 +118,31 @@ def handover_database(spec):
     # Scan database name and retrieve species or compara name, database type, release number and assembly version
     db_prefix, db_type, assembly = parse_db_infos(src_url.database)
     # Check if the given database can be handed over
+    logger.debug("Retrieved %s %s %s ", db_prefix, db_type, assembly)
     if db_type not in db_types_list:
         msg = "Handover failed, %s has been handed over after deadline. Please contact the Production team" % src_uri
         log_and_publish(make_report('ERROR', msg, spec, src_uri))
         raise ValueError(msg)
     # Check if the database release match the handover service
     if db_type == 'compara':
-        compara_release = get_release_compara(src_uri)
-        if release != compara_release:
-            msg = "Handover failed, %s database release version %s does not match handover service release version %s" % (
-                src_uri, compara_release, release)
-            log_and_publish(make_report('ERROR', msg, spec, src_uri))
-            raise ValueError(msg)
+        if check_grch37(spec['src_uri'], 'homo_sapiens'):
+            spec['progress_total'] = 2
+        db_release = get_release_compara(src_uri)
     else:
         db_release = get_release(src_uri)
-        if release != db_release:
-            msg = "Handover failed, %s database release version %s does not match handover service release version %s" % (
-                src_uri, db_release, release)
-            log_and_publish(make_report('ERROR', msg, spec, src_uri))
-            raise ValueError(msg)
+        logger.debug("Db_release %s %s", db_type, db_release)
+        if db_prefix == 'homo_sapiens' and assembly == '37':
+            logger.debug("It's 37 assembly - no metadata update")
+            spec['progress_total'] = 2
+        elif db_type in cfg.dispatch_targets.keys() and \
+                any(db_prefix in val for val in cfg.compara_species.values()):
+            logger.debug("Adding dispatch step to total")
+            spec['progress_total'] = 4
+    if release != db_release:
+        msg = "Handover failed, %s database release version %s does not match handover service " \
+              "release version %s" % (src_uri, db_release, release)
+        log_and_publish(make_report('ERROR', msg, spec, src_uri))
+        raise ValueError(msg)
     # Check to which staging server the database need to be copied to
     spec, staging_uri, live_uri = check_staging_server(spec, db_type, db_prefix, assembly)
     if 'tgt_uri' not in spec:
@@ -142,11 +152,14 @@ def handover_database(spec):
         db_division = db_prefix
     else:
         db_division = get_division(src_uri, spec['tgt_uri'], db_type)
+
     if db_division not in allowed_divisions_list:
         raise ValueError(
             'Database division %s does not match server division list %s' % (db_division, allowed_divisions_list))
     spec['staging_uri'] = staging_uri
     spec['progress_complete'] = 0
+    spec['db_division'] = db_division
+    spec['db_type'] = db_type
     msg = "Handling %s" % spec
     log_and_publish(make_report('INFO', msg, spec, src_uri))
     submit_dc(spec, src_url, db_type)
@@ -269,7 +282,7 @@ def process_datachecked_db(self, dc_job_id, spec):
             cfg.dc_uri, dc_job_id)
         log_and_publish(make_report('INFO', prob_msg, spec, src_uri))
         msg = """Running datachecks on %s completed but found problems. You can download the output here %s""" % (
-        src_uri, cfg.dc_uri + "download_datacheck_outputs/" + str(dc_job_id))
+            src_uri, cfg.dc_uri + "download_datacheck_outputs/" + str(dc_job_id))
         send_email(to_address=spec['contact'], subject='Datacheck found problems', body=msg,
                    smtp_server=cfg.smtp_server)
     elif result['status'] == 'dc-run-error':
@@ -295,7 +308,7 @@ def submit_copy(spec):
     spec['copy_job_id'] = copy_job_id
     task_id = process_copied_db.delay(copy_job_id, spec)
     dbg_msg = 'Submitted DB for copying as %s' % task_id
-    log_and_publish(make_report('DEBUG', 'Handover failed, cannot submit copy job', spec, src_uri))
+    log_and_publish(make_report('DEBUG', dbg_msg, spec, spec['src_uri']))
     return task_id
 
 
@@ -328,7 +341,7 @@ Please see %s
         return
     elif 'GRCh37' in spec:
         log_and_publish(make_report('INFO', 'Copying complete, Handover successful', spec, src_uri))
-        spec['progress_complete'] = 2
+        spec['progress_complete'] = 3
     else:
         log_and_publish(make_report('INFO', 'Copying complete, submitting metadata job', spec, src_uri))
         spec['progress_complete'] = 2
@@ -392,15 +405,43 @@ Please see %s
                 if 'current_database_list' in details:
                     drop_current_databases(details['current_database_list'], spec)
                 if event['genome'] in blat_species and event['type'] == 'new_assembly':
-                    msg = 'The following species %s has a new assembly, please update the port number for this species here and communicate to Web: https://github.com/Ensembl/ensembl-production/blob/master/modules/Bio/EnsEMBL/Production/Pipeline/PipeConfig/DumpCore_conf.pm#L107' % \
+                    msg = 'The following species %s has a new assembly, please update the port number for this ' \
+                          'species here and communicate to Web: https://github.com/Ensembl/ensembl-production/blob/' \
+                          'master/modules/Bio/EnsEMBL/Production/Pipeline/PipeConfig/DumpCore_conf.pm#L107' % \
                           event['genome']
                     send_email(to_address=cfg.production_email,
                                subject='BLAT species list needs updating in FTP Dumps config',
                                body=msg)
-        log_and_publish(make_report('INFO', 'Metadata load complete, Handover successful', spec, tgt_uri))
         spec['progress_complete'] = 3
+        log_and_publish(make_report('INFO', 'Metadata load complete, Handover successful', spec, tgt_uri))
+        dispatch_to = cfg.dispatch_targets.get(spec['db_type'], None)
+        if dispatch_to is not None:
+            # if core db
+            log_and_publish(make_report('INFO', 'Dispatching Database to compara hosts'))
+            # retrieve species list from genome division
+            if spec['genome'] in cfg.compara_species[spec['db_division']]:
+                # if species in species_list trigger a supplementary copy to vertannot-staging
+                spec['tgt_uri'] = cfg.dispatch_targets[spec['db_type']]
+                submit_dispatch(spec)
+
         # log_and_publish(make_report('INFO', 'Metadata load complete, submitting event', spec, tgt_uri))
         # submit_event(spec,result)
+
+
+def submit_dispatch(spec):
+    """ dispatch database to dedicated host """
+    src_uri = spec['src_uri']
+    try:
+        copy_job_id = db_copy_client.submit_job(src_uri, spec['tgt_uri'], None, None,
+                                                False, True, True, None, None)
+    except Exception as e:
+        log_and_publish(make_report('ERROR', 'Handover failed, cannot dispatch database', spec, src_uri))
+        raise ValueError('Handover failed, cannot submit dispatch job %s' % e) from e
+    spec['copy_job_id'] = copy_job_id
+    task_id = process_dispatch_db.delay(copy_job_id, spec)
+    dbg_msg = 'Submitted DB for dispatch as %s' % task_id
+    log_and_publish(make_report('DEBUG', dbg_msg, spec, src_uri))
+    return task_id
 
 
 def submit_event(spec, result):
@@ -430,3 +471,29 @@ def drop_current_databases(current_db_list, spec):
                 msg = 'Dropping %s' % db_uri
                 log_and_publish(make_report('INFO', msg, spec, tgt_uri))
                 drop_database(db_uri)
+
+
+@app.task(bind=True, default_retry_delay=retry_wait)
+def process_dispatch_db(self, copy_job_id, spec):
+    """
+    Process dispatched dbs after metadata updates.
+    :param self:
+    :param copy_job_id:
+    :param spec:
+    :return:
+    """
+    self.max_retries = None
+    src_uri = spec['src_uri']
+    copy_in_progress_msg = 'Dispatching in progress, please see: %s%s' % (cfg.copy_web_uri, copy_job_id)
+    log_and_publish(make_report('INFO', copy_in_progress_msg, spec, src_uri))
+    try:
+        result = db_copy_client.retrieve_job(copy_job_id)
+    except Exception as e:
+        log_and_publish(make_report('ERROR', 'Database dispatch failed, cannot retrieve copy job', spec, src_uri))
+        raise ValueError('Handover failed, cannot retrieve copy job %s' % e) from e
+    if result['status'] in ['incomplete', 'running', 'submitted']:
+        log_and_publish(make_report('DEBUG', 'Database dispatch job incomplete, checking again later', spec, src_uri))
+        raise self.retry()
+    else:
+        log_and_publish(make_report('INFO', 'Database dispatch complete, handover complete', spec, src_uri))
+        spec['progress_complete'] = 4
