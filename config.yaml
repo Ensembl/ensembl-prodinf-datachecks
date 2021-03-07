@@ -2,6 +2,6 @@
 base_dir: '/app/'
 datacheck_output_dir: '/nfs/nobackup/ensembl/ensprod/datachecks'
 datacheck_common_dir: '/nfs/panda/ensembl/production/datachecks'
-hive_uri: 'mysql://ensadmin:ensembl@mysql-ens-hive-prod-1:4575/ensprod_db_datachecks_production'
+hive_uri: 'mysql://'
 server_names_file: '/app/server_names.json'
 swagger_file: '/app/swagger.yml'
