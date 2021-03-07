@@ -1,0 +1,238 @@
+{
+  "mysql://ensro@mysql-ens-core-prod-1:4524/": {
+    "server_name": "core-prod-1",
+    "config_profile": "vertebrates"
+  },
+  "mysql://ensro@mysql-ens-compara-prod-1:4485/": {
+    "server_name": "compara-prod-1",
+    "config_profile": "compara"
+  },
+  "mysql://ensro@mysql-ens-compara-prod-2:4522/": {
+    "server_name": "compara-prod-2",
+    "config_profile": "compara"
+  },
+  "mysql://ensro@mysql-ens-compara-prod-3:4523/": {
+    "server_name": "compara-prod-3",
+    "config_profile": "compara"
+  },
+  "mysql://ensro@mysql-ens-compara-prod-4:4401/": {
+    "server_name": "compara-prod-4",
+    "config_profile": "compara"
+  },
+  "mysql://ensro@mysql-ens-compara-prod-5:4615/": {
+    "server_name": "compara-prod-5",
+    "config_profile": "compara"
+  },
+  "mysql://ensro@mysql-ens-compara-prod-6:4616/": {
+    "server_name": "compara-prod-6",
+    "config_profile": "compara"
+  },
+  "mysql://ensro@mysql-ens-compara-prod-7:4617/": {
+    "server_name": "compara-prod-7",
+    "config_profile": "compara"
+  },
+  "mysql://ensro@mysql-ens-compara-prod-8:4618/": {
+    "server_name": "compara-prod-8",
+    "config_profile": "compara"
+  },
+  "mysql://ensro@mysql-ens-compara-prod-9:4647/": {
+    "server_name": "compara-prod-9",
+    "config_profile": "compara"
+  },
+  "mysql://ensro@mysql-ens-compara-prod-10:4648/": {
+    "server_name": "compara-prod-10",
+    "config_profile": "compara"
+  },
+  "mysql://ensro@mysql-ens-general-dev-1:4484/": {
+    "server_name": "general-dev-1",
+    "config_profile": "general"
+  },
+  "mysql://ensro@mysql-ens-general-dev-2:4586/": {
+    "server_name": "general-dev-2",
+    "config_profile": "general"
+  },
+  "mysql://ensro@mysql-ens-general-dev-3:4587/": {
+    "server_name": "general-dev-3",
+    "config_profile": "general"
+  },
+  "mysql://ensro@mysql-ens-genebuild-prod-1:4527/": {
+    "server_name": "genebuild-prod-1",
+    "config_profile": "vertebrates"
+  },
+  "mysql://ensro@mysql-ens-genebuild-prod-2:4528/": {
+    "server_name": "genebuild-prod-2",
+    "config_profile": "vertebrates"
+  },
+  "mysql://ensro@mysql-ens-genebuild-prod-3:4529/": {
+    "server_name": "genebuild-prod-3",
+    "config_profile": "vertebrates"
+  },
+  "mysql://ensro@mysql-ens-genebuild-prod-4:4530/": {
+    "server_name": "genebuild-prod-4",
+    "config_profile": "vertebrates"
+  },
+  "mysql://ensro@mysql-ens-genebuild-prod-5:4531/": {
+    "server_name": "genebuild-prod-5",
+    "config_profile": "vertebrates"
+  },
+  "mysql://ensro@mysql-ens-genebuild-prod-6:4532/": {
+    "server_name": "genebuild-prod-6",
+    "config_profile": "vertebrates"
+  },
+  "mysql://ensro@mysql-ens-genebuild-prod-7:4533/": {
+    "server_name": "genebuild-prod-7",
+    "config_profile": "vertebrates"
+  },
+  "mysql://ensro@mysql-ens-general-prod-1:4525/": {
+    "server_name": "general-prod-1",
+    "config_profile": "general"
+  },
+  "mysql://ensro@mysql-ens-general-prod-3:4631/": {
+    "server_name": "general-prod-3",
+    "config_profile": "general"
+  },
+  "mysql://ensro@mysql-ens-general-prod-4:4632/": {
+    "server_name": "general-prod-4",
+    "config_profile": "general"
+  },
+  "mysql://ensro@mysql-ens-havana-prod-1:4581/": {
+    "server_name": "havana-prod-1",
+    "config_profile": "vertebrates"
+  },
+  "mysql://ensro@mysql-ens-havana-prod-2:4682/": {
+    "server_name": "havana-prod-2",
+    "config_profile": "vertebrates"
+  },
+  "mysql://ensro@mysql-ens-mirror-1:4240/": {
+    "server_name": "mirror-1",
+    "config_profile": "general"
+  },
+  "mysql://ensro@mysql-ens-mirror-2:4603/": {
+    "server_name": "mirror-2",
+    "config_profile": "general"
+  },
+  "mysql://ensro@mysql-ens-mirror-3:4275/": {
+    "server_name": "mirror-3",
+    "config_profile": "general"
+  },
+  "mysql://ensro@mysql-ens-mirror-4:4495/": {
+    "server_name": "mirror-4",
+    "config_profile": "general"
+  },
+  "mysql://ensro@mysql-ens-metazoa-prod-1:4238/": {
+    "server_name": "metazoa-prod-1",
+    "config_profile": "metazoa"
+  },
+  "mysql://ensro@mysql-ens-metazoa-prod-2:4126/": {
+    "server_name": "metazoa-prod-2",
+    "config_profile": "metazoa"
+  },
+  "mysql://ensro@mysql-ens-meta-prod-1:4483/": {
+    "server_name": "meta-prod-1",
+    "config_profile": "general"
+  },
+  "mysql://ensro@mysql-ens-microbes-prod-1:4239/": {
+    "server_name": "microbes-prod-1",
+    "config_profile": "bacteria"
+  },
+  "mysql://ensro@mysql-ens-microbes-prod-2:4346/": {
+    "server_name": "microbes-prod-2",
+    "config_profile": "microbes"
+  },
+  "mysql://ensro@mysql-ens-microbes-prod-3:4207/": {
+    "server_name": "microbes-prod-3",
+    "config_profile": "microbes"
+  },
+  "mysql://ensro@mysql-ens-plants-prod-1:4243/": {
+    "server_name": "plants-prod-1",
+    "config_profile": "plants"
+  },
+  "mysql://ensro@mysql-ens-plants-prod-2:4208/": {
+    "server_name": "plants-prod-2",
+    "config_profile": "plants"
+  },
+  "mysql://ensro@mysql-ens-reg-prod-1:4526/": {
+    "server_name": "reg-prod-1",
+    "config_profile": "vertebrates"
+  },
+  "mysql://ensro@mysql-ens-reg-prod-2:4545/": {
+    "server_name": "reg-prod-2",
+    "config_profile": "vertebrates"
+  },
+  "mysql://ensro@mysql-ens-reg-prod-3:4611/": {
+    "server_name": "reg-prod-3",
+    "config_profile": "vertebrates"
+  },
+  "mysql://ensro@mysql-ens-reg-prod-4:4612/": {
+    "server_name": "reg-prod-4",
+    "config_profile": "vertebrates"
+  },
+  "mysql://ensro@mysql-ens-sta-1:4519/": {
+    "server_name": "sta-1",
+    "config_profile": "st1"
+  },
+  "mysql://ensro@mysql-ens-sta-1-b:4519/": {
+    "server_name": "sta-1-b",
+    "config_profile": "st1b"
+  },
+  "mysql://ensro@mysql-ens-sta-2:4520/": {
+    "server_name": "sta-2",
+    "config_profile": "st2"
+  },
+  "mysql://ensro@mysql-ens-sta-3:4160/": {
+    "server_name": "sta-3",
+    "config_profile": "st3"
+  },
+  "mysql://ensro@mysql-ens-sta-3-b:4160/": {
+    "server_name": "sta-3-b",
+    "config_profile": "st3b"
+  },
+  "mysql://ensro@mysql-ens-sta-4:4494/": {
+    "server_name": "sta-4",
+    "config_profile": "st4"
+  },
+  "mysql://ensro@mysql-ens-sta-4-b:4494/": {
+    "server_name": "sta-4-b",
+    "config_profile": "st4b"
+  },
+  "mysql://ensro@mysql-ens-sta-5:4672/": {
+    "server_name": "sta-5",
+    "config_profile": "st5"
+  },
+  "mysql://ensro@mysql-ens-vertannot-staging:4573/": {
+    "server_name": "vertannot-staging",
+    "config_profile": "vertebrates"
+  },
+  "mysql://ensro@mysql-ens-test-1:4508/": {
+    "server_name": "test-1",
+    "config_profile": "general"
+  },
+  "mysql://ensro@mysql-ens-test-2:4509/": {
+    "server_name": "test-2",
+    "config_profile": "general"
+  },
+  "mysql://ensro@mysql-ens-var-prod-1:4449/": {
+    "server_name": "var-prod-1",
+    "config_profile": "vertebrates"
+  },
+  "mysql://ensro@mysql-ens-var-prod-2:4521/": {
+    "server_name": "var-prod-2",
+    "config_profile": "vertebrates"
+  },
+  "mysql://ensro@mysql-ens-var-prod-3:4606/": {
+    "server_name": "var-prod-3",
+    "config_profile": "vertebrates"
+  },
+  "mysql://ensro:ensro@mysql-ens-var-prod-4:4631/": {
+    "server_name": "var-prod-4",
+    "config_profile": "vertebrates"
+  },
+  "mysql://ensro@mysql-eg-vectorbase-dev:4440/": {
+    "server_name": "vectorbase-dev",
+    "config_profile": "metazoa"
+  },
+  "mysql://ensro@mysql-eg-vectorbase-prod:4440/": {
+    "server_name": "vectorbase-prod",
+    "config_profile": "metazoa"
+  }
+}

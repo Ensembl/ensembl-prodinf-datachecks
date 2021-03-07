@@ -1,0 +1,11 @@
+git+ssh://git@github.com/Ensembl/ensembl-prodinf-core.git#egg=ensembl-prodinf-core
+Click
+elasticsearch>=6.8.1,<7.0.0
+Flask
+flasgger
+Flask-Cors
+gunicorn
+requests
+SQLAlchemy
+wtforms
+email_validator
