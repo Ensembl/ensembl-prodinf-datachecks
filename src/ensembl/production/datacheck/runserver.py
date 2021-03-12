@@ -1,6 +1,6 @@
 import logging.config
 import click
-from ensembl.datacheck.app.main import app
+from ensembl.production.datacheck.app.main import app
 
 @click.command()
 @click.option('-p', '--port', type=int, default=5000)

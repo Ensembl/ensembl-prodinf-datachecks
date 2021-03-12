@@ -13,8 +13,8 @@ from flask_cors import CORS
 from ensembl.production.core.db_utils import get_databases_list, get_db_type
 from ensembl.production.core.models.hive import HiveInstance
 from ensembl.production.core.server_utils import assert_mysql_uri, assert_mysql_db_uri
-from ensembl.datacheck.forms import DatacheckSubmissionForm
-from ensembl.datacheck.config import DatacheckConfig
+from ensembl.production.datacheck.forms import DatacheckSubmissionForm
+from ensembl.production.datacheck.config import DatacheckConfig
 
 #as we move to django based UI we are commenting tempate rendering##############
  

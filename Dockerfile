@@ -19,5 +19,5 @@ ENV DATACHECK_CONFIG_PATH="/app/config.yaml"
 
 
 EXPOSE 5000
-CMD  ["/usr/local/bin/gunicorn", "--config", "/app/gunicorn_config.py", "-b", "0.0.0.0:5000", "ensembl.datacheck.app.main:app"]
+CMD  ["/usr/local/bin/gunicorn", "--config", "/app/gunicorn_config.py", "-b", "0.0.0.0:5000", "ensembl.production.datacheck.app.main:app"]
 

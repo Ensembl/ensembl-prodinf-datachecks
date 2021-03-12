@@ -57,7 +57,7 @@ setup(
     keywords='ensembl, datacheck, production',
     entry_points={
         'console_scripts': [
-            'datacheck_api = ensembl.datacheck.runserver:main'
+            'datacheck_api = ensembl.production.datacheck.runserver:main'
         ]
     }
 )
