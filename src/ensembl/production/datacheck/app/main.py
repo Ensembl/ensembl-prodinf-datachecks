@@ -272,7 +272,7 @@ def job_details():
 @app.route('/datacheck/jobs/<int:job_id>', methods=['GET'])
 def job_result(job_id):
     job = get_hive().get_result_for_job_id(job_id, progress=False)
-
+    fmt = request.args.get('format', None)
     # Handle case where submission is marked as complete,
     # but where output has not been created.
     if 'output' not in job.keys():
@@ -282,11 +282,11 @@ def job_result(job_id):
     elif job['output']['passed_total'] == 0:
         job['status'] = 'failed'
 
-    # if request.is_json:
-    return jsonify(job)
-    # else:
+    if request.is_json or fmt == 'json':
+        return jsonify(job)
+    else:
     # Need to pass some data to the template...
-    # return render_template('ensembl/datacheck/detail.html')
+        return render_template('list.html', job_id=job_id)
 
 
 @app.route('/datacheck/download_datacheck_outputs/<int:job_id>')

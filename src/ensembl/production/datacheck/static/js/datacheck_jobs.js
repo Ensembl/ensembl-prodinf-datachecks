@@ -255,7 +255,7 @@ $(document).ready(function(){
   var $table = $('#table')
   $table.bootstrapTable('refreshOptions', {
         theadClasses: 'bg-purple',
-        url: "/datacheck/jobs?format=json"
+        url: "/datacheck/jobs"
   });
 
   $table.bootstrapTable('expandAllRows');

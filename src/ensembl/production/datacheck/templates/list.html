@@ -56,7 +56,11 @@
  <script src="{{ url_for('static', filename='js/datacheck_jobs.js') }}"></script>
 
  <script>
+
+  console.log('heeeeeeeeee');
+  console.log("{{ job_id }}");
   function queryParams(params) {
+    params.format = "json";
     {% if job_id %}
       params.job_id = {{ job_id }}
     {% endif %}
