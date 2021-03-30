@@ -9,14 +9,15 @@ file_config = load_config_yaml(config_file_path)
 
 
 class EnsemblConfig:
+
     BASE_DIR = os.environ.get('BASE_DIR',
                               file_config.get('base_dir'))
     SECRET_KEY = os.environ.get('SECRET_KEY',
                                 file_config.get('secret_key', os.urandom(32)))
     SERVER_URIS_FILE = os.environ.get('SERVER_URIS_FILE',
-                                      file_config.get('server_uris_file', 'ensembl/server_uris_list.json'))
+                                      file_config.get('server_uris_file', 'server_uris_list.json'))
     SWAGGER = {
-      'title': 'Ensembl Production Web Services',
+      'title': 'Ensembl Datacheck Service',
       'uiversion': 3,
       'hide_top_bar': True,
       'ui_params': {
@@ -27,7 +28,7 @@ class EnsemblConfig:
 
 
 class DatacheckConfig(EnsemblConfig):
-   
+  
     DATACHECK_INDEX = os.path.join(EnsemblConfig.BASE_DIR, 'ensembl-datacheck/lib/Bio/EnsEMBL/DataCheck/index.json')
     DATACHECK_COMMON_DIR = os.environ.get("DATACHECK_COMMON_DIR",
                                           file_config.get('datacheck_common_dir'))
@@ -37,4 +38,4 @@ class DatacheckConfig(EnsemblConfig):
                                    file_config.get('hive_analysis', 'DataCheckSubmission'))
     HIVE_URI = os.environ.get("HIVE_URI", file_config.get('hive_uri'))
     SERVER_NAMES_FILE = os.environ.get("SERVER_NAMES", file_config.get('server_names_file'))
-    SWAGGER_FILE = os.environ.get("SWAGGER_FILE", file_config.get('swagger_file'))
+    SWAGGER_FILE = os.environ.get("SWAGGER_FILE", file_config.get('swagger_file', f"{pathlib.Path().absolute()}/swagger.yml" ))

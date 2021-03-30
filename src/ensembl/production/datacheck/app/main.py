@@ -1,13 +1,13 @@
 import os
 import re
-from io import BytesIO
-from pathlib import Path
-from zipfile import ZipFile
-
-from flasgger import Swagger
+import time
 from flask import Flask, json, jsonify, redirect, render_template, request, send_file
+from flask_bootstrap import Bootstrap
 from flask_cors import CORS
-#from flask_bootstrap import Bootstrap
+from flasgger import Swagger
+from io import BytesIO
+from zipfile import ZipFile
+from pathlib import Path
 
 
 from ensembl.production.core.db_utils import get_databases_list, get_db_type
@@ -16,20 +16,17 @@ from ensembl.production.core.server_utils import assert_mysql_uri, assert_mysql_
 from ensembl.production.datacheck.forms import DatacheckSubmissionForm
 from ensembl.production.datacheck.config import DatacheckConfig
 
-#as we move to django based UI we are commenting tempate rendering##############
  
 # Go up two levels to get to root, where we will find the static and template files
-#app_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-#static_path = os.path.join(app_path, 'static')
-#template_path = os.path.join(app_path, 'templates')
-#app = Flask(__name__, static_url_path='', static_folder=static_path, template_folder=template_path)
-####################################################################################################
+app_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+static_path = os.path.join(app_path, 'static')
+template_path = os.path.join(app_path, 'templates')
 
-app = Flask(__name__, instance_relative_config=True )
+app = Flask(__name__, static_url_path='', static_folder=static_path, template_folder=template_path)
 
 app.config.from_object(DatacheckConfig)
 
-#Bootstrap(app)
+Bootstrap(app)
 
 CORS(app)
 
@@ -37,7 +34,7 @@ Swagger(app, template_file=app.config['SWAGGER_FILE'])
 
 app.analysis = app.config['HIVE_ANALYSIS']
 app.index = json.load(open(app.config['DATACHECK_INDEX']))
-app.server_names = json.load(open(app.config['SERVER_NAMES_FILE']))
+app.server_names = json.load(open(os.path.join(app_path, app.config['SERVER_NAMES_FILE'])))
 
 app.names_list = []
 app.groups_list = []
@@ -84,8 +81,7 @@ def get_hive():
         hive = HiveInstance(app.config['HIVE_URI'])
     return hive
 
-
-
+@app.route('/', methods=['GET'])
 @app.route('/datacheck/', methods=['GET'])
 def index():
     # Missing template
@@ -121,7 +117,13 @@ def names(name_param=None):
             if name == name_param:
                 index_names.setdefault(name, []).append(params)
 
-    return jsonify(index_names)
+    if request.is_json:
+        return jsonify(index_names)
+    else:
+        return render_template(
+            'names.html',
+            datachecks=index_names
+        )
 
 
 @app.route('/datacheck/names/list', methods=['GET'])
@@ -138,7 +140,14 @@ def groups(group_param=None):
             if group_param is None or group == group_param:
                 index_groups.setdefault(group, []).append(params)
 
-    return jsonify(index_groups)
+    if request.is_json:
+        return jsonify(index_groups)
+    else:
+        return render_template(
+            'groups.html',
+            datachecks=index_groups
+        )
+
 
 @app.route('/datacheck/groups/list', methods=['GET'])
 def groups_list():
@@ -153,7 +162,13 @@ def types(type_param=None):
         if type_param is None or params['datacheck_type'] == type_param:
             index_types.setdefault(params['datacheck_type'], []).append(params)
 
-    return jsonify(index_types)
+    if request.is_json:
+        return jsonify(index_types)
+    else:
+        return render_template(
+            'types.html',
+            datachecks=index_types
+        )
 
 
 @app.route('/datacheck/search/<string:keyword>', methods=['GET'])
@@ -213,32 +228,36 @@ def job_submit(payload=None):
 
     job = get_hive().create_job(app.analysis, input_data)
 
-    results = {"job_id": job.job_id}
-    return jsonify(results), 201
+    if request.is_json:
+        results = {"job_id": job.job_id}
+        return jsonify(results), 201
+    else:
+        return redirect('/datacheck/jobs/' + str(job.job_id))
 
 
 @app.route('/datacheck/jobs', methods=['GET'])
 def job_list():
-     
+
     fmt = request.args.get('format', None)
     job_id = request.args.get('job_id', None)
-    
-#if request.is_json or fmt == 'json':
-    if job_id:
-        jobs = [ get_hive().get_result_for_job_id(job_id, progress=False) ]
-    else:
-        jobs = get_hive().get_all_results(app.analysis)
 
-    # Handle case where submission is marked as complete,
-    # but where output has not been created.
-    for job in jobs:
-        if 'output' not in job.keys():
-            job['status'] = 'incomplete'
-        elif job['output']['failed_total'] > 0:
-            job['status'] = 'failed'
+    if request.is_json or fmt == 'json':
+        if job_id:
+            jobs = [ get_hive().get_result_for_job_id(job_id, progress=False) ]
+        else:
+            jobs = get_hive().get_all_results(app.analysis)
 
-    return jsonify(jobs)
+        # Handle case where submission is marked as complete,
+        # but where output has not been created.
+        for job in jobs:
+            if 'output' not in job.keys():
+                job['status'] = 'incomplete'
+            elif job['output']['failed_total'] > 0:
+                job['status'] = 'failed'
 
+        return jsonify(jobs)
+
+    return render_template('list.html', job_id=job_id)
 
 @app.route('/datacheck/jobs/details', methods=['GET'])
 def job_details():
@@ -249,9 +268,11 @@ def job_details():
     except Exception:
         return jsonify({'Could not retrieve results'})
 
+
 @app.route('/datacheck/jobs/<int:job_id>', methods=['GET'])
 def job_result(job_id):
     job = get_hive().get_result_for_job_id(job_id, progress=False)
+
     # Handle case where submission is marked as complete,
     # but where output has not been created.
     if 'output' not in job.keys():
@@ -259,9 +280,14 @@ def job_result(job_id):
     elif job['output']['failed_total'] > 0:
         job['status'] = 'failed'
     elif job['output']['passed_total'] == 0:
-        job['status'] = 'dc-run-error'
+        job['status'] = 'failed'
 
+    # if request.is_json:
     return jsonify(job)
+    # else:
+    # Need to pass some data to the template...
+    # return render_template('ensembl/datacheck/detail.html')
+
 
 @app.route('/datacheck/download_datacheck_outputs/<int:job_id>')
 def download_dc_outputs(job_id):
@@ -275,24 +301,31 @@ def download_dc_outputs(job_id):
                 for f_path in paths:
                     z.write(str(f_path), f_path.name)
             data.seek(0)
-            filename = 'dc_job_%s.zip' % job_id
+            filename = 'Datacheck_output_job_%s.zip' % job_id
             return send_file(data, mimetype='application/zip',
                              attachment_filename=filename, as_attachment=True)
         else:
             for f_path in paths:
                 return send_file(str(f_path), as_attachment=True)
 
+
 @app.route('/datacheck/submit', methods=['GET'])
 def display_form():
     form = DatacheckSubmissionForm(request.form)
 
     server_name_choices = [('', '')]
+    server_name_dict = {}
+
     for i, j in get_servers_dict().items():
-        server_name_choices.append((i, j['server_name']))
+        server_name_dict[j['server_name']] = i
+
+    for name in sorted(server_name_dict):
+        server_name_choices.append((server_name_dict[name], name))
+
     form.server.server_name.choices = server_name_choices
 
     return render_template(
-        'ensembl/datacheck/submit.html',
+        'submit.html',
         form=form
     )
 
