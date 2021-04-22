@@ -39,3 +39,5 @@ class DatacheckConfig(EnsemblConfig):
     HIVE_URI = os.environ.get("HIVE_URI", file_config.get('hive_uri'))
     SERVER_NAMES_FILE = os.environ.get("SERVER_NAMES", file_config.get('server_names_file'))
     SWAGGER_FILE = os.environ.get("SWAGGER_FILE", file_config.get('swagger_file', f"{pathlib.Path().absolute()}/swagger.yml" ))
+    COPY_URI_DROPDOWN = os.environ.get("COPY_URI_DROPDOWN",
+                          file_config.get('copy_uri_dropdown', "http://production-services.ensembl.org:80/"))

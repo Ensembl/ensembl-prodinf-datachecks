@@ -1,19 +1,34 @@
 {% extends "base.html" %}
 
-{% set icon_image = 'img/production.png' %}
-{% set title = 'Datacheck Submission' %}
-
+<!--set icon_image = 'img/production.png' 
+set title = 'Datacheck Submission' -->
+{%- block styles %}
+  {{ super() }}
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-select@1.13.14/dist/css/bootstrap-select.min.css">
+{%- endblock styles %}
 {% block content -%}
+{{ super() }}
 <div class="container">
-  <form action="" method="post" enctype="multipart/form-data" autocomplete="off">
+  <div class="row">
+    <div class="col-sm-10">
+          {% if error %}
+            <div class="alert alert-danger m-2" role="alert">
+                {{ error }}
+              </div>
+          {% endif %} 
+    </div>
+  </div>
+  <fieldset class="border rounded p-2 border-purple" >
+    <legend class="w-auto bg-purple" >&nbsp;Datacheck Submission&nbsp;</legend>
+  <form action="" method="post" enctype="multipart/form-data" autocomplete="off" class="m-4">
     {{ form.csrf }}
 
-    <fieldset class="border rounded p-2 border-purple">
+    <fieldset class="border rounded p-2 ">
       <legend class="w-auto fg-purple">&nbsp;{{ form.server.description }}&nbsp;</legend>
 
       <div class="form-group row">
         {{ form.server.server_name.label( class='col-sm-2 col-form-label' ) }}
-        <div class="col-sm-4">{{ form.server.server_name( class='form-control' ) }}</div>
+        <div class="col-sm-4">{{ form.server.server_name( class='form-control selectpicker', **{'data-show-subtext':'true', 'title':"Select server name...", 'data-live-search':'true'} ) }}</div>
       </div>
 
       <div class="form-group row">
@@ -22,6 +37,13 @@
           {{ form.server.dbname( class='form-control' ) }}
           {{ form.server.species( class='form-control', style='display: none' ) }}
           {{ form.server.division( class='form-control', style='display: none' ) }}
+          {% if form.server.dbname.errors %}
+          <div class="alert alert-danger m-2" role="alert">
+            {% for error in form.server.dbname.errors %}
+              {{ error }}
+            {% endfor %}
+          </div>
+        {% endif %} 
         </div>
       </div>
 
@@ -33,7 +55,7 @@
     </fieldset>
 
     <fieldset class="border rounded p-2">
-      <legend class="w-auto">&nbsp;{{ form.datacheck.description }}&nbsp;</legend>
+      <legend class="w-auto fg-purple">&nbsp;{{ form.datacheck.description }}&nbsp;</legend>
 
       <div class="form-group row">
         {{ form.datacheck.datacheck_name.label( class='col-sm-2 col-form-label' ) }}
@@ -42,22 +64,47 @@
 
       <div class="form-group row">
         {{ form.datacheck.datacheck_group.label( class='col-sm-2 col-form-label' ) }}
-        <div class="col-sm-9">{{ form.datacheck.datacheck_group( class='form-control' ) }}</div>
+        <div class="col-sm-9">{{ form.datacheck.datacheck_group( class='form-control' ) }}
+          {% if form.datacheck.datacheck_group.errors %}
+          <div class="alert alert-danger m-2" role="alert">
+            {% for error in form.datacheck.datacheck_group.errors %}
+              {{ error }}
+            {% endfor %}
+          </div>
+        {% endif %}
+        </div>
       </div>
 
       <div class="form-group row">
         {{ form.datacheck.datacheck_type.label( class='col-sm-2 col-form-label' ) }}
-        <div class="col-sm-3">{{ form.datacheck.datacheck_type( class='form-control' ) }}</div>
+        <div class="col-sm-3">{{ form.datacheck.datacheck_type( class='form-control' ) }}
+          {% if form.datacheck.datacheck_type.errors %}
+          <div class="alert alert-danger m-2" role="alert">
+            {% for error in form.datacheck.datacheck_type.errors %}
+              {{ error }}
+            {% endfor %}
+          </div>
+        {% endif %}
+        </div>
       </div>
 
     </fieldset>
 
     <fieldset class="border rounded p-2">
-      <legend class="w-auto">&nbsp;{{ form.submitter.description }}&nbsp;</legend>
+      <legend class="w-auto fg-purple">&nbsp;{{ form.submitter.description }}&nbsp;</legend>
 
       <div class="form-group row">
         {{ form.submitter.email.label( class='col-sm-2 col-form-label' ) }}
-        <div class="col-sm-5">{{ form.submitter.email( class='form-control' ) }}</div>
+        <div class="col-sm-5">{{ form.submitter.email( class='form-control' ) }}
+          {% if form.submitter.email.errors %}
+          <div class="alert alert-danger m-2" role="alert">
+            {% for error in form.submitter.email.errors %}
+              {{ error }}
+            {% endfor %}
+          </div>
+        {% endif %} 
+        </div>
+
       </div>
 
       <div class="form-group row">
@@ -72,15 +119,19 @@
     </div>
 
   </form>
-</div>
+</fieldset>
+
 {%- endblock content %}
 
 {% block scripts %}
   {{ super() }}
+  <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap-select@1.13.14/dist/js/bootstrap-select.min.js"></script>
   <script src="{{ url_for('static', filename='js/ensembl.js') }}"></script>
   <script src="{{ url_for('static', filename='js/typeahead.bundle.js') }}"></script>
   <script src="{{ url_for('static', filename='js/tagsinput.js') }}"></script>
   <script src="{{ url_for('static', filename='js/autocomplete.js') }}"></script>
+ 
 {% endblock scripts %}
 
 

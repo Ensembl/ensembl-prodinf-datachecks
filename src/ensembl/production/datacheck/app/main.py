@@ -1,18 +1,32 @@
+# .. See the NOTICE file distributed with this work for additional information
+#    regarding copyright ownership.
+#    Licensed under the Apache License, Version 2.0 (the "License");
+#    you may not use this file except in compliance with the License.
+#    You may obtain a copy of the License at
+#        http://www.apache.org/licenses/LICENSE-2.0
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS,
+#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#    See the License for the specific language governing permissions and
+#    limitations under the License.
 import os
 import re
 import time
-from flask import Flask, json, jsonify, redirect, render_template, request, send_file
+from flask import Flask, json, jsonify, redirect, render_template, request, send_file, redirect
 from flask_bootstrap import Bootstrap
 from flask_cors import CORS
 from flasgger import Swagger
 from io import BytesIO
 from zipfile import ZipFile
 from pathlib import Path
+import requests
+from requests.exceptions import HTTPError
 
 
 from ensembl.production.core.db_utils import get_databases_list, get_db_type
 from ensembl.production.core.models.hive import HiveInstance
 from ensembl.production.core.server_utils import assert_mysql_uri, assert_mysql_db_uri
+from ensembl.production.core.exceptions import HTTPRequestError
 from ensembl.production.datacheck.forms import DatacheckSubmissionForm
 from ensembl.production.datacheck.config import DatacheckConfig
 
@@ -182,6 +196,21 @@ def search(keyword):
 
     return jsonify(index_search)
 
+@app.route('/datacheck/dropdown/databases/<string:src_host>/<string:src_port>', methods=['GET'])
+def dropdown(src_host=None, src_port=None):
+  try:
+    search = request.args.get('search', None)
+    if src_host and src_port and search:
+      res = requests.get(f"{DatacheckConfig.COPY_URI_DROPDOWN}api/dbcopy/databases/{src_host}/{src_port}", params={'search': search})
+      res.raise_for_status()
+      return jsonify(res.json())
+    else:
+      raise Exception('required params not provided')
+  except HTTPError as http_err:
+    raise HTTPRequestError(f'{http_err}', 404)
+  except Exception as e:
+    print(str(e))
+    return jsonify([])
 
 @app.route('/datacheck/jobs', methods=['POST'])
 def job_submit(payload=None):
@@ -309,65 +338,67 @@ def download_dc_outputs(job_id):
                 return send_file(str(f_path), as_attachment=True)
 
 
-@app.route('/datacheck/submit', methods=['GET'])
+@app.route('/datacheck/submit', methods=['POST', 'GET'])
 def display_form():
-    form = DatacheckSubmissionForm(request.form)
+    # Here we convert the form fields into a 'payload' dictionary
+    # that is the required input format for the hive submission.
+    try:
 
-    server_name_choices = [('', '')]
-    server_name_dict = {}
+        form = DatacheckSubmissionForm(request.form)
+        error = ''
+        server_name_choices = [('', '')]
+        server_name_dict = {}
 
-    for i, j in get_servers_dict().items():
-        server_name_dict[j['server_name']] = i
+        for i, j in get_servers_dict().items():
+            server_name_dict[j['server_name']] = i
 
-    for name in sorted(server_name_dict):
-        server_name_choices.append((server_name_dict[name], name))
+        for name in sorted(server_name_dict):
+            server_name_choices.append((server_name_dict[name], name))
 
-    form.server.server_name.choices = server_name_choices
+        form.server.server_name.choices = server_name_choices
+
+        if  request.method == 'POST' : 
+            form.validate() 
+            payload = {
+                'server_url': form.server.server_name.data,
+                'dbname': None,
+                'species': None,
+                'division': None,
+                'db_type': None,
+                'datacheck_names': [],
+                'datacheck_groups': [],
+                'datacheck_types': [],
+                'email': form.submitter.email.data,
+                'tag': form.submitter.tag.data
+            }
+
+            if form.server.source.data == 'dbname':
+                payload['dbname'] = form.server.dbname.data
+            else:
+                if form.server.source.data == 'species':
+                    payload['species'] = form.server.species.data
+                elif form.server.source.data == 'division':
+                    payload['division'] = form.server.division.data
+
+                payload['db_type'] = form.server.db_type.data
+
+            if form.datacheck.datacheck_name.data != '':
+                payload['datacheck_names'] = form.datacheck.datacheck_name.data.split(',')
+            if form.datacheck.datacheck_group.data != '':
+                payload['datacheck_groups'] = form.datacheck.datacheck_group.data.split(',')
+            if form.datacheck.datacheck_type.data != '':
+                payload['datacheck_types'] = form.datacheck.datacheck_type.data.split(',')
+     
+            return job_submit(payload)
+
+    except Exception as e:
+        error = str(e)
 
     return render_template(
         'submit.html',
-        form=form
+        form=form,
+        error=error
     )
-
-
-@app.route('/datacheck/submit', methods=['POST'])
-def submit_form():
-    # Here we convert the form fields into a 'payload' dictionary
-    # that is the required input format for the hive submission.
-
-    form = DatacheckSubmissionForm(request.form)
-
-    payload = {
-        'server_url': form.server.server_name.data,
-        'dbname': None,
-        'species': None,
-        'division': None,
-        'db_type': None,
-        'datacheck_names': [],
-        'datacheck_groups': [],
-        'datacheck_types': [],
-        'email': form.submitter.email.data,
-        'tag': form.submitter.tag.data
-    }
-
-    if form.server.source.data == 'dbname':
-        payload['dbname'] = form.server.dbname.data
-    else:
-        if form.server.source.data == 'species':
-            payload['species'] = form.server.species.data
-        elif form.server.source.data == 'division':
-            payload['division'] = form.server.division.data
-
-        payload['db_type'] = form.server.db_type.data
-
-    if form.datacheck.datacheck_name.data != '':
-        payload['datacheck_names'] = form.datacheck.datacheck_name.data.split(',')
-    if form.datacheck.datacheck_group.data != '':
-        payload['datacheck_groups'] = form.datacheck.datacheck_group.data.split(',')
-    if form.datacheck.datacheck_type.data != '':
-        payload['datacheck_types'] = form.datacheck.datacheck_type.data.split(',')
-
-    return job_submit(payload)
 
 
 @app.route('/datacheck/ping', methods=['GET'])
@@ -396,3 +427,13 @@ def set_config_file(config_profile):
 def is_grch37(dbname):
     p = re.compile('homo_sapiens.*_37')
     return p.match(dbname)
+
+@app.errorhandler(HTTPRequestError)
+def handle_bad_request_error(e):
+    app.logger.error(str(e))
+    return jsonify(error=str(e)), e.status_code
+
+@app.errorhandler(404)
+def handle_sqlalchemy_error(e):
+     app.logger.error(str(e))
+     return jsonify(error=str(e)), 404

@@ -15,7 +15,19 @@ $(document).ready(function(){
         return tokens;
     }
     */
+    var SelectedHost = '';
+    var SelectedPort = '';
 
+    // set search for dropdown 
+    $('.selectpicker').selectpicker({
+        size: 10,
+    });
+
+    $('form').on('submit', function(e){
+        $("#submit").val("please wait..");
+        $("#submit").prop('disabled', true);
+    });
+      
     var datacheck_name_list = new Bloodhound({
         datumTokenizer: Bloodhound.tokenizers.whitespace,
         queryTokenizer: Bloodhound.tokenizers.whitespace,
@@ -66,4 +78,49 @@ $(document).ready(function(){
         }
     });
     */
+
+    //typeahead to select database 
+
+    $("#server-server_name").change(function () {
+        
+        var selectedValue = $(this).val();
+        const regex = new RegExp('.+@(.+)\:([0-9]{4})\/?'); 
+        if (regex.test(selectedValue)){
+            const regex_val = selectedValue.match(regex);
+            
+            SelectedHost = regex_val[1];
+            SelectedPort = regex_val[2];
+       }
+    });
+
+    $("#server-dbname").autocomplete({
+        source: function (request, response) {
+            
+           $.ajax({
+                //url: `${copy_url}api/dbcopy/databases/${SelectedHostDetails.name}/${SelectedHostDetails.port}`,
+                url: `/datacheck/dropdown/databases/${SelectedHost}/${SelectedPort}`,
+                dataType: "json",
+                data: {
+                    search: request.term
+                },
+                success: function (data) {
+            
+                    response(data);
+                },
+                error: function (_request, _textStatus, _error) {
+                  response([]);
+                }
+            });
+        },
+        minLength: 1,
+        select: function (event, ui) {
+            this.value =  ui.item.value;
+            return false;
+        },
+        change: function () {
+            
+        }
+    });    
+  
+
 });

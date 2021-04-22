@@ -1,3 +1,4 @@
+{% from 'bootstrap/nav.html' import render_nav_item %}
 {% block doc -%}
 
 <!DOCTYPE html>
@@ -28,18 +29,26 @@
 
   <body {% block body_attribs %}{% endblock body_attribs %}>
     {% block body -%}
-      {% block heading %}
-      <a id="top"></a>
 
-      <div class="container">
-        <h2><img src="{{ url_for('static', filename=icon_image) }}" /> {{title}}</h2>
-      </div>
-      {%- endblock heading %}
 
       {% block navbar %}
+      <nav class="navbar navbar-icon-top navbar-expand-lg navbar-dark bg-purple" >
+        <a class="navbar-brand" href="#"><span class="mb-0 h3">Datacheck</a>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">    
+            <div class="navbar-nav mr-auto">
+                {{ render_nav_item('display_form', 'Submit') }}
+                {{ render_nav_item('job_list', 'List Jobs') }}
+                {{ render_nav_item('groups', 'Datacheck groups') }}
+            </div>
+        </div>
+    </nav>
       {%- endblock navbar %}
 
       {% block content -%}
+
       {%- endblock content %}
 
       {% block scripts %}
