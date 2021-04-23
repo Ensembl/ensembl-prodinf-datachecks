@@ -35,7 +35,7 @@ setup(
     include_package_data=True,   
     url='https://github.com/Ensembl/ensembl-prodinf-datacheck',
     license='APACHE 2.0',
-    author='vinay',
+    author='vinay kaikala',
     author_email='vinay@ebi.ac.uk',
     maintainer='Ensembl Production Team',
     maintainer_email='ensembl-production@ebi.ac.uk',
