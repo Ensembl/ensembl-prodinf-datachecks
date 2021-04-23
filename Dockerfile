@@ -1,4 +1,4 @@
-FROM python:3.7.10
+FROM python:3.8.9
 
 RUN useradd --create-home appuser
 WORKDIR /home/appuser

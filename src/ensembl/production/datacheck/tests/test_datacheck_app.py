@@ -1,9 +1,21 @@
+# .. See the NOTICE file distributed with this work for additional information
+#     regarding copyright ownership.
+#     Licensed under the Apache License, Version 2.0 (the "License");
+#     you may not use this file except in compliance with the License.
+#     You may obtain a copy of the License at
+#         http://www.apache.org/licenses/LICENSE-2.0
+#     Unless required by applicable law or agreed to in writing, software
+#     distributed under the License is distributed on an "AS IS" BASIS,
+#     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#     See the License for the specific language governing permissions and
+#     limitations under the License.
+
 import unittest
 from flask import Flask, render_template, jsonify, Request, request
 from werkzeug.test import EnvironBuilder
 from ensembl.production.datacheck.forms import DatacheckSubmissionForm
 
-vaild_payload ={
+valid_payload ={
                 'server_url':'mysql://ensro@mysql-ens-sta-1:4512/' ,
                 'dbname': 'homo_sapiens_core_38_101',
                 'species': None,
@@ -58,7 +70,7 @@ class TestValidateOnSubmit(TestDatacheckForm):
             self.assertEqual(f.validate(), False)
 
     def test_submitted_and_valid(self):
-        with self.request(method='POST', data=vaild_payload):
+        with self.request(method='POST', data=valid_payload):
             print(request.form)
             f = DatacheckSubmissionForm(request.form, csrf_enabled=False)
             self.assertEqual(f.validate_on_submit(), True)
@@ -73,7 +85,7 @@ class TestCSRF(TestDatacheckForm):
             self.assertEqual(f.validate(), False)
 
     def test_invalid_csrf(self):
-        with self.request(method='POST', data=vaild_payload):
+        with self.request(method='POST', data=valid_payload):
             f = DatacheckSubmissionForm()
             self.assertEqual(f.validate_on_submit(), False)
             self.assertEqual(f.errors['csrf_token'], [u'CSRF token missing'])
@@ -81,14 +93,14 @@ class TestCSRF(TestDatacheckForm):
     def test_csrf_disabled(self):
         self.app.config['CSRF_ENABLED'] = False
 
-        with self.request(method='POST', data=vaild_payload):
+        with self.request(method='POST', data=valid_payload):
             f = DatacheckSubmissionForm(request.form)
             f.validate()
             self.assertEqual(f.validate_on_submit(), True)
 
     def test_valid(self):
         csrf_token = DatacheckSubmissionForm().csrf_token.current_token
-        builder = EnvironBuilder(method='POST', data={**vaild_payload, 'csrf_token': csrf_token })
+        builder = EnvironBuilder(method='POST', data={**valid_payload, 'csrf_token': csrf_token })
         env = builder.get_environ()
         req = Request(env)
         f = DatacheckSubmissionForm(req.form)
