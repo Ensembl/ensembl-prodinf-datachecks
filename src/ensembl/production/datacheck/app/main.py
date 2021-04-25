@@ -12,7 +12,8 @@
 import os
 import re
 import time
-from flask import Flask, json, jsonify, redirect, render_template, request, send_file, redirect
+from flask import Flask, json, jsonify, redirect, render_template, request, send_file, redirect, flash
+from flask_wtf.csrf import CSRFProtect
 from flask_bootstrap import Bootstrap
 from flask_cors import CORS
 from flasgger import Swagger
@@ -45,6 +46,8 @@ Bootstrap(app)
 CORS(app)
 
 Swagger(app, template_file=app.config['SWAGGER_FILE'])
+
+csrf = CSRFProtect(app)
 
 app.analysis = app.config['HIVE_ANALYSIS']
 app.index = json.load(open(app.config['DATACHECK_INDEX']))
@@ -342,10 +345,10 @@ def download_dc_outputs(job_id):
 def display_form():
     # Here we convert the form fields into a 'payload' dictionary
     # that is the required input format for the hive submission.
+
     try:
 
         form = DatacheckSubmissionForm(request.form)
-        error = ''
         server_name_choices = [('', '')]
         server_name_dict = {}
 
@@ -356,9 +359,14 @@ def display_form():
             server_name_choices.append((server_name_dict[name], name))
 
         form.server.server_name.choices = server_name_choices
-
+ 
         if  request.method == 'POST' : 
-            form.validate() 
+                
+            if not form.validate():
+                if form.server.source.data != 'division' and not any( [form.server.dbname.data,  form.server.species.data])  :
+                    form.server.dbname.errors=['Database name or Species name required..!']
+                raise Exception('Invalid Form ...')
+            
             payload = {
                 'server_url': form.server.server_name.data,
                 'dbname': None,
@@ -371,7 +379,7 @@ def display_form():
                 'email': form.submitter.email.data,
                 'tag': form.submitter.tag.data
             }
-
+           
             if form.server.source.data == 'dbname':
                 payload['dbname'] = form.server.dbname.data
             else:
@@ -388,17 +396,18 @@ def display_form():
                 payload['datacheck_groups'] = form.datacheck.datacheck_group.data.split(',')
             if form.datacheck.datacheck_type.data != '':
                 payload['datacheck_types'] = form.datacheck.datacheck_type.data.split(',')
-     
+
+            print('a ami ,,,,')   
             return job_submit(payload)
 
     except Exception as e:
-        error = str(e)
-
+        flash(str(e))
+    
     return render_template(
         'submit.html',
         form=form,
-        error=error
-    )
+        )
+
 
 
 @app.route('/datacheck/ping', methods=['GET'])
@@ -437,3 +446,4 @@ def handle_bad_request_error(e):
 def handle_sqlalchemy_error(e):
      app.logger.error(str(e))
      return jsonify(error=str(e)), 404
+

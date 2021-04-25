@@ -68,15 +68,15 @@ class AtLeastOne(object):
 class ServerForm(FlaskForm):
     server_name = SelectField('Server Name', validators=[InputRequired()])
     source = SelectField('Source', choices=[('dbname', 'Database'), ('species', 'Species'), ('division', 'Division')])
-    dbname = StringField('Database', validators=[AtLeastOne(['species', 'division'])], render_kw={"placeholder": " select db name eg: homo_sapiens_core_104_38"})
-    species = StringField('Species', validators=[AtLeastOne(['database', 'division'])])
-    division = SelectField('Division', choices=divisions, validators=[AtLeastOne(['database', 'species'])], default='vertebrates')
+    dbname = StringField('Database', validators=[AtLeastOne(['dbname', 'species', 'division'])], render_kw={"placeholder": " select db name eg: homo_sapiens_core_104_38"})
+    species = StringField('Species', validators=[AtLeastOne(['species', 'dbname', 'division'])])
+    division = SelectField('Division', validators=[AtLeastOne(['division', 'species', 'dbname'])], choices=divisions, default='vertebrates')
     db_type = SelectField('Database Type', choices=database_types, default='core')
 
 
 class DatacheckForm(FlaskForm):
-    datacheck_name = StringField('Names', validators=[AtLeastOne(['datacheck_name'])])
-    datacheck_group = StringField('Groups', validators=[AtLeastOne(['datacheck_group'])])
+    datacheck_name = StringField('Names', validators=[AtLeastOne(['datacheck_name', 'datacheck_group'])])
+    datacheck_group = StringField('Groups', validators=[AtLeastOne(['datacheck_group', 'datacheck_name'])])
     datacheck_type = SelectField('Type', choices=datacheck_types, default='critical')
 
 
