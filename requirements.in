@@ -12,5 +12,6 @@ mysqlclient
 pytest
 requests
 SQLAlchemy
+sqlalchemy_utils==0.37.0
 wtforms
 

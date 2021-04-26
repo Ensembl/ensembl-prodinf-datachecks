@@ -7,7 +7,9 @@
 amqp==5.0.6
     # via kombu
 attrs==20.3.0
-    # via jsonschema
+    # via
+    #   jsonschema
+    #   pytest
 bootstrap-flask==1.5.1
     # via -r requirements.in
 certifi==2020.12.5
@@ -32,12 +34,15 @@ flasgger==0.9.5
     # via -r requirements.in
 flask-cors==3.0.10
     # via -r requirements.in
+flask-wtf==0.14.3
+    # via -r requirements.in
 flask==1.1.2
     # via
     #   -r requirements.in
     #   bootstrap-flask
     #   flasgger
     #   flask-cors
+    #   flask-wtf
 greenlet==1.0.0
     # via sqlalchemy
 gunicorn==20.0.4
@@ -50,9 +55,15 @@ importlib-metadata==3.7.0
     # via
     #   jsonschema
     #   kombu
+    #   pluggy
+    #   pytest
     #   sqlalchemy
+iniconfig==1.1.1
+    # via pytest
 itsdangerous==1.1.0
-    # via flask
+    # via
+    #   flask
+    #   flask-wtf
 jinja2==2.11.3
     # via flask
 jsonschema==3.2.0
@@ -67,8 +78,18 @@ mistune==0.8.4
     # via flasgger
 mysqlclient==2.0.3
     # via -r requirements.in
+packaging==20.9
+    # via pytest
+pluggy==0.13.1
+    # via pytest
+py==1.10.0
+    # via pytest
+pyparsing==2.4.7
+    # via packaging
 pyrsistent==0.17.3
     # via jsonschema
+pytest==6.2.3
+    # via -r requirements.in
 pyyaml==5.4.1
     # via
     #   ensembl-prodinf-core
@@ -84,13 +105,17 @@ six==1.15.0
     #   flask-cors
     #   jsonschema
     #   sqlalchemy-utils
-sqlalchemy-utils==0.36.8
-    # via ensembl-prodinf-core
 sqlalchemy==1.4.6
     # via
     #   -r requirements.in
     #   ensembl-prodinf-core
     #   sqlalchemy-utils
+sqlalchemy_utils==0.37.0
+    # via
+    #   -r requirements.in
+    #   ensembl-prodinf-core
+toml==0.10.2
+    # via pytest
 typing-extensions==3.7.4.3
     # via importlib-metadata
 urllib3==1.26.3
@@ -102,7 +127,9 @@ vine==5.0.0
 werkzeug==1.0.1
     # via flask
 wtforms==2.3.3
-    # via -r requirements.in
+    # via
+    #   -r requirements.in
+    #   flask-wtf
 zipp==3.4.1
     # via importlib-metadata
 
