@@ -1,5 +1,4 @@
-from flask_wtf import FlaskForm
-from wtforms import  FormField, SelectField, StringField, SubmitField, TextAreaField
+from wtforms import Form, FormField, SelectField, StringField, SubmitField, TextAreaField
 from wtforms.validators import Email, InputRequired, ValidationError
 from markupsafe import Markup
 from wtforms.widgets.core import html_params
@@ -10,7 +9,8 @@ divisions = [
     ('metazoa', 'Metazoa'),
     ('plants', 'Plants'),
     ('protists', 'Protists'),
-    ('vertebrates', 'Vertebrates')
+    ('vertebrates', 'Vertebrates'),
+    ('virus', 'Virus'), 
 ]
 
 database_types = [
@@ -65,7 +65,7 @@ class AtLeastOne(object):
                 raise ValidationError(message)
 
 
-class ServerForm(FlaskForm):
+class ServerForm(Form):
     server_name = SelectField('Server Name', validators=[InputRequired()])
     source = SelectField('Source', choices=[('dbname', 'Database'), ('species', 'Species'), ('division', 'Division')])
     dbname = StringField('Database', validators=[AtLeastOne(['dbname', 'species', 'division'])], render_kw={"placeholder": " select db name eg: homo_sapiens_core_104_38"})
@@ -74,18 +74,18 @@ class ServerForm(FlaskForm):
     db_type = SelectField('Database Type', choices=database_types, default='core')
 
 
-class DatacheckForm(FlaskForm):
+class DatacheckForm(Form):
     datacheck_name = StringField('Names', validators=[AtLeastOne(['datacheck_name', 'datacheck_group'])])
     datacheck_group = StringField('Groups', validators=[AtLeastOne(['datacheck_group', 'datacheck_name'])])
     datacheck_type = SelectField('Type', choices=datacheck_types, default='critical')
 
 
-class SubmitterForm(FlaskForm):
+class SubmitterForm(Form):
     email = StringField('Email', validators=[Email(), InputRequired()])
     tag = StringField('Tag',  validators=[InputRequired()])
 
 
-class DatacheckSubmissionForm(FlaskForm):
+class DatacheckSubmissionForm(Form):
     server = FormField(ServerForm, description='Server')
     datacheck = FormField(DatacheckForm, description='Datachecks')
     submitter = FormField(SubmitterForm, description='Submitter')

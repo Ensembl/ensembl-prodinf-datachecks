@@ -47,8 +47,6 @@ CORS(app)
 
 Swagger(app, template_file=app.config['SWAGGER_FILE'])
 
-csrf = CSRFProtect(app)
-
 app.analysis = app.config['HIVE_ANALYSIS']
 app.index = json.load(open(app.config['DATACHECK_INDEX']))
 app.server_names = json.load(open(os.path.join(app_path, app.config['SERVER_NAMES_FILE'])))
@@ -227,7 +225,7 @@ def job_submit(payload=None):
     input_data = dict(payload)
 
     assert_mysql_uri(input_data['server_url'])
-
+    
     # Determine db_type if necessary.
     # Convert all species-selection parameters to lists, as required by the hive pipeline
     dbname = input_data['dbname']
@@ -240,7 +238,7 @@ def job_submit(payload=None):
         input_data['species'] = input_data['species'].split(',')
     elif input_data['division'] is not None:
         input_data['division'] = input_data['division'].split(',')
-
+    
     # Hard-code this for the time being; need to handle memory usage better for unparallelised runs
     input_data['parallelize_datachecks'] = 1
 
@@ -253,13 +251,13 @@ def job_submit(payload=None):
             config_profile = 'grch37'
             if db_category != 'core':
                 db_category = 'grch37'
-
+       
     input_data['registry_file'] = set_registry_file(db_category, server_name)
-
+    
     input_data['config_file'] = set_config_file(config_profile)
-
+    
     job = get_hive().create_job(app.analysis, input_data)
-
+    
     if request.is_json:
         results = {"job_id": job.job_id}
         return jsonify(results), 201
@@ -277,8 +275,7 @@ def job_list():
         if job_id:
             jobs = [ get_hive().get_result_for_job_id(job_id, progress=False) ]
         else:
-            jobs = get_hive().get_all_results(app.analysis)
-
+            jobs = get_hive().get_all_results(app.analysis)    
         # Handle case where submission is marked as complete,
         # but where output has not been created.
         for job in jobs:
@@ -397,7 +394,7 @@ def display_form():
             if form.datacheck.datacheck_type.data != '':
                 payload['datacheck_types'] = form.datacheck.datacheck_type.data.split(',')
 
-            print('a ami ,,,,')   
+
             return job_submit(payload)
 
     except Exception as e:

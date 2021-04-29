@@ -14,10 +14,6 @@ class EnsemblConfig:
                               file_config.get('base_dir'))
     SECRET_KEY = os.environ.get('SECRET_KEY',
                                 file_config.get('secret_key', os.urandom(32)))
-
-    WTF_CSRF_CHECK_DEFAULT = os.environ.get('WTF_CSRF_CHECK_DEFAULT',
-                                file_config.get('WTF_CSRF_CHECK_DEFAULT', True))
-
     SERVER_URIS_FILE = os.environ.get('SERVER_URIS_FILE',
                                       file_config.get('server_uris_file', 'server_uris_list.json'))
     SWAGGER = {

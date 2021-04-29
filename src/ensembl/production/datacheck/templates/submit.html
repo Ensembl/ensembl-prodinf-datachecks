@@ -34,8 +34,7 @@ set title = 'Datacheck Submission' -->
   <fieldset class="border rounded p-2 border-purple" >
     <legend class="w-auto bg-purple" >&nbsp;Datacheck Submission&nbsp;</legend>
   <form action="" method="post" enctype="multipart/form-data" autocomplete="off" class="m-4">
-    {{ form.csrf_token }}
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+    {{ form.csrf}}
     <fieldset class="border rounded p-2 ">
       <legend class="w-auto fg-purple">&nbsp;{{ form.server.description }}&nbsp;</legend>
 

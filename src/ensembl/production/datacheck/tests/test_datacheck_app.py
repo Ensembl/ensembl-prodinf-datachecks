@@ -16,11 +16,11 @@ from werkzeug.test import EnvironBuilder
 from ensembl.production.datacheck.forms import DatacheckSubmissionForm
 
 valid_payload ={
-                'server-server_name':'mysql://ensro@mysql-ens-sta-1:4512/' ,
+                'server-server_name':'mysql://ensro@mysql:4523/' ,
                 'server-source': 'dbname',
                 'server-dbname': 'homo_sapiens_core_38_101',
-                'server-species': '',
-                'server-division': '',
+                'server-species': 'homo_sapiens',
+                'server-division': 'vert',
                 'server-db_type': 'core',
                 'datacheck-datacheck_name': 'AlignFeatureExternalDB',
                 'datacheck-datacheck_group': 'annotation',
@@ -45,9 +45,9 @@ class TestDatacheckForm(unittest.TestCase):
     
         @app.route("/formvalidate/", methods=("POST",))
         def form_submit():
-            form = DatacheckSubmissionForm(csrf_enabled=True)
+            form = DatacheckSubmissionForm()
 
-            if form.validate_on_submit():
+            if form.validate():
                 return {'valid': True}
 
             return {'Valid': False}
@@ -60,46 +60,24 @@ class TestDatacheckForm(unittest.TestCase):
 class TestValidateOnSubmit(TestDatacheckForm):
     def test_not_submitted(self):
         with self.request(method='GET', data={}):
-            f = DatacheckSubmissionForm(request.form, csrf_enabled=False)
-            self.assertEqual(f.is_submitted(), False)
-            self.assertEqual(f.validate_on_submit(), False)
+            f = DatacheckSubmissionForm(request.form)
+            self.assertEqual(f.validate(), False)
 
     def test_submitted_not_valid(self):
         with self.request(method='POST', data={}):
-            f = DatacheckSubmissionForm(request.form, csrf_enabled=False)
-            self.assertEqual(f.is_submitted(), True)
+            f = DatacheckSubmissionForm(request.form)
             self.assertEqual(f.validate(), False)
 
     def test_submitted_and_valid(self):
         with self.request(method='POST', data=valid_payload):
             f = DatacheckSubmissionForm(request.form)
-            self.assertEqual(f.validate_on_submit(), True)
+            self.assertEqual(f.validate(), True)
 
 
 
 class TestCSRF(TestDatacheckForm):
-    def test_csrf_token(self):
-        with self.request(method='GET'):
-            f = DatacheckSubmissionForm(request.form)
-            self.assertEqual(hasattr(f, 'csrf_token'), True)
-            self.assertEqual(f.validate(), False)
-
-    def test_invalid_csrf(self):
-        with self.request(method='POST', data=valid_payload):
-            f = DatacheckSubmissionForm()
-            self.assertEqual(f.validate_on_submit(), False)
-            self.assertEqual(f.errors['csrf_token'], [u'The CSRF token is missing.'])
-
-    def test_csrf_disabled(self):
-        self.app.config['CSRF_ENABLED'] = False
-
-        with self.request(method='POST', data=valid_payload):
-            f = DatacheckSubmissionForm(request.form)
-            f.validate()
-            self.assertEqual(f.validate_on_submit(), False)
 
     def test_valid(self):
-        csrf_token = DatacheckSubmissionForm().csrf_token.current_token
         builder = EnvironBuilder(method='POST', data={**valid_payload })
         env = builder.get_environ()
         req = Request(env)
