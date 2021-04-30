@@ -31,109 +31,110 @@ set title = 'Datacheck Submission' -->
           {% endif %} 
     </div>
   </div>
-  <fieldset class="border rounded p-2 border-purple" >
-    <legend class="w-auto bg-purple" >&nbsp;Datacheck Submission&nbsp;</legend>
-  <form action="" method="post" enctype="multipart/form-data" autocomplete="off" class="m-4">
-    {{ form.csrf}}
-    <fieldset class="border rounded p-2 ">
-      <legend class="w-auto fg-purple">&nbsp;{{ form.server.description }}&nbsp;</legend>
+  <div class="card border-2 shadow my-5 h-border">
+    <fieldset class="" >
+      <legend class=" h-buttons " >&nbsp;Datacheck Submission&nbsp;</legend>
+    <form action="" method="post" enctype="multipart/form-data" autocomplete="off" class="m-4">
+      {{ form.csrf}}
+      <fieldset class="border rounded p-2 ">
+        <legend class="w-auto ">&nbsp;{{ form.server.description }}&nbsp;</legend>
 
-      <div class="form-group row">
-        {{ form.server.server_name.label( class='col-sm-2 col-form-label' ) }}
-        <div class="col-sm-4">{{ form.server.server_name( class='form-control selectpicker', **{'data-show-subtext':'true', 'title':"Select server name...", 'data-live-search':'true'} ) }}</div>
-      </div>
-
-      <div class="form-group row">
-        <div class="col-sm-2">{{ form.server.source( class='form-control select-align-right', onchange='selectServerSource()' ) }}</div>
-        <div class="col-sm-4">
-          {{ form.server.dbname( class='form-control' ) }}
-          {{ form.server.species( class='form-control', style='display: none' ) }}
-          {{ form.server.division( class='form-control', style='display: none' ) }}
-          {% if form.server.dbname.errors %}
-          <div class="alert alert-danger m-2" role="alert">
-            {% for error in form.server.dbname.errors %}
-              {{ error }}
-            {% endfor %}
-            
-          </div>
-        {% endif %} 
-        </div>
-      </div>
-
-      <div class="form-group row">
-        {{ form.server.db_type.label( class='col-sm-2 col-form-label', id='server-db_type-label', style='display: none' ) }}
-        <div class="col-sm-2">{{ form.server.db_type( class='form-control', style='display: none' ) }}</div>
-      </div>
-
-    </fieldset>
-
-    <fieldset class="border rounded p-2">
-      <legend class="w-auto fg-purple">&nbsp;{{ form.datacheck.description }}&nbsp;</legend>
-
-      <div class="form-group row">
-        {{ form.datacheck.datacheck_name.label( class='col-sm-2 col-form-label' ) }}
-        <div class="col-sm-9">{{ form.datacheck.datacheck_name( class='form-control' ) }}</div>
-      </div>
-
-      <div class="form-group row">
-        {{ form.datacheck.datacheck_group.label( class='col-sm-2 col-form-label' ) }}
-        <div class="col-sm-9">{{ form.datacheck.datacheck_group( class='form-control' ) }}
-          {% if form.datacheck.datacheck_group.errors %}
-          <div class="alert alert-danger m-2" role="alert">
-            {% for error in form.datacheck.datacheck_group.errors %}
-              {{ error }}
-            {% endfor %}
-          </div>
-        {% endif %}
-        </div>
-      </div>
-
-      <div class="form-group row">
-        {{ form.datacheck.datacheck_type.label( class='col-sm-2 col-form-label' ) }}
-        <div class="col-sm-3">{{ form.datacheck.datacheck_type( class='form-control' ) }}
-          {% if form.datacheck.datacheck_type.errors %}
-          <div class="alert alert-danger m-2" role="alert">
-            {% for error in form.datacheck.datacheck_type.errors %}
-              {{ error }}
-            {% endfor %}
-          </div>
-        {% endif %}
-        </div>
-      </div>
-
-    </fieldset>
-
-    <fieldset class="border rounded p-2">
-      <legend class="w-auto fg-purple">&nbsp;{{ form.submitter.description }}&nbsp;</legend>
-
-      <div class="form-group row">
-        {{ form.submitter.email.label( class='col-sm-2 col-form-label' ) }}
-        <div class="col-sm-5">{{ form.submitter.email( class='form-control' ) }}
-          {% if form.submitter.email.errors %}
-          <div class="alert alert-danger m-2" role="alert">
-            {% for error in form.submitter.email.errors %}
-              {{ error }}
-            {% endfor %}
-          </div>
-        {% endif %} 
+        <div class="form-group row">
+          {{ form.server.server_name.label( class='col-sm-2 col-form-label' ) }}
+          <div class="col-sm-4">{{ form.server.server_name( class='form-control selectpicker', **{'data-show-subtext':'true', 'title':"Select server name...", 'data-live-search':'true'} ) }}</div>
         </div>
 
-      </div>
+        <div class="form-group row">
+          <div class="col-sm-2">{{ form.server.source( class='form-control select-align-right', onchange='selectServerSource()' ) }}</div>
+          <div class="col-sm-4">
+            {{ form.server.dbname( class='form-control' ) }}
+            {{ form.server.species( class='form-control', style='display: none' ) }}
+            {{ form.server.division( class='form-control', style='display: none' ) }}
+            {% if form.server.dbname.errors %}
+            <div class="alert alert-danger m-2" role="alert">
+              {% for error in form.server.dbname.errors %}
+                {{ error }}
+              {% endfor %}
+              
+            </div>
+          {% endif %} 
+          </div>
+        </div>
+
+        <div class="form-group row">
+          {{ form.server.db_type.label( class='col-sm-2 col-form-label', id='server-db_type-label', style='display: none' ) }}
+          <div class="col-sm-2">{{ form.server.db_type( class='form-control', style='display: none' ) }}</div>
+        </div>
+
+      </fieldset>
+
+      <fieldset class="border rounded p-2">
+        <legend class="w-auto ">&nbsp;{{ form.datacheck.description }}&nbsp;</legend>
+
+        <div class="form-group row">
+          {{ form.datacheck.datacheck_name.label( class='col-sm-2 col-form-label' ) }}
+          <div class="col-sm-9">{{ form.datacheck.datacheck_name( class='form-control' ) }}</div>
+        </div>
+
+        <div class="form-group row">
+          {{ form.datacheck.datacheck_group.label( class='col-sm-2 col-form-label' ) }}
+          <div class="col-sm-9">{{ form.datacheck.datacheck_group( class='form-control' ) }}
+            {% if form.datacheck.datacheck_group.errors %}
+            <div class="alert alert-danger m-2" role="alert">
+              {% for error in form.datacheck.datacheck_group.errors %}
+                {{ error }}
+              {% endfor %}
+            </div>
+          {% endif %}
+          </div>
+        </div>
+
+        <div class="form-group row">
+          {{ form.datacheck.datacheck_type.label( class='col-sm-2 col-form-label' ) }}
+          <div class="col-sm-3">{{ form.datacheck.datacheck_type( class='form-control' ) }}
+            {% if form.datacheck.datacheck_type.errors %}
+            <div class="alert alert-danger m-2" role="alert">
+              {% for error in form.datacheck.datacheck_type.errors %}
+                {{ error }}
+              {% endfor %}
+            </div>
+          {% endif %}
+          </div>
+        </div>
+
+      </fieldset>
+
+      <fieldset class="border rounded p-2">
+        <legend class="w-auto ">&nbsp;{{ form.submitter.description }}&nbsp;</legend>
+
+        <div class="form-group row">
+          {{ form.submitter.email.label( class='col-sm-2 col-form-label' ) }}
+          <div class="col-sm-5">{{ form.submitter.email( class='form-control' ) }}
+            {% if form.submitter.email.errors %}
+            <div class="alert alert-danger m-2" role="alert">
+              {% for error in form.submitter.email.errors %}
+                {{ error }}
+              {% endfor %}
+            </div>
+          {% endif %} 
+          </div>
+
+        </div>
+
+        <div class="form-group row">
+          {{ form.submitter.tag.label( class='col-sm-2 col-form-label' ) }}
+          <div class="col-sm-5">{{ form.submitter.tag( class='form-control' ) }}</div>
+        </div>
+
+      </fieldset>
 
       <div class="form-group row">
-        {{ form.submitter.tag.label( class='col-sm-2 col-form-label' ) }}
-        <div class="col-sm-5">{{ form.submitter.tag( class='form-control' ) }}</div>
+        <div class="col-sm-12">{{ form.submit( class='btn h-buttons', style='float:right;' ) }}</div>
       </div>
 
-    </fieldset>
-
-    <div class="form-group row">
-      <div class="col-sm-12">{{ form.submit( class='btn bg-purple', style='float:right;' ) }}</div>
-    </div>
-
-  </form>
-</fieldset>
-
+    </form>
+  </fieldset>
+</div>
 {%- endblock content %}
 
 {% block scripts %}

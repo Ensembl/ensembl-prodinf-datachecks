@@ -266,7 +266,7 @@ $(document).ready(function(){
 
   var $table = $('#table')
   $table.bootstrapTable('refreshOptions', {
-        theadClasses: 'bg-purple',
+        theadClasses: 'h-buttons',
         url: "/datacheck/jobs"
   });
 
