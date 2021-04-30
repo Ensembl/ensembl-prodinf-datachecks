@@ -24,6 +24,11 @@ Clone the necessary repositories:
 git clone https://github.com/Ensembl/ensembl
 git clone https://github.com/Ensembl/ensembl-hive
 git clone https://github.com/Ensembl/ensembl-datacheck.git
+git clone https://github.com/Ensembl/ensembl-compara
+git clone https://github.com/Ensembl/ensembl-funcgen
+git clone https://github.com/Ensembl/ensembl-metadata
+git clone https://github.com/Ensembl/ensembl-orm
+git clone https://github.com/Ensembl/ensembl-variation
 git clone https://github.com/Ensembl/ensembl-prodinf-datachecks.git
 ```
 
