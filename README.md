@@ -1,5 +1,5 @@
 # README
-Overview
+EnsEMBL - Production Datacheck Service Application
 ========
 
 The Datacheck service provides a set of endpoints to allow Datacheck to be run on specified Ensembl MySQL databases. 
