@@ -1,0 +1,7 @@
+---
+base_dir: '/home/appuser/'
+datacheck_output_dir: '/nfs'
+datacheck_common_dir: '/nfs'
+hive_uri: 'mysql://test:test@test:3366/ensprod_db_datachecks_production'
+server_names_file: '/home/appuser/server_names.json'
+swagger_file: '/home/appuser/swagger.yml'

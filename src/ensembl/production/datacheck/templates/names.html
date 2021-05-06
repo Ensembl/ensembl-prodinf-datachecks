@@ -1,0 +1,33 @@
+{% extends "catalog.html" %}
+
+{% block datacheck_table %}
+
+  <table class="table table-bordered table-striped">
+    <thead class="h-buttons">
+      <tr>
+        <th >Name</th>
+        <th >Description</th>
+        <th >Type</th>
+        <th >Groups</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for name in datachecks | sort %}
+      {% set type = datachecks[name].datacheck_type %}
+      <tr>
+        <td><a title="{{ name }} Perl module (opens in new tab)" href="{{ repo_url }}{{ name }}.pm" target="_blank">{{ name }}</a></td>
+        <td>{{ datachecks[name].description }}</td>
+        <td><a title="View all {{ type }} datachecks" href="/datacheck/types#{{ type }}">{{ type }}</a></td>
+        <td>
+          {% set pipe = joiner("|") %}
+          {% for group in datachecks[name].groups | sort %}
+            {{ pipe() }}
+            <a title="View all '{{ group }}' datachecks" href="/datacheck/groups#{{ group }}">{{ group }}</a>
+          {% endfor %}
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+
+{% endblock datacheck_table %}

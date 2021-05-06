@@ -1,0 +1,17 @@
+git+git://github.com/Ensembl/ensembl-prodinf-core.git#egg=ensembl-prodinf-core
+Bootstrap-Flask
+Click
+elasticsearch>=6.8.1,<7.0.0
+email_validator
+Flask
+flasgger
+Flask-Cors
+flask_wtf
+gunicorn
+mysqlclient
+pytest
+requests
+SQLAlchemy
+sqlalchemy_utils==0.37.0
+wtforms
+
