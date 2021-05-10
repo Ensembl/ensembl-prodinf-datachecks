@@ -1,9 +1,0 @@
-{
-	"new_assembly": [
-		"dump_dna",
-		"dump_peptide"
-	],
-	"new_genebuild": [
-		"dump_peptide"
-	]
-}

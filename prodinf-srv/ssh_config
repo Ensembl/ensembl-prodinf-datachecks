@@ -1,8 +1,0 @@
-User ensmysql
-Ciphers arcfour
-StrictHostKeyChecking no
-UserKnownHostsFile /dev/null
-LogLevel QUIET
-BatchMode yes
-IdentityFile /ssh_keys/id_rsa
-IdentitiesOnly yes
