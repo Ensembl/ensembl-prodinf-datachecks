@@ -1,4 +1,4 @@
-ensembl-prodinf-core@git+http://github.com/Ensembl/ensembl-prodinf-core.git#egg=ensembl-prodinf-core
+ensembl-prodinf-core@git+https://github.com/Ensembl/ensembl-prodinf-core.git#egg=ensembl-prodinf-core
 Bootstrap-Flask
 Click
 elasticsearch>=6.8.1,<7.0.0
