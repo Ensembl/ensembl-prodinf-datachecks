@@ -28,7 +28,7 @@ elasticsearch==6.8.1
     # via -r requirements.in
 email-validator==1.1.2
     # via -r requirements.in
-git+git://github.com/Ensembl/ensembl-prodinf-core.git#egg=ensembl-prodinf-core
+ensembl-prodinf-core@git+https://github.com/Ensembl/ensembl-prodinf-core.git#egg=ensembl-prodinf-core
     # via -r requirements.in
 flasgger==0.9.5
     # via -r requirements.in
@@ -51,13 +51,6 @@ idna==2.10
     # via
     #   email-validator
     #   requests
-importlib-metadata==3.7.0
-    # via
-    #   jsonschema
-    #   kombu
-    #   pluggy
-    #   pytest
-    #   sqlalchemy
 iniconfig==1.1.1
     # via pytest
 itsdangerous==1.1.0
@@ -116,8 +109,6 @@ sqlalchemy_utils==0.37.0
     #   ensembl-prodinf-core
 toml==0.10.2
     # via pytest
-typing-extensions==3.7.4.3
-    # via importlib-metadata
 urllib3==1.26.3
     # via
     #   elasticsearch
@@ -130,8 +121,6 @@ wtforms==2.3.3
     # via
     #   -r requirements.in
     #   flask-wtf
-zipp==3.4.1
-    # via importlib-metadata
 
 # The following packages are considered to be unsafe in a requirements file:
 # setuptools
