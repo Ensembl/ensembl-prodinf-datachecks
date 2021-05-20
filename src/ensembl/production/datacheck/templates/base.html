@@ -19,7 +19,24 @@
       {%- block styles %}
       <!-- Bootstrap -->
       {{ bootstrap.load_css(version='4.3.0') }}
-      <link rel="stylesheet" href="{{ url_for('static', filename='css/ensembl.css') }}">
+      
+      {% if config['DATACHECK_TYPE'] == 'vertebrates' %}
+          <link rel= "stylesheet" type= "text/css" href= "{{ url_for('static',filename='css/vertebrates.css') }}">
+      {% elif config['DATACHECK_TYPE'] == 'plants' %}
+          <link rel= "stylesheet" type= "text/css" href= "{{ url_for('static',filename='css/plants.css') }}">
+      {% elif config['DATACHECK_TYPE'] == 'metazoa' %}
+          <link rel= "stylesheet" type= "text/css" href= "{{ url_for('static',filename='css/metazoa.css') }}">   
+      {% elif config['DATACHECK_TYPE'] == 'microbes' or  config['HANDOVER_TYPE'] == 'bacteria'%}
+          <link rel= "stylesheet" type= "text/css" href= "{{ url_for('static',filename='css/microbes.css') }}">
+      {% elif config['DATACHECK_TYPE'] == 'viruses' %}
+          <link rel= "stylesheet" type= "text/css" href= "{{ url_for('static',filename='css/viruses.css') }}"> 
+      {% elif config['DATACHECK_TYPE'] == 'rapid' %}
+          <link rel= "stylesheet" type= "text/css" href= "{{ url_for('static',filename='css/rapid.css') }}">                                     
+      {% else %}
+          <link rel="stylesheet" href="{{ url_for('static', filename='css/vertebrates.css') }}">>
+      {% endif %}
+
+
       <link rel="shortcut icon" href="{{ url_for('static', filename=icon_image) }}">
       <link href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet" 
       integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
@@ -30,10 +47,10 @@
   <body {% block body_attribs %}{% endblock body_attribs %}>
     {% block body -%}
 
-
+    
       {% block navbar %}
-      <nav class="navbar navbar-icon-top navbar-expand-lg navbar-dark bg-info" >
-        <a class="navbar-brand" href="#"><span class="mb-0 h3">Datacheck</a>
+      <nav class="navbar navbar-icon-top navbar-expand-lg navbar-dark dnav" >
+        <a class="navbar-brand" href="#"><span class="mb-0 h3">Datacheck {{config['DATACHECK_TYPE']}}</a>
             <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>

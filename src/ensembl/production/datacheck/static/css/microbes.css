@@ -1,10 +1,14 @@
+.dnav{
+  background-color: #6c757d !important;
+}
+
 h2 {
   padding-top: 20px;
   padding-bottom: 10px;
 }
 
 a {
-  color: #337ab7;
+  color: #6c757d;
 }
 
 fieldset {
@@ -42,7 +46,7 @@ select.select-align-right > option {
 }
 
 .nav-link.active {
-  background-color: #17a2b8 !important; /* rgba(128, 0, 102, 0.2);*/
+  background-color: #6c757d !important; /* rgba(128, 0, 102, 0.2);*/
   color: white !important;
 }
 
@@ -142,8 +146,8 @@ select.select-align-right > option {
 }
 
 .bootstrap-tagsinput .badge {
-  background-color: #17a2b8;
-  border: 1px solid #17a2b8;
+  background-color: #6c757d;
+  border: 1px solid #6c757d;
   font-size: 90%;
 }
 
@@ -198,10 +202,10 @@ margin: -1px;
   padding: 2px;
   width: 5px;
   margin: 0;
-  background:#17a2b8  ;
+  background:#6c757d  ;
   color: #f5f5ef;
   display:block;
-  border:  2px solid #17a2b8!important ;
+  border:  2px solid #6c757d!important ;
   float: auto;   
 }
 .ui-menu .ui-menu-item-wrapper:hover {
@@ -216,10 +220,10 @@ margin: -1px;
 
 /*set button colors*/
 .h-buttons{
-  background-color: #17a2b8;
+  background-color: #6c757d;
   color: white;
 }
 .h-border{
-  border-color:#17a2b8!important;
+  border-color:#6c757d!important;
 }
 
