@@ -28,7 +28,7 @@ function downloadFormat(value, row){
     cursor_download = 'pointer';
     download_event = ''; 
   }
-  return '<a title="Dowload DC.. " style="cursor:'+ cursor_download +'; '+ download_event +'"  href="/datacheck/download_datacheck_outputs/'+ row.id  +' ">'+ row.id +'</a>'
+  return '<a title="Dowload DC.. " style="cursor:'+ cursor_download +'; '+ download_event +'"  href="/datachecks/download_datacheck_outputs/'+ row.id  +' ">'+ row.id +'</a>'
 }
 
 
@@ -39,7 +39,7 @@ function detailPage(value, row){
        download = '';
     }
 
-  return '<a title="More details " style="cursor: pointer"  >'+ row.id +'</a> ' + '<a title="Download Datacheck output " style="cursor: pointer"  href="/datacheck/download_datacheck_outputs/' + row.id  +'">'+ download +'</a>'
+  return '<a title="More details " style="cursor: pointer"  >'+ row.id +'</a> ' + '<a title="Download Datacheck output " style="cursor: pointer"  href="/datachecks/download_datacheck_outputs/' + row.id  +'">'+ download +'</a>'
 }
 
 function statusFormat(value, row){
@@ -193,7 +193,7 @@ function getdetails(id, json_path, db_name){
 
     document.getElementById(db_name+'_details').innerHTML = '<div class="d-flex justify-content-center"> <div class="spinner-border" role="status"> <span class="sr-only">Loading...</span> </div> </div></div>';
     //send proper url  
-    $.getJSON('/datacheck/jobs/details?jsonfile=' + json_path, function(result){
+    $.getJSON('/datachecks/jobs/details?jsonfile=' + json_path, function(result){
         console.log(result);
         let details = parse_details(db_name, result);
         document.getElementById(db_name+'_details').innerHTML = details;
@@ -267,7 +267,7 @@ $(document).ready(function(){
   var $table = $('#table')
   $table.bootstrapTable('refreshOptions', {
         theadClasses: 'h-buttons',
-        url: "/datacheck/jobs"
+        url: "/datachecks/jobs"
   });
 
   $table.bootstrapTable('expandAllRows');
@@ -278,6 +278,6 @@ $(document).ready(function(){
   /*$(".job_btn").click(function(){
        let job_id = $("#myjob_id").val();
              //this will redirect us in same window
-             document.location.href = "/datacheck/jobs/" + job_id
+             document.location.href = "/datachecks/jobs/" + job_id
   });*/
 });

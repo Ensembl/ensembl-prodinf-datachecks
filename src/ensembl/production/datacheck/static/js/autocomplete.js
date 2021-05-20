@@ -110,7 +110,7 @@ $(document).ready(function(){
             
            $.ajax({
                 //url: `${copy_url}api/dbcopy/databases/${SelectedHostDetails.name}/${SelectedHostDetails.port}`,
-                url: `/datacheck/dropdown/databases/${SelectedHost}/${SelectedPort}`,
+                url: `/datachecks/dropdown/databases/${SelectedHost}/${SelectedPort}`,
                 dataType: "json",
                 data: {
                     search: request.term

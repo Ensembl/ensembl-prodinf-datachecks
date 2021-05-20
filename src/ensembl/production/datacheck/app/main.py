@@ -37,7 +37,7 @@ app_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 static_path = os.path.join(app_path, 'static')
 template_path = os.path.join(app_path, 'templates')
 
-app = Flask(__name__, static_url_path='', static_folder=static_path, template_folder=template_path)
+app = Flask(__name__, static_url_path='/static/datachecks/', static_folder=static_path, template_folder=template_path)
 
 app.config.from_object(DatacheckConfig)
 
@@ -97,32 +97,32 @@ def get_hive():
     return hive
 
 @app.route('/', methods=['GET'])
-@app.route('/datacheck/', methods=['GET'])
+@app.route('/datachecks/', methods=['GET'])
 def index():
     # Missing template
     # return render_template('ensembl/datacheck/index.html')
     return jsonify({'title': 'Datacheck REST endpoints', 'uiversion': 2})
 
 
-@app.route('/datacheck/servers/list', methods=['GET'])
+@app.route('/datachecks/servers/list', methods=['GET'])
 def servers_list():
     return jsonify(get_servers_list())
 
 
-@app.route('/datacheck/servers/dict', methods=['GET'])
+@app.route('/datachecks/servers/dict', methods=['GET'])
 def servers_dict():
     return jsonify(get_servers_dict())
 
 
-@app.route('/datacheck/databases/list', methods=['GET'])
+@app.route('/datachecks/databases/list', methods=['GET'])
 def databases_list():
     db_uri = request.args.get('db_uri')
     query = request.args.get('query')
     return jsonify(get_databases_list(db_uri, query))
 
 
-@app.route('/datacheck/names/', methods=['GET'])
-@app.route('/datacheck/names/<string:name_param>', methods=['GET'])
+@app.route('/datachecks/names/', methods=['GET'])
+@app.route('/datachecks/names/<string:name_param>', methods=['GET'])
 def names(name_param=None):
     if name_param is None:
         index_names = app.index
@@ -141,13 +141,13 @@ def names(name_param=None):
         )
 
 
-@app.route('/datacheck/names/list', methods=['GET'])
+@app.route('/datachecks/names/list', methods=['GET'])
 def names_list():
     return jsonify(get_names_list())
 
 
-@app.route('/datacheck/groups/', methods=['GET'])
-@app.route('/datacheck/groups/<string:group_param>', methods=['GET'])
+@app.route('/datachecks/groups/', methods=['GET'])
+@app.route('/datachecks/groups/<string:group_param>', methods=['GET'])
 def groups(group_param=None):
     index_groups = {}
     for name, params in app.index.items():
@@ -164,13 +164,13 @@ def groups(group_param=None):
         )
 
 
-@app.route('/datacheck/groups/list', methods=['GET'])
+@app.route('/datachecks/groups/list', methods=['GET'])
 def groups_list():
     return jsonify(get_groups_list())
 
 
-@app.route('/datacheck/types/', methods=['GET'])
-@app.route('/datacheck/types/<string:type_param>', methods=['GET'])
+@app.route('/datachecks/types/', methods=['GET'])
+@app.route('/datachecks/types/<string:type_param>', methods=['GET'])
 def types(type_param=None):
     index_types = {}
     for name, params in app.index.items():
@@ -186,7 +186,7 @@ def types(type_param=None):
         )
 
 
-@app.route('/datacheck/search/<string:keyword>', methods=['GET'])
+@app.route('/datachecks/search/<string:keyword>', methods=['GET'])
 def search(keyword):
     index_search = {}
     keyword_re = re.compile(keyword, re.IGNORECASE)
@@ -197,7 +197,7 @@ def search(keyword):
 
     return jsonify(index_search)
 
-@app.route('/datacheck/dropdown/databases/<string:src_host>/<string:src_port>', methods=['GET'])
+@app.route('/datachecks/dropdown/databases/<string:src_host>/<string:src_port>', methods=['GET'])
 def dropdown(src_host=None, src_port=None):
   try:
     search = request.args.get('search', None)
@@ -210,10 +210,10 @@ def dropdown(src_host=None, src_port=None):
   except HTTPError as http_err:
     raise HTTPRequestError(f'{http_err}', 404)
   except Exception as e:
-    print(str(e))
+    logging.fatal(str(e))
     return jsonify([])
 
-@app.route('/datacheck/jobs', methods=['POST'])
+@app.route('/datachecks/jobs', methods=['POST'])
 def job_submit(payload=None):
     # Most of the parameters that are in the payload can be pushed straight
     # through to the input_data for the hive submission. The parameter names
@@ -262,10 +262,10 @@ def job_submit(payload=None):
         results = {"job_id": job.job_id}
         return jsonify(results), 201
     else:
-        return redirect('/datacheck/jobs/' + str(job.job_id))
+        return redirect('/datachecks/jobs/' + str(job.job_id))
 
 
-@app.route('/datacheck/jobs', methods=['GET'])
+@app.route('/datachecks/jobs', methods=['GET'])
 def job_list():
 
     fmt = request.args.get('format', None)
@@ -288,7 +288,7 @@ def job_list():
 
     return render_template('list.html', job_id=job_id)
 
-@app.route('/datacheck/jobs/details', methods=['GET'])
+@app.route('/datachecks/jobs/details', methods=['GET'])
 def job_details():
     try:
         jsonfile = request.args.get('jsonfile', None)
@@ -298,7 +298,7 @@ def job_details():
         return jsonify({'Could not retrieve results'})
 
 
-@app.route('/datacheck/jobs/<int:job_id>', methods=['GET'])
+@app.route('/datachecks/jobs/<int:job_id>', methods=['GET'])
 def job_result(job_id):
     job = get_hive().get_result_for_job_id(job_id, progress=False)
     fmt = request.args.get('format', None)
@@ -318,7 +318,7 @@ def job_result(job_id):
         return render_template('list.html', job_id=job_id)
 
 
-@app.route('/datacheck/download_datacheck_outputs/<int:job_id>')
+@app.route('/datachecks/download_datacheck_outputs/<int:job_id>')
 def download_dc_outputs(job_id):
     job = get_hive().get_result_for_job_id(job_id, progress=False)
     if 'output' in job:
@@ -338,7 +338,7 @@ def download_dc_outputs(job_id):
                 return send_file(str(f_path), as_attachment=True)
 
 
-@app.route('/datacheck/submit', methods=['POST', 'GET'])
+@app.route('/datachecks/submit', methods=['POST', 'GET'])
 def display_form():
     # Here we convert the form fields into a 'payload' dictionary
     # that is the required input format for the hive submission.
@@ -407,7 +407,7 @@ def display_form():
 
 
 
-@app.route('/datacheck/ping', methods=['GET'])
+@app.route('/datachecks/ping', methods=['GET'])
 def ping():
     return jsonify({'status': 'ok'})
 
