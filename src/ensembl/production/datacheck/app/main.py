@@ -101,7 +101,7 @@ def get_hive():
 def index():
     # Missing template
     # return render_template('ensembl/datacheck/index.html')
-    return jsonify({'title': 'Datacheck REST endpoints', 'uiversion': 2})
+    return jsonify({'title': '%s Datacheck REST endpoints' % os.getenv('APP_ENV', '').capitalize(), 'uiversion': 2})
 
 
 @app.route('/datachecks/servers/list', methods=['GET'])
@@ -213,7 +213,7 @@ def dropdown(src_host=None, src_port=None):
     logging.fatal(str(e))
     return jsonify([])
 
-@app.route('/datachecks/jobs', methods=['POST'])
+@app.route('/datachecks/jobs/', methods=['POST'])
 def job_submit(payload=None):
     # Most of the parameters that are in the payload can be pushed straight
     # through to the input_data for the hive submission. The parameter names
@@ -265,7 +265,7 @@ def job_submit(payload=None):
         return redirect('/datachecks/jobs/' + str(job.job_id))
 
 
-@app.route('/datachecks/jobs', methods=['GET'])
+@app.route('/datachecks/jobs/', methods=['GET'])
 def job_list():
 
     fmt = request.args.get('format', None)
@@ -338,7 +338,7 @@ def download_dc_outputs(job_id):
                 return send_file(str(f_path), as_attachment=True)
 
 
-@app.route('/datachecks/submit', methods=['POST', 'GET'])
+@app.route('/datachecks/submit/', methods=['POST', 'GET'])
 def display_form():
     # Here we convert the form fields into a 'payload' dictionary
     # that is the required input format for the hive submission.

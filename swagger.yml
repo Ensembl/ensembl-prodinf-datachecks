@@ -8,10 +8,10 @@ tags:
   - name: Retrieve datacheck information, and submit and monitor datacheck jobs
 
 paths:
-  /datacheck/names:
+  /datachecks/names:
     get:
       tags:
-        - Retrieve datacheck information
+        - Retrieve datachecks information
       summary: "Return all datachecks"
       responses:
         200:
@@ -21,25 +21,25 @@ paths:
               schema:
                 $ref: "#/components/schemas/names"
 
-  /datacheck/names/{name}:
+  /datachecks/names/{name}:
     get:
       tags:
-        - Retrieve datacheck information
-      summary: "Return a specified datacheck"
+        - Retrieve datachecks information
+      summary: "Return a specified datachecks"
       parameters:
         - $ref: "#/components/parameters/name"
       responses:
         200:
-          description: Details of a specified datacheck.
+          description: Details of a specified datachecks.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/names"
 
-  /datacheck/groups:
+  /datachecks/groups:
     get:
       tags:
-        - Retrieve datacheck information
+        - Retrieve datachecks information
       summary: "Return all datachecks, categorised by group"
       responses:
         200:
@@ -49,10 +49,10 @@ paths:
               schema:
                 $ref: "#/components/schemas/groups"
 
-  /datacheck/groups/{group}:
+  /datachecks/groups/{group}:
     get:
       tags:
-        - Retrieve datacheck information
+        - Retrieve datachecks information
       summary: "Return datachecks in a specified group"
       parameters:
         - $ref: "#/components/parameters/group"
@@ -64,10 +64,10 @@ paths:
               schema:
                 $ref: "#/components/schemas/groups"
 
-  /datacheck/types:
+  /datachecks/types:
     get:
       tags:
-        - Retrieve datacheck information
+        - Retrieve datachecks information
       summary: "Return all datachecks, categorised by type (critical or advisory)"
       responses:
         200:
@@ -77,10 +77,10 @@ paths:
               schema:
                 $ref: "#/components/schemas/types"
 
-  /datacheck/types/{type}:
+  /datachecks/types/{type}:
     get:
       tags:
-        - Retrieve datacheck information
+        - Retrieve datachecks information
       summary: "Return datachecks for the specified type"
       parameters:
         - $ref: "#/components/parameters/type"
@@ -92,10 +92,10 @@ paths:
               schema:
                 $ref: "#/components/schemas/types"
 
-  /datacheck/search/{keyword}:
+  /datachecks/search/{keyword}:
     get:
       tags:
-        - Retrieve datacheck information
+        - Retrieve datachecks information
       summary: "Return datachecks whose name or description partially match the keyword"
       parameters:
         - $ref: "#/components/parameters/keyword"
@@ -107,11 +107,11 @@ paths:
               schema:
                 $ref: "#/components/schemas/keywords"
 
-  /datacheck/submit:
+  /datachecks/submit:
     post:
       tags:
         - Submit datachecks
-      summary: "Pass datacheck parameters to pipeline for execution"
+      summary: "Pass datachecks parameters to pipeline for execution"
       responses:
         200:
           description: Details of submitted job
@@ -120,24 +120,24 @@ paths:
               schema:
                 $ref: "#/components/schemas/job"
 
-  /datacheck/jobs:
+  /datachecks/jobs:
     get:
       tags:
-        - Retrieve datacheck job information
-      summary: "Return all datacheck jobs"
+        - Retrieve datachecks job information
+      summary: "Return all datachecks jobs"
       responses:
         200:
-          description: All datacheck jobs.
+          description: All datachecks jobs.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/jobs"
 
-  /datacheck/jobs/{job_id}:
+  /datachecks/jobs/{job_id}:
     get:
       tags:
-        - Retrieve datacheck job information
-      summary: "Return a specified datacheck job"
+        - Retrieve datachecks job information
+      summary: "Return a specified datachecks job"
       parameters:
         - $ref: "#/components/parameters/job_id"
       responses:
@@ -153,7 +153,7 @@ components:
     name:
       name: name
       in: path
-      description: A datacheck name
+      description: A datachecks name
       required: true
       schema:
         type: string
@@ -162,7 +162,7 @@ components:
     group:
       name: group
       in: path
-      description: A datacheck group
+      description: A datachecks group
       required: true
       schema:
         type: string
@@ -171,7 +171,7 @@ components:
     type:
       name: type
       in: path
-      description: A datacheck type
+      description: A datachecks type
       required: true
       schema:
         type: string
@@ -189,14 +189,14 @@ components:
     job_id:
       name: job_id
       in: path
-      description: A datacheck pipeline job ID
+      description: A datachecks pipeline job ID
       required: true
       schema:
         type: int
         example: 10
 
   schemas:
-    datacheck:
+    datachecks:
       title: datacheck
       type: object
       properties:
@@ -236,7 +236,7 @@ components:
         name:
           type: array
           items:
-            $ref: "#/components/schemas/datacheck"
+            $ref: "#/components/schemas/datachecks"
 
     groups:
       title: groups
@@ -245,7 +245,7 @@ components:
         group:
           type: array
           items:
-            $ref: "#/components/schemas/datacheck"
+            $ref: "#/components/schemas/datachecks"
 
     types:
       title: types
@@ -254,7 +254,7 @@ components:
         type:
           type: array
           items:
-            $ref: "#/components/schemas/datacheck"
+            $ref: "#/components/schemas/datachecks"
 
     keywords:
       title: keyword
@@ -263,7 +263,7 @@ components:
         keyword:
           type: array
           items:
-            $ref: "#/components/schemas/datacheck"
+            $ref: "#/components/schemas/datachecks"
 
     job:
       title: job
@@ -281,7 +281,7 @@ components:
         status:
           type: string
           enum: ["failed", "incomplete", "passed"]
-          description: Result of datacheck job execution
+          description: Result of datachecks job execution
 
     jobs:
       title: jobs
