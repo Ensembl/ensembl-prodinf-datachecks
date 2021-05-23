@@ -52,3 +52,5 @@ class DatacheckConfig(EnsemblConfig):
     SWAGGER_FILE = os.environ.get("SWAGGER_FILE", file_config.get('swagger_file', f"{pathlib.Path().absolute()}/swagger.yml" ))
     COPY_URI_DROPDOWN = os.environ.get("COPY_URI_DROPDOWN",
                           file_config.get('copy_uri_dropdown', "http://production-services.ensembl.org:80/"))
+
+    DATACHECK_TYPE = os.environ.get('DATACHECK_TYPE', file_config.get('datacheck_type', 'metazoa'))                      
