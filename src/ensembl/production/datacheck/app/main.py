@@ -37,7 +37,7 @@ app_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 static_path = os.path.join(app_path, 'static')
 template_path = os.path.join(app_path, 'templates')
 
-app = Flask(__name__, static_url_path='', static_folder=static_path, template_folder=template_path)
+app = Flask(__name__, static_url_path='/static/datachecks/', static_folder=static_path, template_folder=template_path)
 
 app.config.from_object(DatacheckConfig)
 
