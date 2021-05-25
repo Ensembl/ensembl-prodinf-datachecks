@@ -10,9 +10,9 @@
       <span class="navbar-brand">List by:</span>
 
       <div class="navbar-nav">
-        <a class="nav-item nav-link {%- if request.endpoint.endswith('names') %} active {% endif -%} " href="/datacheck/names" >Name</a></li>
-        <a class="nav-item nav-link {%- if request.endpoint.endswith('groups') %} active {% endif -%} " href="/datacheck/groups" >Group</a></li>
-        <a class="nav-item nav-link {%- if request.endpoint.endswith('types') %} active {% endif -%} " href="/datacheck/types" >Type</a></li>
+        <a class="nav-item nav-link {%- if request.endpoint.endswith('names') %} active {% endif -%} " href="/names" >Name</a></li>
+        <a class="nav-item nav-link {%- if request.endpoint.endswith('groups') %} active {% endif -%} " href="/groups" >Group</a></li>
+        <a class="nav-item nav-link {%- if request.endpoint.endswith('types') %} active {% endif -%} " href="/types" >Type</a></li>
       </div>
 
       {% if request.endpoint.endswith('groups') %}
