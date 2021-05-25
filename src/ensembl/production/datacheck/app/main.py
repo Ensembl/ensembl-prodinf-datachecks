@@ -225,7 +225,10 @@ def job_submit(payload=None):
     input_data = dict(payload)
 
     assert_mysql_uri(input_data['server_url'])
-    
+
+    if 'target_url' not in input_data:
+        input_data['target_url'] = input_data['server_url']
+
     # Determine db_type if necessary.
     # Convert all species-selection parameters to lists, as required by the hive pipeline
     dbname = input_data['dbname']
