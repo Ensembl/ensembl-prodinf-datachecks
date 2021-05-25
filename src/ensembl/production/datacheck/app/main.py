@@ -336,7 +336,7 @@ def download_dc_outputs(job_id):
                 return send_file(str(f_path), as_attachment=True)
 
 
-@app.route('/submit', methods=['POST', 'GET'])
+@app.route('/jobs/submit', methods=['POST', 'GET'])
 def display_form():
     # Here we convert the form fields into a 'payload' dictionary
     # that is the required input format for the hive submission.
