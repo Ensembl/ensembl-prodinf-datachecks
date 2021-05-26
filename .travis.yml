@@ -17,7 +17,7 @@ before_install:
   - sudo mv docker-compose /usr/local/bin
 
 before_script:
-  - pip install -r requirements-test.txt
+  - pip install -r requirements.txt
   - pip install coverage
   - pip install .
 

@@ -223,7 +223,10 @@ def job_submit(payload=None):
     input_data = dict(payload)
 
     assert_mysql_uri(input_data['server_url'])
-    
+
+    if 'target_url' in input_data:
+        input_data['server_uri'] = input_data['target_url'].split(',')
+
     # Determine db_type if necessary.
     # Convert all species-selection parameters to lists, as required by the hive pipeline
     dbname = input_data['dbname']
@@ -243,14 +246,11 @@ def job_submit(payload=None):
     servers = get_servers_dict()
     server_name = servers[input_data['server_url']]['server_name']
     config_profile = servers[input_data['server_url']]['config_profile']
-    db_category = input_data['db_type']
     if dbname is not None:
         if is_grch37(dbname):
             config_profile = 'grch37'
-            if db_category != 'core':
-                db_category = 'grch37'
-       
-    input_data['registry_file'] = set_registry_file(db_category, server_name)
+    
+    input_data['registry_file'] = set_registry_file(server_name)
     
     input_data['config_file'] = set_config_file(config_profile)
     
@@ -420,8 +420,8 @@ def set_db_type(dbname, db_uri):
     return db_type
 
 
-def set_registry_file(db_category, server_name):
-    return os.path.join(app.config['DATACHECK_REGISTRY_DIR'], db_category, '.'.join([server_name, 'pm']))
+def set_registry_file(server_name):
+    return os.path.join(app.config['DATACHECK_REGISTRY_DIR'], '.'.join([server_name, 'pm']))
 
 
 def set_config_file(config_profile):
@@ -441,4 +441,3 @@ def handle_bad_request_error(e):
 def handle_sqlalchemy_error(e):
      app.logger.error(str(e))
      return jsonify(error=str(e)), 404
-
