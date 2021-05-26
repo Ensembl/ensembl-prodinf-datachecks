@@ -226,8 +226,8 @@ def job_submit(payload=None):
 
     assert_mysql_uri(input_data['server_url'])
 
-    if 'target_url' not in input_data:
-        input_data['target_url'] = input_data['server_url']
+    if 'target_url' in input_data:
+        input_data['server_uri'] = input_data['target_url'].split(',')
 
     # Determine db_type if necessary.
     # Convert all species-selection parameters to lists, as required by the hive pipeline
@@ -446,4 +446,3 @@ def handle_bad_request_error(e):
 def handle_sqlalchemy_error(e):
      app.logger.error(str(e))
      return jsonify(error=str(e)), 404
-
