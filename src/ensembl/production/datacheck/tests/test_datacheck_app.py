@@ -16,18 +16,23 @@ from werkzeug.test import EnvironBuilder
 from ensembl.production.datacheck.forms import DatacheckSubmissionForm
 
 valid_payload ={
-                'server-server_name':'mysql://ensro@mysql:4523/' ,
-                'server-source': 'dbname',
-                'server-dbname': 'homo_sapiens_core_38_101',
-                'server-species': 'homo_sapiens',
-                'server-division': 'vert',
-                'server-db_type': 'core',
-                'datacheck-datacheck_name': 'AlignFeatureExternalDB',
-                'datacheck-datacheck_group': 'annotation',
-                'datacheck-datacheck_type': 'critical',
-                'submitter-tag-email': 'test@ebi.ac.uk',
-                'tag': 'Testcase for datacheck form'
+                "server-server_name":"sta-1" ,
+                "server-source": "dbname",
+                "server-dbname": "homo",
+                "server-species": "",
+                "server-db_type": "core",
+                "datacheck-datacheck_name": "AlignFeatureExternalDB",
+                "datacheck-datacheck_group": "annotation",
+                "datacheck-datacheck_type": "critical",
+                "submitter-email": "test@gmail.com",
+                "submitter-tag": "Testcase"
                 }
+
+def set_dynamic_choices(form):
+    for name, field in form._fields.items():
+        if name == 'server':
+            field.server_name.choices =  [('sta-1', 'sta-1')]
+    return form        
 
 class TestDatacheckForm(unittest.TestCase):
     def setUp(self):
@@ -45,8 +50,8 @@ class TestDatacheckForm(unittest.TestCase):
     
         @app.route("/formvalidate/", methods=("POST",))
         def form_submit():
-            form = DatacheckSubmissionForm()
-
+            form = DatacheckSubmissionForm(request.form)
+            form=set_dynamic_choices(form) 
             if form.validate():
                 return {'valid': True}
 
@@ -71,6 +76,7 @@ class TestValidateOnSubmit(TestDatacheckForm):
     def test_submitted_and_valid(self):
         with self.request(method='POST', data=valid_payload):
             f = DatacheckSubmissionForm(request.form)
+            f=set_dynamic_choices(f)
             self.assertEqual(f.validate(), True)
 
 
@@ -82,6 +88,7 @@ class TestCSRF(TestDatacheckForm):
         env = builder.get_environ()
         req = Request(env)
         f = DatacheckSubmissionForm(req.form)
+        f=set_dynamic_choices(f)
         self.assertTrue(f.validate())
 
     def test_form(self):
