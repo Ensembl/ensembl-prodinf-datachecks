@@ -23,7 +23,6 @@ from pathlib import Path
 import requests
 from requests.exceptions import HTTPError
 
-
 from ensembl.production.core.db_utils import get_databases_list, get_db_type
 from ensembl.production.core.models.hive import HiveInstance
 from ensembl.production.core.server_utils import assert_mysql_uri, assert_mysql_db_uri
@@ -31,7 +30,6 @@ from ensembl.production.core.exceptions import HTTPRequestError
 from ensembl.production.datacheck.forms import DatacheckSubmissionForm
 from ensembl.production.datacheck.config import DatacheckConfig
 
- 
 # Go up two levels to get to root, where we will find the static and template files
 app_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 static_path = os.path.join(app_path, 'static')
@@ -95,6 +93,7 @@ def get_hive():
     if hive is None:
         hive = HiveInstance(app.config['HIVE_URI'])
     return hive
+
 
 @app.route('/', methods=['GET'])
 def index():
@@ -195,21 +194,24 @@ def search(keyword):
 
     return jsonify(index_search)
 
+
 @app.route('/dropdown/databases/<string:src_host>/<string:src_port>', methods=['GET'])
 def dropdown(src_host=None, src_port=None):
-  try:
-    search = request.args.get('search', None)
-    if src_host and src_port and search:
-      res = requests.get(f"{DatacheckConfig.COPY_URI_DROPDOWN}api/dbcopy/databases/{src_host}/{src_port}", params={'search': search})
-      res.raise_for_status()
-      return jsonify(res.json())
-    else:
-      raise Exception('required params not provided')
-  except HTTPError as http_err:
-    raise HTTPRequestError(f'{http_err}', 404)
-  except Exception as e:
-    print(str(e))
-    return jsonify([])
+    try:
+        search = request.args.get('search', None)
+        if src_host and src_port and search:
+            res = requests.get(f"{DatacheckConfig.COPY_URI_DROPDOWN}api/dbcopy/databases/{src_host}/{src_port}",
+                               params={'search': search})
+            res.raise_for_status()
+            return jsonify(res.json())
+        else:
+            raise Exception('required params not provided')
+    except HTTPError as http_err:
+        raise HTTPRequestError(f'{http_err}', 404)
+    except Exception as e:
+        print(str(e))
+        return jsonify([])
+
 
 @app.route('/jobs', methods=['POST'])
 def job_submit(payload=None):
@@ -221,7 +223,7 @@ def job_submit(payload=None):
         payload = request.json
 
     input_data = dict(payload)
-
+    app.logger.info('Received payload %s', input_data)
     assert_mysql_uri(input_data['server_url'])
 
     if 'target_url' in input_data:
@@ -239,23 +241,24 @@ def job_submit(payload=None):
         input_data['species'] = input_data['species'].split(',')
     elif input_data['division'] is not None:
         input_data['division'] = input_data['division'].split(',')
-    
+
     # Hard-code this for the time being; need to handle memory usage better for unparallelised runs
     input_data['parallelize_datachecks'] = 1
 
     servers = get_servers_dict()
+    app.logger.info('Servers %s', servers)
     server_name = servers[input_data['server_url']]['server_name']
     config_profile = servers[input_data['server_url']]['config_profile']
     if dbname is not None:
         if is_grch37(dbname):
             config_profile = 'grch37'
-    
+
     input_data['registry_file'] = set_registry_file(server_name)
-    
+
     input_data['config_file'] = set_config_file(config_profile)
-    
+    app.logger.info('get Hive %s', get_hive())
     job = get_hive().create_job(app.analysis, input_data)
-    
+    app.logger.info("Job created %s", job)
     if request.is_json:
         results = {"job_id": job.job_id}
         return jsonify(results), 201
@@ -265,16 +268,15 @@ def job_submit(payload=None):
 
 @app.route('/jobs', methods=['GET'])
 def job_list():
-
     fmt = request.args.get('format', None)
     job_id = request.args.get('job_id', None)
 
     if request.is_json or fmt == 'json':
         if job_id:
-            jobs = [ get_hive().get_result_for_job_id(job_id, progress=False) ]
+            jobs = [get_hive().get_result_for_job_id(job_id, progress=False)]
         else:
-            jobs = get_hive().get_all_results(app.analysis)    
-        # Handle case where submission is marked as complete,
+            jobs = get_hive().get_all_results(app.analysis)
+            # Handle case where submission is marked as complete,
         # but where output has not been created.
         for job in jobs:
             if 'output' not in job.keys():
@@ -285,6 +287,7 @@ def job_list():
         return jsonify(jobs)
 
     return render_template('list.html', job_id=job_id)
+
 
 @app.route('/jobs/details', methods=['GET'])
 def job_details():
@@ -312,7 +315,7 @@ def job_result(job_id):
     if request.is_json or fmt == 'json':
         return jsonify(job)
     else:
-    # Need to pass some data to the template...
+        # Need to pass some data to the template...
         return render_template('list.html', job_id=job_id)
 
 
@@ -354,14 +357,15 @@ def display_form():
             server_name_choices.append((server_name_dict[name], name))
 
         form.server.server_name.choices = server_name_choices
- 
-        if  request.method == 'POST' : 
-                
+
+        if request.method == 'POST':
+
             if not form.validate():
-                if form.server.source.data != 'division' and not any( [form.server.dbname.data,  form.server.species.data])  :
-                    form.server.dbname.errors=['Database name or Species name required..!']
+                if form.server.source.data != 'division' and not any(
+                        [form.server.dbname.data, form.server.species.data]):
+                    form.server.dbname.errors = ['Database name or Species name required..!']
                 raise Exception('Invalid Form ...')
-            
+
             payload = {
                 'server_url': form.server.server_name.data,
                 'dbname': None,
@@ -374,7 +378,7 @@ def display_form():
                 'email': form.submitter.email.data,
                 'tag': form.submitter.tag.data
             }
-           
+
             if form.server.source.data == 'dbname':
                 payload['dbname'] = form.server.dbname.data
             else:
@@ -392,17 +396,15 @@ def display_form():
             if form.datacheck.datacheck_type.data != '':
                 payload['datacheck_types'] = form.datacheck.datacheck_type.data.split(',')
 
-
             return job_submit(payload)
 
     except Exception as e:
         flash(str(e))
-    
+
     return render_template(
         'submit.html',
         form=form,
-        )
-
+    )
 
 
 @app.route('/ping', methods=['GET'])
@@ -432,12 +434,14 @@ def is_grch37(dbname):
     p = re.compile('homo_sapiens.*_37')
     return p.match(dbname)
 
+
 @app.errorhandler(HTTPRequestError)
 def handle_bad_request_error(e):
     app.logger.error(str(e))
     return jsonify(error=str(e)), e.status_code
 
+
 @app.errorhandler(404)
 def handle_sqlalchemy_error(e):
-     app.logger.error(str(e))
-     return jsonify(error=str(e)), 404
+    app.logger.error(str(e))
+    return jsonify(error=str(e)), 404
