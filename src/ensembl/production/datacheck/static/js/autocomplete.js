@@ -43,7 +43,7 @@ $(document).ready(function(){
     var datacheck_name_list = new Bloodhound({
         datumTokenizer: Bloodhound.tokenizers.whitespace,
         queryTokenizer: Bloodhound.tokenizers.whitespace,
-        prefetch: 'names/list'
+        prefetch: '/names/list'
     });
 
     $('#datacheck-datacheck_name').tagsinput({
@@ -57,7 +57,7 @@ $(document).ready(function(){
     var datacheck_group_list = new Bloodhound({
         datumTokenizer: Bloodhound.tokenizers.whitespace,
         queryTokenizer: Bloodhound.tokenizers.whitespace,
-        prefetch: 'groups/list'
+        prefetch: '/groups/list'
     });
 
     $('#datacheck-datacheck_group').tagsinput({
@@ -110,7 +110,7 @@ $(document).ready(function(){
             
            $.ajax({
                 //url: `${copy_url}api/dbcopy/databases/${SelectedHostDetails.name}/${SelectedHostDetails.port}`,
-                url: `/datacheck/dropdown/databases/${SelectedHost}/${SelectedPort}`,
+                url: `/dropdown/databases/${SelectedHost}/${SelectedPort}`,
                 dataType: "json",
                 data: {
                     search: request.term

@@ -17,12 +17,12 @@
       <tr>
         <td><a title="{{ name }} Perl module (opens in new tab)" href="{{ repo_url }}{{ name }}.pm" target="_blank">{{ name }}</a></td>
         <td>{{ datachecks[name].description }}</td>
-        <td><a title="View all {{ type }} datachecks" href="/datacheck/types#{{ type }}">{{ type }}</a></td>
+        <td><a title="View all {{ type }} datachecks" href="/types#{{ type }}">{{ type }}</a></td>
         <td>
           {% set pipe = joiner("|") %}
           {% for group in datachecks[name].groups | sort %}
             {{ pipe() }}
-            <a title="View all '{{ group }}' datachecks" href="/datacheck/groups#{{ group }}">{{ group }}</a>
+            <a title="View all '{{ group }}' datachecks" href="/groups#{{ group }}">{{ group }}</a>
           {% endfor %}
         </td>
       </tr>
