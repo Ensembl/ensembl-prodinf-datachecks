@@ -29,19 +29,22 @@
   data-detail-formatter="detailFormatter"
   data-buttons-class="btn h-buttons"
   data-query-params="queryParams"
+  data-sort-name="input.timestamp" 
+  data-sort-order="desc"
   data-show-columns="true">
   <thead>
     <tr style="cursor: pointer">
       <!--<th data-formatter="expandIcon"></th>-->
       <th data-field="id" data-sortable="true" data-formatter="detailPage">ID</th>
       <!--<th data-field="input.db_type" data-sortable="true">DB Type</th>-->
+      <th data-field="input.server_url" data-sortable="true" data-formatter="FormatServerHost"  >Server Host</th>
       <th data-field="input.dbname" data-sortable="true" data-formatter="FormatArrayName"  >DB Name</th>
       <th data-field="input.datacheck_types" data-sortable="true" data-formatter="FormatArrayName"  >Datacheck types</th>
       <th data-field="input.datacheck_groups" data-sortable="true" data-formatter="FormatArrayName"  >Datacheck groups</th>
       <th data-field="status" data-sortable="true" data-formatter="statusFormat">Status</th>
       <th data-field="input.tag" data-sortable="true" >Tag</th>
       <th data-field="input.timestamp" data-sortable="true" >Start Time</th>
-      <th data-field="output" data-sortable="true" data-formatter="FormatTimestamp">End Time</th>
+      <th data-field="output" data-sortable="true" data-visible="false" data-formatter="FormatTimestamp">End Time</th>
     </tr>
   </thead>
 </table>
