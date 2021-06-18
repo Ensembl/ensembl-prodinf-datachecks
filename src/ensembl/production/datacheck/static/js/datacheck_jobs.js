@@ -87,7 +87,17 @@ function FormatTimestamp(value){
   else{ return '-';}
 }
 
-
+function FormatServerHost(value, row){
+  
+  const host_regexp = new RegExp('mysql://.+@(.+):.+'); 
+  let host = host_regexp.exec(value);
+  if(host != null){
+    return host[1];
+  }else{
+    return 'NA';
+  } 
+  
+}
 
 
 function parseJobs(row, type){
