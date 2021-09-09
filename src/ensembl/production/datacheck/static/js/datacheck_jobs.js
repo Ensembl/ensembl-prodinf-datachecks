@@ -42,12 +42,23 @@ function detailPage(value, row){
   return '<a title="More details " style="cursor: pointer"  >'+ row.id +'</a> ' + '<a title="Download Datacheck output " style="cursor: pointer"  href="/download_datacheck_outputs/' + row.id  +'">'+ download +'</a>'
 }
 
+
 function statusFormat(value, row){
      let class_name = 'badge-success';
      let html = [];
      if (value == 'incomplete'){
          class_name = 'badge-primary';
-         return '<span class="badge ' + class_name +'">'+ value +'</span><br>'
+         console.log(row);
+          let jobprogress = ` 
+              <span class="badge badge-warning">
+                Jobs Running <span class="badge badge-light">${row.progress.inprogress}</span>
+              </span><br>
+              <span class="badge badge-success">
+                Jobs completed <span class="badge badge-light">${row.progress.completed}</span>
+              </span><br>
+            `; 
+          return jobprogress;
+         //return '<span class="badge ' + class_name +'">'+ value +'</span><br>' 
      }   
      if(value == 'failed'){
       return '<span class="badge badge-danger">'+ value +'</span>'
@@ -76,7 +87,17 @@ function FormatTimestamp(value){
   else{ return '-';}
 }
 
-
+function FormatServerHost(value, row){
+  
+  const host_regexp = new RegExp('mysql://.+@(.+):.+'); 
+  let host = host_regexp.exec(value);
+  if(host != null){
+    return host[1];
+  }else{
+    return 'NA';
+  } 
+  
+}
 
 
 function parseJobs(row, type){

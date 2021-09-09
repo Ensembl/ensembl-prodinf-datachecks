@@ -273,7 +273,7 @@ def job_list():
 
     if request.is_json or fmt == 'json':
         if job_id:
-            jobs = [get_hive().get_result_for_job_id(job_id, progress=False)]
+            jobs = [get_hive().get_result_for_job_id(job_id, progress=True)]
         else:
             jobs = get_hive().get_all_results(app.analysis)
             # Handle case where submission is marked as complete,
@@ -301,7 +301,7 @@ def job_details():
 
 @app.route('/jobs/<int:job_id>', methods=['GET'])
 def job_result(job_id):
-    job = get_hive().get_result_for_job_id(job_id, progress=False)
+    job = get_hive().get_result_for_job_id(job_id, progress=True)
     fmt = request.args.get('format', None)
     # Handle case where submission is marked as complete,
     # but where output has not been created.
