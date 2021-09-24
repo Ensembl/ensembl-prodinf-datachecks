@@ -28,7 +28,7 @@ elasticsearch==6.8.1
     # via -r requirements.in
 email-validator==1.1.2
     # via -r requirements.in
-ensembl-prodinf-core@git+https://github.com/Ensembl/ensembl-prodinf-core.git#egg=ensembl-prodinf-core
+ensembl-prodinf-core@git+https://github.com/Ensembl/ensembl-prodinf-core.git@1.3#egg=ensembl-prodinf-core
     # via -r requirements.in
 flasgger==0.9.5
     # via -r requirements.in
