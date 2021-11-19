@@ -11,16 +11,34 @@
 #    limitations under the License.
 
 import os
+import sys
 from ensembl.production.core.config import load_config_yaml
 import pathlib
+from ensembl.utils.rloader import RemoteFileLoader
+
 pathlib.Path(__file__).parent.absolute()
 
 config_file_path = os.environ.get('DATACHECK_CONFIG_PATH')
 file_config = load_config_yaml(config_file_path)
 
 
-class EnsemblConfig:
+class DCConfigLoader:
+    uri = 'https://raw.githubusercontent.com/Ensembl/ensembl-datacheck/release/{}/lib/Bio/EnsEMBL/DataCheck/index.json'
 
+    @classmethod
+    def load_config(cls, version):
+        loader = RemoteFileLoader('json')
+        uri = cls.uri.format(version)
+        try:
+            dc_index = loader.r_open(uri)
+        except Exception as e:
+            print("Can't start, DC index.json unavailable for release %s" % version)
+            sys.exit(255)
+        return dc_index
+
+
+class EnsemblConfig:
+    SCRIPT_NAME = os.environ.get('SCRIPT_NAME', 'trumuche')
     BASE_DIR = os.environ.get('BASE_DIR',
                               file_config.get('base_dir'))
     SECRET_KEY = os.environ.get('SECRET_KEY',
@@ -28,29 +46,33 @@ class EnsemblConfig:
     SERVER_URIS_FILE = os.environ.get('SERVER_URIS_FILE',
                                       file_config.get('server_uris_file', 'server_uris_list.json'))
     SWAGGER = {
-      'title': 'Ensembl Datacheck Service',
-      'uiversion': 3,
-      'hide_top_bar': True,
-      'ui_params': {
-        'defaultModelsExpandDepth': -1
-      },
-      'favicon': '/img/production.png'
+        'title': 'Ensembl Datacheck Service',
+        'uiversion': 3,
+        'hide_top_bar': True,
+        'ui_params': {
+            'defaultModelsExpandDepth': -1
+        },
+        'favicon': '/img/production.png'
     }
 
 
 class DatacheckConfig(EnsemblConfig):
-  
-    DATACHECK_INDEX = os.path.join(EnsemblConfig.BASE_DIR, 'ensembl-datacheck/lib/Bio/EnsEMBL/DataCheck/index.json')
+    DATACHECK_INDEX = DCConfigLoader.load_config(os.environ.get("ENS_VERSION", '105'))
+
     DATACHECK_COMMON_DIR = os.environ.get("DATACHECK_COMMON_DIR",
-                                          file_config.get('datacheck_common_dir'))
+                                          file_config.get('datacheck_common_dir', '~/datachecks'))
     DATACHECK_CONFIG_DIR = os.path.join(DATACHECK_COMMON_DIR, 'config')
     DATACHECK_REGISTRY_DIR = os.path.join(DATACHECK_COMMON_DIR, 'registry')
     HIVE_ANALYSIS = os.environ.get("HIVE_ANALYSIS",
                                    file_config.get('hive_analysis', 'DataCheckSubmission'))
     HIVE_URI = os.environ.get("HIVE_URI", file_config.get('hive_uri'))
-    SERVER_NAMES_FILE = os.environ.get("SERVER_NAMES", file_config.get('server_names_file'))
-    SWAGGER_FILE = os.environ.get("SWAGGER_FILE", file_config.get('swagger_file', f"{pathlib.Path().absolute()}/swagger.yml" ))
+    SERVER_NAMES_FILE = os.environ.get("SERVER_NAMES", file_config.get('server_names_file',
+                                                                       os.path.join(os.path.dirname(__file__),
+                                                                                    'server_names.dev.json')))
+    SWAGGER_FILE = os.environ.get("SWAGGER_FILE",
+                                  file_config.get('swagger_file', f"{pathlib.Path().absolute()}/swagger.yml"))
     COPY_URI_DROPDOWN = os.environ.get("COPY_URI_DROPDOWN",
-                          file_config.get('copy_uri_dropdown', "http://production-services.ensembl.org:80/"))
+                                       file_config.get('copy_uri_dropdown',
+                                                       "http://production-services.ensembl.org:80/"))
 
-    DATACHECK_TYPE = os.environ.get('DATACHECK_TYPE', file_config.get('datacheck_type', 'metazoa'))                      
+    DATACHECK_TYPE = os.environ.get('DATACHECK_TYPE', file_config.get('datacheck_type', 'metazoa'))

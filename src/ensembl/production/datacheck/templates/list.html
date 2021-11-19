@@ -1,73 +1,84 @@
 {% extends 'base.html' %}
 
 {% block head %}
-{{ super() }}
-<link type="text/css"  rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap-table.min.css') }}"/>
+    {{ super() }}
+    <link type="text/css" rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap-table.min.css') }}"/>
 {% endblock %}
 {% block content %}
 
-<!-- <div class="container" > -->
-<div class="m-4" >
-<div class="row table-responsive">
-<div class="col-12">
-<table id="table"
-  class="table table-striped thead-dark table-bordered "
-  data-toggle="table"
-  data-row-style="rowStyle"
-  data-search="true"
-  data-show-refresh="true"
-  data-show-columns="true"
-  data-sortable="true"
-  data-sort-class="table-active"
-  data-pagination="true"
-  data-show-button-text="true"
-  data-page-size="25"
-  data-detail-view="true"
-  data-detail-view-by-click="false"
-  data-detail-view-icon="true"
-  data-detail-formatter="detailFormatter"
-  data-buttons-class="btn h-buttons"
-  data-query-params="queryParams"
-  data-sort-name="input.timestamp" 
-  data-sort-order="desc"
-  data-show-columns="true">
-  <thead>
-    <tr style="cursor: pointer">
-      <!--<th data-formatter="expandIcon"></th>-->
-      <th data-field="id" data-sortable="true" data-formatter="detailPage">ID</th>
-      <!--<th data-field="input.db_type" data-sortable="true">DB Type</th>-->
-      <th data-field="input.server_url" data-sortable="true" data-formatter="FormatServerHost"  >Server Host</th>
-      <th data-field="input.dbname" data-sortable="true" data-formatter="FormatArrayName"  >Database</th>
-      <th data-field="input.datacheck_names" data-sortable="true" data-formatter="FormatArrayName" data-visible="false" >Datacheck Names</th>
-      <th data-field="input.datacheck_types" data-sortable="true" data-formatter="FormatArrayName" data-visible="false" >Datacheck Types</th>
-      <th data-field="input.datacheck_groups" data-sortable="true" data-formatter="FormatArrayName" data-visible="false" >Datacheck Groups</th>
-      <th data-field="status" data-sortable="true" data-formatter="statusFormat">Status</th>
-      <th data-field="input.tag" data-sortable="true" >Tag</th>
-      <th data-field="input.timestamp" data-sortable="true" >Start Time</th>
-      <th data-field="output" data-sortable="true" data-visible="false" data-formatter="FormatTimestamp">End Time</th>
-    </tr>
-  </thead>
-</table>
-</div>
-</div>
-</div>
+    <!-- <div class="container" > -->
+    <div class="m-4">
+        <div class="row table-responsive">
+            <div class="col-12">
+                <table id="table"
+                       class="table table-striped thead-dark table-bordered "
+                       data-toggle="table"
+                       data-row-style="rowStyle"
+                       data-search="true"
+                       data-show-refresh="true"
+                       data-sortable="true"
+                       data-sort-class="table-active"
+                       data-pagination="true"
+                       data-show-button-text="true"
+                       data-page-size="25"
+                       data-detail-view="true"
+                       data-detail-view-by-click="false"
+                       data-detail-view-icon="true"
+                       data-detail-formatter="detailFormatter"
+                       data-buttons-class="btn h-buttons"
+                       data-query-params="queryParams"
+                       data-sort-name="input.timestamp"
+                       data-sort-order="desc"
+                       data-show-columns="true">
+                    <thead>
+                    <tr style="cursor: pointer">
+                        <!--<th data-formatter="expandIcon"></th>-->
+                        <th data-field="id" data-sortable="true" data-formatter="detailPage">ID</th>
+                        <!--<th data-field="input.db_type" data-sortable="true">DB Type</th>-->
+                        <th data-field="input.server_url" data-sortable="true" data-formatter="FormatServerHost">Server
+                            Host
+                        </th>
+                        <th data-field="input.dbname" data-sortable="true" data-formatter="FormatArrayName">Database
+                        </th>
+                        <th data-field="input.datacheck_names" data-sortable="true" data-formatter="FormatArrayName"
+                            data-visible="false">Datacheck Names
+                        </th>
+                        <th data-field="input.datacheck_types" data-sortable="true" data-formatter="FormatArrayName"
+                            data-visible="false">Datacheck Types
+                        </th>
+                        <th data-field="input.datacheck_groups" data-sortable="true" data-formatter="FormatArrayName"
+                            data-visible="false">Datacheck Groups
+                        </th>
+                        <th data-field="status" data-sortable="true" data-formatter="statusFormat">Status</th>
+                        <th data-field="input.tag" data-sortable="true">Tag</th>
+                        <th data-field="input.timestamp" data-sortable="true">Start Time</th>
+                        <th data-field="output" data-sortable="true" data-visible="false"
+                            data-formatter="FormatTimestamp">End Time
+                        </th>
+                    </tr>
+                    </thead>
+                </table>
+            </div>
+        </div>
+    </div>
 {% endblock content %}
 
 {% block scripts %}
-  {{ super() }}
-  <script src="{{ url_for('static', filename='js/bootstrap-table.min.js') }}"></script>
- <script src="{{ url_for('static', filename='js/datacheck_jobs.js') }}"></script>
+    {{ super() }}
+    <script src="{{ url_for('static', filename='js/bootstrap-table.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/datacheck_jobs.js') }}"></script>
 
- <script>
+    <script>
 
-  console.log("{{ job_id }}");
-  function queryParams(params) {
-    params.format = "json";
-    {% if job_id %}
-      params.job_id = {{ job_id }}
-    {% endif %}
-     return params
-  }
-</script>
+        console.log("{{ job_id }}");
+
+        function queryParams(params) {
+            params.format = "json";
+            {% if job_id %}
+                params.job_id = {{ job_id }}
+            {% endif %}
+            return params
+        }
+    </script>
 
 {% endblock scripts %}

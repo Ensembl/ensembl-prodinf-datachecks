@@ -11,48 +11,60 @@
 #    limitations under the License.
 import os
 import re
-import time
-from flask import Flask, json, jsonify, redirect, render_template, request, send_file, redirect, flash
-from flask_wtf.csrf import CSRFProtect
-from flask_bootstrap import Bootstrap
-from flask_cors import CORS
-from flasgger import Swagger
 from io import BytesIO
-from zipfile import ZipFile
 from pathlib import Path
-import requests
-from requests.exceptions import HTTPError
+from zipfile import ZipFile
 
+import requests
 from ensembl.production.core.db_utils import get_databases_list, get_db_type
+from ensembl.production.core.exceptions import HTTPRequestError
 from ensembl.production.core.models.hive import HiveInstance
 from ensembl.production.core.server_utils import assert_mysql_uri, assert_mysql_db_uri
-from ensembl.production.core.exceptions import HTTPRequestError
-from ensembl.production.datacheck.forms import DatacheckSubmissionForm
+from flasgger import Swagger
+from flask import Flask, json, jsonify, render_template, request, send_file, redirect, flash
+from flask_bootstrap import Bootstrap
+from flask_cors import CORS
+from requests.exceptions import HTTPError
+from werkzeug.middleware.dispatcher import DispatcherMiddleware
+from werkzeug.wrappers import Response
 from ensembl.production.datacheck.config import DatacheckConfig
+from ensembl.production.datacheck.forms import DatacheckSubmissionForm
 
 # Go up two levels to get to root, where we will find the static and template files
 app_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 static_path = os.path.join(app_path, 'static')
 template_path = os.path.join(app_path, 'templates')
 
-app = Flask(__name__, static_url_path='/static/datachecks/', static_folder=static_path, template_folder=template_path)
+app = Flask(__name__,
+            static_url_path='/static/datachecks/',
+            static_folder=static_path,
+            template_folder=template_path)
 
 app.config.from_object(DatacheckConfig)
 
 Bootstrap(app)
-
 CORS(app)
-
 Swagger(app, template_file=app.config['SWAGGER_FILE'])
 
 app.analysis = app.config['HIVE_ANALYSIS']
-app.index = json.load(open(app.config['DATACHECK_INDEX']))
+app.index = app.config['DATACHECK_INDEX']
 app.server_names = json.load(open(os.path.join(app_path, app.config['SERVER_NAMES_FILE'])))
 
 app.names_list = []
 app.groups_list = []
 app.servers_list = []
 app.servers_dict = {}
+
+if app.config['SCRIPT_NAME']:
+    app.wsgi_app = DispatcherMiddleware(
+        Response('Not Found', status=404),
+        {app.config['SCRIPT_NAME']: app.wsgi_app}
+    )
+
+@app.context_processor
+def inject_configs():
+    print('script_name', app.config['SCRIPT_NAME'])
+    return dict(script_name=app.config['SCRIPT_NAME'])
 
 
 def get_names_list():

@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 
 {% set title = 'Datacheck Catalog' %}
-{% set repo_url = 'https://github.com/Ensembl/ensembl-datacheck/tree/master/lib/Bio/EnsEMBL/DataCheck/Checks/' %}
+{% set repo_url = 'https://github.com/Ensembl/ensembl-datacheck/tree/main/lib/Bio/EnsEMBL/DataCheck/Checks/' %}
 
 {% block content -%}
 
@@ -10,9 +10,9 @@
       <span class="navbar-brand">List by:</span>
 
       <div class="navbar-nav">
-        <a class="nav-item nav-link {%- if request.endpoint.endswith('names') %} active {% endif -%} " href="/names" >Name</a></li>
-        <a class="nav-item nav-link {%- if request.endpoint.endswith('groups') %} active {% endif -%} " href="/groups" >Group</a></li>
-        <a class="nav-item nav-link {%- if request.endpoint.endswith('types') %} active {% endif -%} " href="/types" >Type</a></li>
+        <a class="nav-item nav-link {%- if request.endpoint.endswith('names') %} active {% endif -%} " href="{{script_name}}/names" >Name</a></li>
+        <a class="nav-item nav-link {%- if request.endpoint.endswith('groups') %} active {% endif -%} " href="{{script_name}}/groups" >Group</a></li>
+        <a class="nav-item nav-link {%- if request.endpoint.endswith('types') %} active {% endif -%} " href="{{script_name}}/types" >Type</a></li>
       </div>
 
       {% if request.endpoint.endswith('groups') %}
