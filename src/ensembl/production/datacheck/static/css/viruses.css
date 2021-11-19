@@ -32,7 +32,6 @@ select.select-align-right > option {
 }
 
 .navbar {
-  padding: 0rem 0rem 0rem 1rem;
   margin-bottom: 20px;
 }
 
@@ -153,15 +152,15 @@ select.select-align-right > option {
 
 /* dropdown css */
 
-.ui-autocomplete { 
-  position: absolute; 
+.ui-autocomplete {
+  position: absolute;
   cursor: pointer;
   max-height: 400px;
   overflow-y: auto;   /* prevent horizontal scrollbar */
   overflow-x: auto; /* add padding to account for vertical scrollbar */
   z-index:1000 !important;
-} 
-* html .ui-autocomplete { width:5px; } 
+}
+* html .ui-autocomplete { width:5px; }
 
 .ui-menu .ui-menu {
 margin-top: -3px;
@@ -169,7 +168,7 @@ margin-top: -3px;
 
 .ui-menu .ui-menu-item {
 margin:0;
-padding: 0; 
+padding: 0;
 float: left;
 clear: left;
 width: 100%;
@@ -179,18 +178,18 @@ width: 100%;
 text-decoration:none;
 display:block;
 padding:.2em .4em;
-line-height:1.5; 
+line-height:1.5;
 }
 
 .ui-menu .ui-menu-item a.ui-state-hover,
-  
+
 
 .ui-menu .ui-menu-item a.ui-state-active {
 font-weight: normal;
 margin: -1px;
-};
+}
 
-.ui-helper-hidden-accessible { 
+.ui-helper-hidden-accessible {
   display: none;
   color: white;
 }
@@ -206,7 +205,7 @@ margin: -1px;
   color: #f5f5ef;
   display:block;
   border:  2px solid #8552c0!important ;
-  float: auto;   
+  float: unset;
 }
 .ui-menu .ui-menu-item-wrapper:hover {
  color: #303030;
