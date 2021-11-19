@@ -10,7 +10,7 @@
 
   <head>
     {%- block head %}
-    <title>{{title}}</title>
+    <title>Production Datachecks App</title>
 
       {%- block metas %}
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -18,7 +18,7 @@
 
       {%- block styles %}
       <!-- Bootstrap -->
-      {{ bootstrap.load_css(version='4.3.0') }}
+      {{ bootstrap.load_css() }}
       
       {% if config['DATACHECK_TYPE'] == 'vertebrates' %}
           <link rel= "stylesheet" type= "text/css" href= "{{ url_for('static',filename='css/vertebrates.css') }}">
@@ -50,7 +50,7 @@
     
       {% block navbar %}
       <nav class="navbar navbar-icon-top navbar-expand-lg navbar-dark dnav" >
-        <a class="navbar-brand" href="#"><span class="mb-0 h3">Datacheck {{config['DATACHECK_TYPE']}}</a>
+        <a class="navbar-brand" href="#"><span class="mb-0 h3">Datacheck {{config['DATACHECK_TYPE']}} e{{config['ENS_VERSION']}}</a>
             <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>

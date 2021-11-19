@@ -21,12 +21,13 @@ from ensembl.production.core.exceptions import HTTPRequestError
 from ensembl.production.core.models.hive import HiveInstance
 from ensembl.production.core.server_utils import assert_mysql_uri, assert_mysql_db_uri
 from flasgger import Swagger
-from flask import Flask, json, jsonify, render_template, request, send_file, redirect, flash
+from flask import Flask, json, jsonify, render_template, request, send_file, redirect, flash, abort
 from flask_bootstrap import Bootstrap
 from flask_cors import CORS
 from requests.exceptions import HTTPError
 from werkzeug.middleware.dispatcher import DispatcherMiddleware
 from werkzeug.wrappers import Response
+
 from ensembl.production.datacheck.config import DatacheckConfig
 from ensembl.production.datacheck.forms import DatacheckSubmissionForm
 
@@ -55,19 +56,24 @@ app.groups_list = []
 app.servers_list = []
 app.servers_dict = {}
 
-if app.config['SCRIPT_NAME']:
+if app.env == 'development':
+    # ENV dev (assumed run from builtin server, so update script_name at wsgi level)
     app.wsgi_app = DispatcherMiddleware(
         Response('Not Found', status=404),
         {app.config['SCRIPT_NAME']: app.wsgi_app}
     )
 
+
 @app.context_processor
 def inject_configs():
-    print('script_name', app.config['SCRIPT_NAME'])
     return dict(script_name=app.config['SCRIPT_NAME'])
 
 
 def get_names_list():
+    if not app.index:
+        # Empty list of compara
+        raise requests.exceptions.HTTPError(f"Missing Datacheck index configuration for {app.config['ENS_VERSION']}")
+
     if not app.names_list:
         for name, params in app.index.items():
             app.names_list.append(name)
@@ -76,6 +82,10 @@ def get_names_list():
 
 
 def get_groups_list():
+    if not app.index:
+        # Empty list of compara
+        raise requests.exceptions.HTTPError(f"Missing Datacheck index configuration for {app.config['ENS_VERSION']}")
+
     if not app.groups_list:
         groups_set = []
         for name, params in app.index.items():
@@ -109,7 +119,10 @@ def get_hive():
 
 @app.route('/', methods=['GET'])
 def index():
-    # Missing template
+    if not app.index:
+        # Empty list of compara
+        raise requests.exceptions.HTTPError(f"Missing Datacheck index configuration for {app.config['ENS_VERSION']}")
+
     return jsonify({'title': 'Datacheck REST endpoints', 'uiversion': 2})
 
 
@@ -133,6 +146,10 @@ def databases_list():
 @app.route('/names/', methods=['GET'])
 @app.route('/names/<string:name_param>', methods=['GET'])
 def names(name_param=None):
+    if not app.index:
+        # Empty list of compara
+        raise requests.exceptions.HTTPError(f"Missing Datacheck index configuration for {app.config['ENS_VERSION']}")
+
     if name_param is None:
         index_names = app.index
     else:
@@ -159,6 +176,10 @@ def names_list():
 @app.route('/groups/<string:group_param>', methods=['GET'])
 def groups(group_param=None):
     index_groups = {}
+    if not app.index:
+        # Empty list of compara
+        raise requests.exceptions.HTTPError(f"Missing Datacheck index configuration for {app.config['ENS_VERSION']}")
+
     for name, params in app.index.items():
         for group in params['groups']:
             if group_param is None or group == group_param:
@@ -182,6 +203,10 @@ def groups_list():
 @app.route('/types/<string:type_param>', methods=['GET'])
 def types(type_param=None):
     index_types = {}
+    if not app.index:
+        # Empty list of compara
+        raise requests.exceptions.HTTPError(f"Missing Datacheck index configuration for {app.config['ENS_VERSION']}")
+
     for name, params in app.index.items():
         if type_param is None or params['datacheck_type'] == type_param:
             index_types.setdefault(params['datacheck_type'], []).append(params)
@@ -199,11 +224,13 @@ def types(type_param=None):
 def search(keyword):
     index_search = {}
     keyword_re = re.compile(keyword, re.IGNORECASE)
+    if not app.index:
+        # Empty list of compara
+        raise requests.exceptions.HTTPError(f"Missing Datacheck index configuration for {app.config['ENS_VERSION']}")
 
     for name, params in app.index.items():
         if keyword_re.search(name) or keyword_re.search(params['description']):
             index_search.setdefault(keyword, []).append(params)
-
     return jsonify(index_search)
 
 
@@ -457,3 +484,8 @@ def handle_bad_request_error(e):
 def handle_sqlalchemy_error(e):
     app.logger.error(str(e))
     return jsonify(error=str(e)), 404
+
+
+@app.errorhandler(requests.exceptions.HTTPError)
+def handle_server_error(e):
+    return jsonify(error=str(e)), 500

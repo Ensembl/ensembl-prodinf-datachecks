@@ -11,6 +11,9 @@
 #    limitations under the License.
 
 import os
+import warnings
+
+import requests.exceptions
 import sys
 from ensembl.production.core.config import load_config_yaml
 import pathlib
@@ -28,17 +31,17 @@ class DCConfigLoader:
     @classmethod
     def load_config(cls, version):
         loader = RemoteFileLoader('json')
-        uri = cls.uri.format(version)
         try:
-            dc_index = loader.r_open(uri)
-        except Exception as e:
-            print("Can't start, DC index.json unavailable for release %s" % version)
-            sys.exit(255)
-        return dc_index
+            uri = cls.uri.format(version)
+            return loader.r_open(uri)
+        except requests.exceptions.HTTPError:
+            warnings.warn(f"Unable to load index.json from {uri}")
+        return {}
 
 
 class EnsemblConfig:
-    SCRIPT_NAME = os.environ.get('SCRIPT_NAME', 'trumuche')
+    ENS_VERSION = os.environ.get("ENS_VERSION", '500')
+    SCRIPT_NAME = os.environ.get('SCRIPT_NAME', '')
     BASE_DIR = os.environ.get('BASE_DIR',
                               file_config.get('base_dir'))
     SECRET_KEY = os.environ.get('SECRET_KEY',
@@ -57,7 +60,7 @@ class EnsemblConfig:
 
 
 class DatacheckConfig(EnsemblConfig):
-    DATACHECK_INDEX = DCConfigLoader.load_config(os.environ.get("ENS_VERSION", '105'))
+    DATACHECK_INDEX = DCConfigLoader.load_config(EnsemblConfig.ENS_VERSION)
 
     DATACHECK_COMMON_DIR = os.environ.get("DATACHECK_COMMON_DIR",
                                           file_config.get('datacheck_common_dir', '~/datachecks'))
