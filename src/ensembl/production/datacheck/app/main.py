@@ -119,10 +119,6 @@ def get_hive():
 
 @app.route('/', methods=['GET'])
 def index():
-    if not app.index:
-        # Empty list of compara
-        raise requests.exceptions.HTTPError(f"Missing Datacheck index configuration for {app.config['ENS_VERSION']}")
-
     return jsonify({'title': 'Datacheck REST endpoints', 'uiversion': 2})
 
 
@@ -224,9 +220,6 @@ def types(type_param=None):
 def search(keyword):
     index_search = {}
     keyword_re = re.compile(keyword, re.IGNORECASE)
-    if not app.index:
-        # Empty list of compara
-        raise requests.exceptions.HTTPError(f"Missing Datacheck index configuration for {app.config['ENS_VERSION']}")
 
     for name, params in app.index.items():
         if keyword_re.search(name) or keyword_re.search(params['description']):
@@ -307,6 +300,10 @@ def job_submit(payload=None):
 
 @app.route('/jobs', methods=['GET'])
 def job_list():
+    if not app.index:
+        # Empty list DC
+        raise requests.exceptions.HTTPError(f"Missing Datacheck index configuration for {app.config['ENS_VERSION']}")
+
     fmt = request.args.get('format', None)
     job_id = request.args.get('job_id', None)
 
@@ -382,6 +379,9 @@ def download_dc_outputs(job_id):
 def display_form():
     # Here we convert the form fields into a 'payload' dictionary
     # that is the required input format for the hive submission.
+    if not app.index:
+        # Empty list DC
+        raise requests.exceptions.HTTPError(f"Missing Datacheck index configuration for {app.config['ENS_VERSION']}")
 
     try:
 
