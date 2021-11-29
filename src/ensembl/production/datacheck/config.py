@@ -41,7 +41,7 @@ class DCConfigLoader:
                 uri = cls.base_uri + 'main/lib/Bio/EnsEMBL/DataCheck/index.json'
                 return loader.r_open(uri)
             except requests.exceptions.HTTPError:
-                warnings.warn(f"Unable to load main either from {uri}")
+                warnings.warn(f"Unable to load main from {uri}")
         return {}
 
 
