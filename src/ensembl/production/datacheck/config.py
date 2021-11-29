@@ -26,16 +26,22 @@ file_config = load_config_yaml(config_file_path)
 
 
 class DCConfigLoader:
-    uri = 'https://raw.githubusercontent.com/Ensembl/ensembl-datacheck/release/{}/lib/Bio/EnsEMBL/DataCheck/index.json'
+    base_uri = 'https://raw.githubusercontent.com/Ensembl/ensembl-datacheck/'
+    uri = base_uri + 'release/{}/lib/Bio/EnsEMBL/DataCheck/index.json'
 
     @classmethod
-    def load_config(cls, version):
+    def load_config(cls, version=''):
         loader = RemoteFileLoader('json')
+        uri = cls.uri.format(version)
         try:
-            uri = cls.uri.format(version)
             return loader.r_open(uri)
         except requests.exceptions.HTTPError:
-            warnings.warn(f"Unable to load index.json from {uri}")
+            warnings.warn(f"Unable to load versioned index.json from {uri}")
+            try:
+                uri = cls.base_uri + 'main/lib/Bio/EnsEMBL/DataCheck/index.json'
+                return loader.r_open(uri)
+            except requests.exceptions.HTTPError:
+                warnings.warn(f"Unable to load main either from {uri}")
         return {}
 
 
