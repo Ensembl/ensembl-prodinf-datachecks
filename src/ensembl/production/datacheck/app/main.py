@@ -1,4 +1,4 @@
-# .. See the NOTICE file distributed with this work for additional information
+# See the NOTICE file distributed with this work for additional information
 #    regarding copyright ownership.
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@ from werkzeug.wrappers import Response
 
 from ensembl.production.datacheck.config import DatacheckConfig
 from ensembl.production.datacheck.forms import DatacheckSubmissionForm
+from ensembl.production.datacheck.exceptions import MissingIndexException
 
 # Go up two levels to get to root, where we will find the static and template files
 app_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -72,7 +73,7 @@ def inject_configs():
 def get_names_list():
     if not app.index:
         # Empty list of compara
-        raise requests.exceptions.HTTPError(f"Missing Datacheck index configuration for {app.config['ENS_VERSION']}")
+        raise MissingIndexException
 
     if not app.names_list:
         for name, params in app.index.items():
@@ -84,7 +85,7 @@ def get_names_list():
 def get_groups_list():
     if not app.index:
         # Empty list of compara
-        raise requests.exceptions.HTTPError(f"Missing Datacheck index configuration for {app.config['ENS_VERSION']}")
+        raise MissingIndexException
 
     if not app.groups_list:
         groups_set = []
@@ -144,7 +145,7 @@ def databases_list():
 def names(name_param=None):
     if not app.index:
         # Empty list of compara
-        raise requests.exceptions.HTTPError(f"Missing Datacheck index configuration for {app.config['ENS_VERSION']}")
+        raise MissingIndexException
 
     if name_param is None:
         index_names = app.index
@@ -174,7 +175,7 @@ def groups(group_param=None):
     index_groups = {}
     if not app.index:
         # Empty list of compara
-        raise requests.exceptions.HTTPError(f"Missing Datacheck index configuration for {app.config['ENS_VERSION']}")
+        raise MissingIndexException
 
     for name, params in app.index.items():
         for group in params['groups']:
@@ -201,7 +202,7 @@ def types(type_param=None):
     index_types = {}
     if not app.index:
         # Empty list of compara
-        raise requests.exceptions.HTTPError(f"Missing Datacheck index configuration for {app.config['ENS_VERSION']}")
+        raise MissingIndexException
 
     for name, params in app.index.items():
         if type_param is None or params['datacheck_type'] == type_param:
@@ -302,7 +303,7 @@ def job_submit(payload=None):
 def job_list():
     if not app.index:
         # Empty list DC
-        raise requests.exceptions.HTTPError(f"Missing Datacheck index configuration for {app.config['ENS_VERSION']}")
+        raise MissingIndexException
 
     fmt = request.args.get('format', None)
     job_id = request.args.get('job_id', None)
@@ -381,7 +382,7 @@ def display_form():
     # that is the required input format for the hive submission.
     if not app.index:
         # Empty list DC
-        raise requests.exceptions.HTTPError(f"Missing Datacheck index configuration for {app.config['ENS_VERSION']}")
+        raise MissingIndexException
 
     try:
 

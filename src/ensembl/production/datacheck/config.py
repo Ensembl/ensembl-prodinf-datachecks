@@ -1,4 +1,4 @@
-# .. See the NOTICE file distributed with this work for additional information
+# See the NOTICE file distributed with this work for additional information
 #    regarding copyright ownership.
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -35,14 +35,11 @@ class DCConfigLoader:
         uri = cls.uri.format(version)
         try:
             return loader.r_open(uri)
-        except requests.exceptions.HTTPError:
-            warnings.warn(f"Unable to load versioned index.json from {uri}")
-            try:
-                uri = cls.base_uri + 'main/lib/Bio/EnsEMBL/DataCheck/index.json'
-                return loader.r_open(uri)
-            except requests.exceptions.HTTPError:
-                warnings.warn(f"Unable to load main from {uri}")
-        return {}
+        except requests.exceptions.RequestException as e:
+            warnings.warn(f"Load versioned index.json error: {e}")
+            uri = cls.base_uri + 'main/lib/Bio/EnsEMBL/DataCheck/index.json'
+            # should always be available uri.
+            return loader.r_open(uri)
 
 
 class EnsemblConfig:
