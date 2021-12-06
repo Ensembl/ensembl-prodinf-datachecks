@@ -16,5 +16,4 @@ from requests.exceptions import HTTPError
 class MissingIndexException(HTTPError):
 
     def __init__(self, *args, **kwargs) -> None:
-        kwargs['message'] = f"Missing Datacheck index configuration for {getenv('ENS_VERSION')}"
-        super().__init__(*args, **kwargs)
+        super().__init__(f"Missing Datacheck index configuration for {getenv('ENS_VERSION')}",  **kwargs)
