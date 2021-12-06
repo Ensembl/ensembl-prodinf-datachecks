@@ -11,20 +11,23 @@
 #   limitations under the License.
 import unittest
 
+import ensembl.production.datacheck.exceptions
 from ensembl.production.datacheck.config import DCConfigLoader
 
 
 class TestConfigLoader(unittest.TestCase):
 
-    def test_config_load(self):
+    def test_config_load_104(self):
         # DuplicateComparaMemberXref was not implemented at this point
         config = DCConfigLoader.load_config('104')
         self.assertNotIn('DuplicateComparaMemberXref', config.keys())
-        # DuplicateComparaMemberXref was not implemented at this point
+
+    def test_config_load_106(self):
+        # DuplicateComparaMemberXref was implemented at this point
         config = DCConfigLoader.load_config('106')
         self.assertIn('DuplicateComparaMemberXref', config.keys())
 
-        with self.assertWarns(Warning):
-            config = DCConfigLoader.load_config('5000')
-            # Load main instead
-            self.assertIn('SpeciesCommonName', config.keys())
+    def test_config_load_fallback(self):
+        config = DCConfigLoader.load_config('5000')
+        # Load main instead
+        self.assertIn('SpeciesCommonName', config.keys())
