@@ -28,6 +28,7 @@ from requests.exceptions import HTTPError
 from werkzeug.middleware.dispatcher import DispatcherMiddleware
 from werkzeug.wrappers import Response
 
+import ensembl.production.datacheck.exceptions
 from ensembl.production.datacheck.config import DatacheckConfig
 from ensembl.production.datacheck.forms import DatacheckSubmissionForm
 from ensembl.production.datacheck.exceptions import MissingIndexException
@@ -488,5 +489,10 @@ def handle_sqlalchemy_error(e):
 
 
 @app.errorhandler(requests.exceptions.HTTPError)
+def handle_server_error(e):
+    return jsonify(error=str(e)), 500
+
+
+@app.errorhandler(ensembl.production.datacheck.exceptions.MissingIndexException)
 def handle_server_error(e):
     return jsonify(error=str(e)), 500
