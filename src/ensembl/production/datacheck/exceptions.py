@@ -9,11 +9,7 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
-from os import getenv
-from requests.exceptions import HTTPError
 
 
-class MissingIndexException(HTTPError):
-
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(f"Missing Datacheck index configuration for {getenv('ENS_VERSION')}",  **kwargs)
+class MissingIndexException(IOError):
+    pass
