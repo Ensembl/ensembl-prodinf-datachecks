@@ -37,7 +37,7 @@ class DCConfigLoader:
             return loader.r_open(uri)
         except requests.exceptions.HTTPError as e:
             logger.warning(f"Load versioned index.json error: {version}")
-            logger.warning(f"No version specified, fallback on `main` branch")
+            logger.warning("No version specified, fallback on `main` branch")
             uri = cls.base_uri + 'main/lib/Bio/EnsEMBL/DataCheck/index.json'
             # should always be available uri.
             return loader.r_open(uri)
