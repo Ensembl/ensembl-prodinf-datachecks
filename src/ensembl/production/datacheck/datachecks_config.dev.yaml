@@ -1,0 +1,7 @@
+---
+datacheck_output_dir: !ENV '${HOME}/datachecks'
+datacheck_common_dir: !ENV '${HOME}/datachecks'
+
+# need to be the same as mentioned in beekeeper datacheck-beekeeper (datacheck.ini)
+hive_uri: !ENV mysql://ensembl@localhost:3306/${USER}_datachecks_test
+server_names_file: !ENV './server_names.json'
