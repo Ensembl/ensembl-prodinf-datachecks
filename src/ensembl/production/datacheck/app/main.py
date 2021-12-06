@@ -495,4 +495,5 @@ def handle_server_error(e):
 
 @app.errorhandler(ensembl.production.datacheck.exceptions.MissingIndexException)
 def handle_server_error(e):
-    return jsonify(error=str(e)), 500
+    message = f"Missing Datacheck index configuration for {app.config['ENS_VERSION']} {e}"
+    return jsonify(error=message), 500
