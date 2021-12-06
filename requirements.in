@@ -14,3 +14,4 @@ requests
 SQLAlchemy
 sqlalchemy_utils==0.37.0
 wtforms
+ensembl-py@git+https://github.com/Ensembl/ensembl-py.git#egg=ensembl-py
