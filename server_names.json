@@ -1,3 +1,10 @@
 {
-
+  "mysql://ensro@test-server-1:3306/": {
+    "server_name": "compara-prod-10",
+    "config_profile": "compara"
+  },
+  "mysql://ensro@test-server-2:3306/": {
+    "server_name": "general-dev-1",
+    "config_profile": "general"
+  }
 }

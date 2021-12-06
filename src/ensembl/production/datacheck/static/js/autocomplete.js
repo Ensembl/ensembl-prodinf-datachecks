@@ -43,7 +43,7 @@ $(document).ready(function(){
     var datacheck_name_list = new Bloodhound({
         datumTokenizer: Bloodhound.tokenizers.whitespace,
         queryTokenizer: Bloodhound.tokenizers.whitespace,
-        prefetch: '/names/list'
+        prefetch: `${script_name}/names/list`
     });
 
     $('#datacheck-datacheck_name').tagsinput({
@@ -57,7 +57,7 @@ $(document).ready(function(){
     var datacheck_group_list = new Bloodhound({
         datumTokenizer: Bloodhound.tokenizers.whitespace,
         queryTokenizer: Bloodhound.tokenizers.whitespace,
-        prefetch: '/groups/list'
+        prefetch: `${script_name}/groups/list`
     });
 
     $('#datacheck-datacheck_group').tagsinput({
@@ -77,7 +77,7 @@ $(document).ready(function(){
     $('#server-database').tagsinput({
         typeaheadjs: {
             remote: {
-                url: '/databases/list?db_uri=',
+                url: `${script_name}/databases/list?db_uri=`,
                 prepare: function (query, settings) {
                     settings.url += encodeURIComponent($('#server-server_url').val());
 
@@ -109,8 +109,7 @@ $(document).ready(function(){
         source: function (request, response) {
             
            $.ajax({
-                //url: `${copy_url}api/dbcopy/databases/${SelectedHostDetails.name}/${SelectedHostDetails.port}`,
-                url: `/dropdown/databases/${SelectedHost}/${SelectedPort}`,
+                url: `${script_name}/dropdown/databases/${SelectedHost}/${SelectedPort}`,
                 dataType: "json",
                 data: {
                     search: request.term

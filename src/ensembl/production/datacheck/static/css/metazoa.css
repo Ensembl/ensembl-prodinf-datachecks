@@ -1,229 +1,235 @@
-.dnav{
-  background-color: #007bff !important;
+.dnav {
+    background-color: #007bff !important;
 }
 
 h2 {
-  padding-top: 20px;
-  padding-bottom: 10px;
+    padding-top: 20px;
+    padding-bottom: 10px;
 }
 
 a {
-  color: #007bff;
+    color: #007bff;
 }
 
 fieldset {
-  margin-bottom: 10px;
+    margin-bottom: 10px;
 }
 
 legend {
-  margin-bottom: 0;
+    margin-bottom: 0;
 }
 
 .select-align-right {
-  text-align-last: right;
+    text-align-last: right;
 }
 
 select.select-align-right > option {
-  direction: rtl;
+    direction: rtl;
 }
 
 .form-group {
-  margin-bottom: 0.75rem;
+    margin-bottom: 0.75rem;
 }
 
 .navbar {
-  padding: 0rem 0rem 0rem 1rem;
-  margin-bottom: 20px;
+    margin-bottom: 20px;
 }
 
 .navbar-brand {
-  margin-right: 0.5rem;
+    margin-right: 0.5rem;
 }
 
 .navbar-expand-lg .navbar-nav .nav-link {
-  padding-left: 1rem;
-  padding-right: 1rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
 }
 
 .nav-link.active {
-  background-color: #007bff !important; /* rgba(128, 0, 102, 0.2);*/
-  color: white !important;
+    background-color: #007bff !important; /* rgba(128, 0, 102, 0.2);*/
+    color: white !important;
 }
 
 .table td, .table th {
-  padding: .5rem 0.75rem;
+    padding: .5rem 0.75rem;
 }
 
 .col-form-label {
-  text-align: right;
+    text-align: right;
 }
 
 .fg-purple {
-  color: rgba(128, 0, 102, 1);
+    color: rgba(128, 0, 102, 1);
 }
 
 .bg-purple {
-  background-color: rgba(128, 0, 102, 1);
-  color: white;
+    background-color: rgba(128, 0, 102, 1);
+    color: white;
 }
 
 .border-purple {
-  border-color: rgba(128, 0, 102, 1)!important;
+    border-color: rgba(128, 0, 102, 1) !important;
 }
 
 .fg-green {
-  color: rgba(0, 102, 0, 1);
+    color: rgba(0, 102, 0, 1);
 }
 
 .bg-green {
-  background-color: rgba(0, 102, 0, 1);
-  color: white;
+    background-color: rgba(0, 102, 0, 1);
+    color: white;
 }
 
 .border-green {
-  border-color: rgba(0, 102, 0, 1)!important;
+    border-color: rgba(0, 102, 0, 1) !important;
 }
 
 .top_link {
-  float: right;
-  color: white;
+    float: right;
+    color: white;
 }
 
 .top_link:hover {
-  color: white;
+    color: white;
 }
 
 .bootstrap-tagsinput {
-  line-height: 30px;
+    line-height: 30px;
 }
 
 .focus {
-  color: #495057;
-  background-color: #fff;
-  border-color: #80bdff;
-  outline: 0;
-  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+    color: #495057;
+    background-color: #fff;
+    border-color: #80bdff;
+    outline: 0;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
 }
 
 .tt-input {
-  -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);
-     -moz-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);
-          box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);
+    -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);
+    -moz-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);
+    box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);
 }
 
 .tt-hint {
-  color: #999
+    color: #999
 }
 
 .tt-menu {
-  width: 422px;
-  margin-top: 4px;
-  padding: 4px 0;
-  background-color: #fff;
-  border: 1px solid #ccc;
-  border: 1px solid rgba(0, 0, 0, 0.2);
-  -webkit-border-radius: 4px;
-     -moz-border-radius: 4px;
-          border-radius: 4px;
-  -webkit-box-shadow: 0 5px 10px rgba(0,0,0,.2);
-     -moz-box-shadow: 0 5px 10px rgba(0,0,0,.2);
-          box-shadow: 0 5px 10px rgba(0,0,0,.2);
+    width: 422px;
+    margin-top: 4px;
+    padding: 4px 0;
+    background-color: #fff;
+    border: 1px solid #ccc;
+    border: 1px solid rgba(0, 0, 0, 0.2);
+    -webkit-border-radius: 4px;
+    -moz-border-radius: 4px;
+    border-radius: 4px;
+    -webkit-box-shadow: 0 5px 10px rgba(0, 0, 0, .2);
+    -moz-box-shadow: 0 5px 10px rgba(0, 0, 0, .2);
+    box-shadow: 0 5px 10px rgba(0, 0, 0, .2);
 }
 
 .tt-suggestion {
-  padding: 3px 20px;
-  line-height: 24px;
+    padding: 3px 20px;
+    line-height: 24px;
 }
 
-.tt-suggestion.tt-cursor,.tt-suggestion:hover {
-  color: #fff;
-  background-color: #0097cf;
+.tt-suggestion.tt-cursor, .tt-suggestion:hover {
+    color: #fff;
+    background-color: #0097cf;
 
 }
 
 .tt-suggestion p {
-  margin: 0;
+    margin: 0;
 }
 
 .bootstrap-tagsinput .badge {
-  background-color: #007bff;
-  border: 1px solid #007bff;
-  font-size: 90%;
+    background-color: #007bff;
+    border: 1px solid #007bff;
+    font-size: 90%;
 }
 
 /* dropdown css */
 
-.ui-autocomplete { 
-  position: absolute; 
-  cursor: pointer;
-  max-height: 400px;
-  overflow-y: auto;   /* prevent horizontal scrollbar */
-  overflow-x: auto; /* add padding to account for vertical scrollbar */
-  z-index:1000 !important;
-} 
-* html .ui-autocomplete { width:5px; } 
+.ui-autocomplete {
+    position: absolute;
+    cursor: pointer;
+    max-height: 400px;
+    overflow-y: auto; /* prevent horizontal scrollbar */
+    overflow-x: auto; /* add padding to account for vertical scrollbar */
+    z-index: 1000 !important;
+}
+
+* html .ui-autocomplete {
+    width: 5px;
+}
 
 .ui-menu .ui-menu {
-margin-top: -3px;
+    margin-top: -3px;
 }
 
 .ui-menu .ui-menu-item {
-margin:0;
-padding: 0; 
-float: left;
-clear: left;
-width: 100%;
+    margin: 0;
+    padding: 0;
+    float: left;
+    clear: left;
+    width: 100%;
 }
 
 .ui-menu .ui-menu-item a {
-text-decoration:none;
-display:block;
-padding:.2em .4em;
-line-height:1.5; 
+    text-decoration: none;
+    display: block;
+    padding: .2em .4em;
+    line-height: 1.5;
 }
 
 .ui-menu .ui-menu-item a.ui-state-hover,
-  
-
 .ui-menu .ui-menu-item a.ui-state-active {
-font-weight: normal;
-margin: -1px;
-};
-
-.ui-helper-hidden-accessible { 
-  display: none;
-  color: white;
+    font-weight: normal;
+    margin: -1px;
 }
-.ui-helper-hidden-accessible { position: absolute; left: -9999px; }
+
+.ui-helper-hidden-accessible {
+    display: none;
+    color: white;
+}
+
+.ui-helper-hidden-accessible {
+    position: absolute;
+    left: -9999px;
+}
 
 /*Submit css for dropdown color*/
 .ui-menu {
-  list-style: aria;
-  padding: 2px;
-  width: 5px;
-  margin: 0;
-  background:#007bff  ;
-  color: #f5f5ef;
-  display:block;
-  border:  2px solid #007bff!important ;
-  float: auto;   
+    list-style: aria;
+    padding: 2px;
+    width: 5px;
+    margin: 0;
+    background: #007bff;
+    color: #f5f5ef;
+    display: block;
+    border: 2px solid #007bff !important;
+    float: unset;
 }
+
 .ui-menu .ui-menu-item-wrapper:hover {
- color: #303030;
- background-color: rgb(216, 209, 214)!important;
- border: rgb(2, 46, 9) 1px solid;
+    color: #303030;
+    background-color: rgb(216, 209, 214) !important;
+    border: rgb(2, 46, 9) 1px solid;
 }
 
 .input-group .bootstrap-select.form-control {
-  z-index: -9999999;
+    z-index: -9999999;
 }
 
 /*set button colors*/
-.h-buttons{
-  background-color: #007bff;
-  color: white;
+.h-buttons {
+    background-color: #007bff;
+    color: white;
 }
-.h-border{
-  border-color:#007bff!important;
+
+.h-border {
+    border-color: #007bff !important;
 }
 

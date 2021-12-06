@@ -1,4 +1,4 @@
-# .. See the NOTICE file distributed with this work for additional information
+# See the NOTICE file distributed with this work for additional information
 #    regarding copyright ownership.
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -11,42 +11,46 @@
 #    limitations under the License.
 import os
 import re
-import time
-from flask import Flask, json, jsonify, redirect, render_template, request, send_file, redirect, flash
-from flask_wtf.csrf import CSRFProtect
-from flask_bootstrap import Bootstrap
-from flask_cors import CORS
-from flasgger import Swagger
 from io import BytesIO
-from zipfile import ZipFile
 from pathlib import Path
-import requests
-from requests.exceptions import HTTPError
+from zipfile import ZipFile
 
+import requests
 from ensembl.production.core.db_utils import get_databases_list, get_db_type
+from ensembl.production.core.exceptions import HTTPRequestError
 from ensembl.production.core.models.hive import HiveInstance
 from ensembl.production.core.server_utils import assert_mysql_uri, assert_mysql_db_uri
-from ensembl.production.core.exceptions import HTTPRequestError
-from ensembl.production.datacheck.forms import DatacheckSubmissionForm
+from flasgger import Swagger
+from flask import Flask, json, jsonify, render_template, request, send_file, redirect, flash, abort
+from flask_bootstrap import Bootstrap
+from flask_cors import CORS
+from requests.exceptions import HTTPError
+from werkzeug.middleware.dispatcher import DispatcherMiddleware
+from werkzeug.wrappers import Response
+
+import ensembl.production.datacheck.exceptions
 from ensembl.production.datacheck.config import DatacheckConfig
+from ensembl.production.datacheck.forms import DatacheckSubmissionForm
+from ensembl.production.datacheck.exceptions import MissingIndexException
 
 # Go up two levels to get to root, where we will find the static and template files
 app_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 static_path = os.path.join(app_path, 'static')
 template_path = os.path.join(app_path, 'templates')
 
-app = Flask(__name__, static_url_path='/static/datachecks/', static_folder=static_path, template_folder=template_path)
+app = Flask(__name__,
+            static_url_path='/static/datachecks/',
+            static_folder=static_path,
+            template_folder=template_path)
 
 app.config.from_object(DatacheckConfig)
 
 Bootstrap(app)
-
 CORS(app)
-
 Swagger(app, template_file=app.config['SWAGGER_FILE'])
 
 app.analysis = app.config['HIVE_ANALYSIS']
-app.index = json.load(open(app.config['DATACHECK_INDEX']))
+app.index = app.config['DATACHECK_INDEX']
 app.server_names = json.load(open(os.path.join(app_path, app.config['SERVER_NAMES_FILE'])))
 
 app.names_list = []
@@ -54,8 +58,24 @@ app.groups_list = []
 app.servers_list = []
 app.servers_dict = {}
 
+if app.env == 'development':
+    # ENV dev (assumed run from builtin server, so update script_name at wsgi level)
+    app.wsgi_app = DispatcherMiddleware(
+        Response('Not Found', status=404),
+        {app.config['SCRIPT_NAME']: app.wsgi_app}
+    )
+
+
+@app.context_processor
+def inject_configs():
+    return dict(script_name=app.config['SCRIPT_NAME'])
+
 
 def get_names_list():
+    if not app.index:
+        # Empty list of compara
+        raise MissingIndexException
+
     if not app.names_list:
         for name, params in app.index.items():
             app.names_list.append(name)
@@ -64,6 +84,10 @@ def get_names_list():
 
 
 def get_groups_list():
+    if not app.index:
+        # Empty list of compara
+        raise MissingIndexException
+
     if not app.groups_list:
         groups_set = []
         for name, params in app.index.items():
@@ -97,7 +121,6 @@ def get_hive():
 
 @app.route('/', methods=['GET'])
 def index():
-    # Missing template
     return jsonify({'title': 'Datacheck REST endpoints', 'uiversion': 2})
 
 
@@ -121,6 +144,10 @@ def databases_list():
 @app.route('/names/', methods=['GET'])
 @app.route('/names/<string:name_param>', methods=['GET'])
 def names(name_param=None):
+    if not app.index:
+        # Empty list of compara
+        raise MissingIndexException
+
     if name_param is None:
         index_names = app.index
     else:
@@ -147,6 +174,10 @@ def names_list():
 @app.route('/groups/<string:group_param>', methods=['GET'])
 def groups(group_param=None):
     index_groups = {}
+    if not app.index:
+        # Empty list of compara
+        raise MissingIndexException
+
     for name, params in app.index.items():
         for group in params['groups']:
             if group_param is None or group == group_param:
@@ -170,6 +201,10 @@ def groups_list():
 @app.route('/types/<string:type_param>', methods=['GET'])
 def types(type_param=None):
     index_types = {}
+    if not app.index:
+        # Empty list of compara
+        raise MissingIndexException
+
     for name, params in app.index.items():
         if type_param is None or params['datacheck_type'] == type_param:
             index_types.setdefault(params['datacheck_type'], []).append(params)
@@ -191,7 +226,6 @@ def search(keyword):
     for name, params in app.index.items():
         if keyword_re.search(name) or keyword_re.search(params['description']):
             index_search.setdefault(keyword, []).append(params)
-
     return jsonify(index_search)
 
 
@@ -268,6 +302,10 @@ def job_submit(payload=None):
 
 @app.route('/jobs', methods=['GET'])
 def job_list():
+    if not app.index:
+        # Empty list DC
+        raise MissingIndexException
+
     fmt = request.args.get('format', None)
     job_id = request.args.get('job_id', None)
 
@@ -343,6 +381,9 @@ def download_dc_outputs(job_id):
 def display_form():
     # Here we convert the form fields into a 'payload' dictionary
     # that is the required input format for the hive submission.
+    if not app.index:
+        # Empty list DC
+        raise MissingIndexException
 
     try:
 
@@ -445,3 +486,14 @@ def handle_bad_request_error(e):
 def handle_sqlalchemy_error(e):
     app.logger.error(str(e))
     return jsonify(error=str(e)), 404
+
+
+@app.errorhandler(requests.exceptions.HTTPError)
+def handle_server_error(e):
+    return jsonify(error=str(e)), 500
+
+
+@app.errorhandler(ensembl.production.datacheck.exceptions.MissingIndexException)
+def handle_server_error(e):
+    message = f"Missing Datacheck index configuration for {app.config['ENS_VERSION']} {e}"
+    return jsonify(error=message), 500
