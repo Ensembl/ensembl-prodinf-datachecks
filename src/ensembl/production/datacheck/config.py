@@ -22,7 +22,10 @@ from ensembl.utils.rloader import RemoteFileLoader
 pathlib.Path(__file__).parent.absolute()
 
 config_file_path = os.environ.get('DATACHECK_CONFIG_PATH', os.path.dirname(__file__) + '/datachecks_config.dev.yaml')
-logger = logging.getLogger(__name__)
+from flask.logging import default_handler
+
+logger = logging.getLogger()
+logger.addHandler(default_handler)
 
 
 class DCConfigLoader:
