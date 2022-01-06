@@ -21,7 +21,7 @@ from ensembl.production.core.exceptions import HTTPRequestError
 from ensembl.production.core.models.hive import HiveInstance
 from ensembl.production.core.server_utils import assert_mysql_uri, assert_mysql_db_uri
 from flasgger import Swagger
-from flask import Flask, json, jsonify, render_template, request, send_file, redirect, flash, abort
+from flask import Flask, json, jsonify, render_template, request, send_file, redirect, flash, url_for
 from flask_bootstrap import Bootstrap
 from flask_cors import CORS
 from requests.exceptions import HTTPError
@@ -30,8 +30,8 @@ from werkzeug.wrappers import Response
 
 import ensembl.production.datacheck.exceptions
 from ensembl.production.datacheck.config import DatacheckConfig
-from ensembl.production.datacheck.forms import DatacheckSubmissionForm
 from ensembl.production.datacheck.exceptions import MissingIndexException
+from ensembl.production.datacheck.forms import DatacheckSubmissionForm
 
 # Go up two levels to get to root, where we will find the static and template files
 app_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -297,7 +297,7 @@ def job_submit(payload=None):
         results = {"job_id": job.job_id}
         return jsonify(results), 201
     else:
-        return redirect('/jobs/' + str(job.job_id))
+        return redirect(url_for('job_result', job_id=str(job.job_id)))
 
 
 @app.route('/jobs', methods=['GET'])
