@@ -1,6 +1,11 @@
 CHANGELOG - Ensembl Prodinf Database copy
 =========================================
 
+v1.2.1
+------
+
+- BugFIX on js for datachecks listing.
+
 v1.2.0
 ------
 
