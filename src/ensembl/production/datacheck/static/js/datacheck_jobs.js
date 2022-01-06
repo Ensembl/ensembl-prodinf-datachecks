@@ -47,10 +47,11 @@ function detailPage(value, row) {
 function statusFormat(value, row) {
     let class_name = 'badge-success';
     let html = [];
-    if (value == 'incomplete') {
+    if (value === 'incomplete') {
         class_name = 'badge-primary';
         console.log(row);
-        let jobprogress = ` 
+        if ('progress' in row) {
+            let jobprogress = ` 
               <span class="badge badge-warning">
                 Jobs Running <span class="badge badge-light">${row.progress.inprogress}</span>
               </span><br>
@@ -58,7 +59,8 @@ function statusFormat(value, row) {
                 Jobs completed <span class="badge badge-light">${row.progress.completed}</span>
               </span><br>
             `;
-        return jobprogress;
+            return jobprogress;
+        }
     }
     if (value == 'failed') {
         return '<span class="badge badge-danger">' + value + '</span>'
@@ -215,7 +217,7 @@ function getdetails(id, json_path, db_name) {
     document.getElementById(db_name + '_details').innerHTML =
         '<div class="d-flex justify-content-center"> <div class="spinner-border" role="status"> <span class="sr-only">Loading...</span> </div> </div></div>';
     //send proper url  
-    $.getJSON('/jobs/details?jsonfile=' + json_path, function (result) {
+    $.getJSON(script_name + '/jobs/details?jsonfile=' + json_path, function (result) {
         console.log(result);
         let details = parse_details(db_name, result);
         document.getElementById(db_name + '_details').innerHTML = details;
@@ -284,8 +286,7 @@ function rowStyle(row, index) {
     let color = '';
     return {
         css: {}
-        }
-    };
+    }
 }
 
 
@@ -294,7 +295,7 @@ $(document).ready(function () {
     var $table = $('#table')
     $table.bootstrapTable('refreshOptions', {
         theadClasses: 'h-buttons',
-        url: "/jobs"
+        url: `${script_name}/jobs`
     });
 
     $table.bootstrapTable('expandAllRows');
