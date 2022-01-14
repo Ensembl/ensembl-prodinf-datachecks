@@ -28,7 +28,7 @@ def import_requirements():
 
 setup(
     name='datacheck',
-    version='1.0.0',
+    version=version,
     namespace_packages=['ensembl'],
     packages=find_namespace_packages(where='src', include=['ensembl.*']),
     package_dir={'': 'src'}, 

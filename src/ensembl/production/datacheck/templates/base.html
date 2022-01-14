@@ -50,7 +50,10 @@
     
       {% block navbar %}
       <nav class="navbar navbar-icon-top navbar-expand-lg navbar-dark dnav" >
-        <a class="navbar-brand" href="#"><span class="mb-0 h3">Datacheck {{config['DATACHECK_TYPE']}} e{{config['ENS_VERSION']}}</a>
+        <a class="navbar-brand" href="#"><span class="mb-0 h3">Datacheck {{config['DATACHECK_TYPE']}} </a>
+            <ul class="nav navbar-nav navbar-right navbar-toggler" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation" >
+              <li><a href="https://github.com/Ensembl/ensembl-prodinf-datachecks/blob/release/{{config['APP_VERSION']}}/CHANGELOG.md" class="nav-item nav-link active">e{{config['ENS_VERSION']}} - v{{config['APP_VERSION']}}</a></li>
+            </ul>
             <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
@@ -60,6 +63,9 @@
                 {{ render_nav_item('job_list', 'List Jobs') }}
                 {{ render_nav_item('groups', 'Datacheck groups') }}
             </div>
+            <ul class="nav navbar-nav navbar-right">
+              <li><a href="https://github.com/Ensembl/ensembl-prodinf-datachecks/blob/release/{{config['APP_VERSION']}}/CHANGELOG.md" class="nav-item nav-link active navbar-brand">e{{config['ENS_VERSION']}} - v{{config['APP_VERSION']}}</a></li>
+            </ul>
         </div>
     </nav>
       {%- endblock navbar %}

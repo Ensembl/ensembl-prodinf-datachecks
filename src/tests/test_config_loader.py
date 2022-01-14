@@ -10,9 +10,10 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 import unittest
-
+import pkg_resources
+from pathlib import Path
 import ensembl.production.datacheck.exceptions
-from ensembl.production.datacheck.config import DCConfigLoader
+from ensembl.production.datacheck.config import DCConfigLoader, DatacheckConfig
 
 
 class TestConfigLoader(unittest.TestCase):
@@ -31,3 +32,16 @@ class TestConfigLoader(unittest.TestCase):
         config = DCConfigLoader.load_config('5000')
         # Load main instead
         self.assertIn('SpeciesCommonName', config.keys())
+
+class TestAPPVersion(unittest.TestCase):
+
+    def test_config_app_version(self):
+        
+        with open(Path(__file__).parent.parent.parent / 'VERSION') as f:
+            version_file = f.read().strip('\n')
+            
+        version = pkg_resources.require("datacheck")[0].version
+        version_config = DatacheckConfig.APP_VERSION
+        self.assertEqual(version, version_config)
+        self.assertEqual(version, version_file)
+        self.assertEqual(version_file, version_config )

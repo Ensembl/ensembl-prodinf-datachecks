@@ -13,7 +13,7 @@
 import logging
 import os
 import pathlib
-
+import pkg_resources
 import requests.exceptions
 from ensembl.production.core.config import load_config_yaml
 
@@ -90,3 +90,5 @@ class DatacheckConfig(EnsemblConfig):
                                                                      "http://production-services.ensembl.org:80/"))
 
     DATACHECK_TYPE = os.environ.get('DATACHECK_TYPE', EnsemblConfig.file_config.get('datacheck_type', 'metazoa'))
+    
+    APP_VERSION = version = pkg_resources.require("datacheck")[0].version 
