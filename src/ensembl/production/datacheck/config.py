@@ -32,7 +32,7 @@ logger.addHandler(default_handler)
 
 def get_app_version():
     try:
-        version = pkg_resources.require("handover")[0].version
+        version = pkg_resources.require("datacheck")[0].version
     except Exception as e:
         with open(Path(__file__).parents[4] / 'VERSION') as f:
             version = f.read()
