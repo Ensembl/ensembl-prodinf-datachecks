@@ -101,4 +101,4 @@ class DatacheckConfig(EnsemblConfig):
 
     DATACHECK_TYPE = os.environ.get('DATACHECK_TYPE', EnsemblConfig.file_config.get('datacheck_type', 'metazoa'))
     
-    APP_VERSION = version = get_app_version() 
+    APP_VERSION =  get_app_version() 
