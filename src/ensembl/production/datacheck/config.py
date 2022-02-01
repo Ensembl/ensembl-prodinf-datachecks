@@ -15,6 +15,8 @@ import os
 import pathlib
 import pkg_resources
 import requests.exceptions
+from pathlib import Path
+
 from ensembl.production.core.config import load_config_yaml
 
 from ensembl.utils.rloader import RemoteFileLoader
@@ -27,6 +29,14 @@ from flask.logging import default_handler
 logger = logging.getLogger()
 logger.addHandler(default_handler)
 
+
+def get_app_version():
+    try:
+        version = pkg_resources.require("datacheck")[0].version
+    except Exception as e:
+        with open(Path(__file__).parents[4] / 'VERSION') as f:
+            version = f.read()
+    return version
 
 class DCConfigLoader:
     base_uri = 'https://raw.githubusercontent.com/Ensembl/ensembl-datacheck/'
@@ -91,4 +101,4 @@ class DatacheckConfig(EnsemblConfig):
 
     DATACHECK_TYPE = os.environ.get('DATACHECK_TYPE', EnsemblConfig.file_config.get('datacheck_type', 'metazoa'))
     
-    APP_VERSION = version = pkg_resources.require("datacheck")[0].version 
+    APP_VERSION =  get_app_version() 
