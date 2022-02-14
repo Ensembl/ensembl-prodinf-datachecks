@@ -5,6 +5,7 @@ v1.2.1
 ------
 
 - BugFIX on js for datachecks listing.
+- Added App version in menu header
 
 v1.2.0
 ------
