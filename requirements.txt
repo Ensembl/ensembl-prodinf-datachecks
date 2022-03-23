@@ -28,7 +28,7 @@ elasticsearch==6.8.1
     # via -r requirements.in
 email-validator==1.1.2
     # via -r requirements.in
-ensembl-hive @ git+https://github.com/Ensembl/ensembl-hive.git@master
+ensembl-hive @ git+https://github.com/Ensembl/ensembl-hive.git@main
     # via ensembl-py
 ensembl-prodinf-core==2.0.1
     # via -r requirements.in
