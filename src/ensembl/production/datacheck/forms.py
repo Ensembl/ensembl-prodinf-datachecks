@@ -10,10 +10,8 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
-from wtforms import Form, FormField, SelectField, StringField, SubmitField, TextAreaField
+from wtforms import Form, FormField, SelectField, StringField, SubmitField
 from wtforms.validators import Email, InputRequired, ValidationError
-from markupsafe import Markup
-from wtforms.widgets.core import html_params
 
 divisions = [
     ('bacteria', 'Bacteria'),
@@ -22,7 +20,7 @@ divisions = [
     ('plants', 'Plants'),
     ('protists', 'Protists'),
     ('vertebrates', 'Vertebrates'),
-    ('virus', 'Virus'), 
+    ('virus', 'Virus'),
 ]
 
 database_types = [
@@ -78,11 +76,13 @@ class AtLeastOne(object):
 
 
 class ServerForm(Form):
-    server_name = SelectField('Server Name', validators=[InputRequired()])
+    server_name = SelectField('Server Name', validators=[InputRequired()], choices=[])
     source = SelectField('Source', choices=[('dbname', 'Database'), ('species', 'Species'), ('division', 'Division')])
-    dbname = StringField('Database', validators=[AtLeastOne(['dbname', 'species', 'division'])], render_kw={"placeholder": " select db name eg: homo_sapiens_core_104_38"})
+    dbname = StringField('Database', validators=[AtLeastOne(['dbname', 'species', 'division'])],
+                         render_kw={"placeholder": " select db name eg: homo_sapiens_core_104_38"})
     species = StringField('Species', validators=[AtLeastOne(['species', 'dbname', 'division'])])
-    division = SelectField('Division', validators=[AtLeastOne(['division', 'species', 'dbname'])], choices=divisions, default='vertebrates')
+    division = SelectField('Division', validators=[AtLeastOne(['division', 'species', 'dbname'])], choices=divisions,
+                           default='vertebrates')
     db_type = SelectField('Database Type', choices=database_types, default='core')
 
 
@@ -94,7 +94,7 @@ class DatacheckForm(Form):
 
 class SubmitterForm(Form):
     email = StringField('Email', validators=[Email(), InputRequired()])
-    tag = StringField('Tag',  validators=[InputRequired()])
+    tag = StringField('Tag', validators=[InputRequired()])
 
 
 class DatacheckSubmissionForm(Form):
