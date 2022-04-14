@@ -1,10 +1,7 @@
 language: python
 python:
   - "3.7.9"
-<<<<<<< HEAD
-=======
   - "3.8"
->>>>>>> 6043480839ed1be14c59eee7020bd203269dad3a
 
 sudo: required
 
