@@ -16,7 +16,7 @@ function expandIcon(value, row, index) {
 
 function DateFormat(value, row, index){
     const dt = moment.utc(value);
-    return dt.format('DD/MM/YYYY: HH:mm:ss');
+    return dt.format();
 }
 
 function DateSorter(a, b) {
