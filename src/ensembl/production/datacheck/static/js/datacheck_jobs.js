@@ -14,6 +14,17 @@ function expandIcon(value, row, index) {
     return '<span title="Click for more info" style="cursor: pointer; color:blue" class="fas fa-plus" onclick="row_details(' + index + ')">+</span> <span class="fa fa-plus"></span>'
 }
 
+function DateFormat(value, row, index){
+    const dt = moment.utc(value);
+    return dt.format();
+}
+
+function DateSorter(a, b) {
+    if (new Date(a) > new Date(b)) return 1;
+    if (new Date(a) < new Date(b)) return -1;
+    return 0;
+}
+
 function row_details(id) {
     let table = $('#table');
     console.log(table);
