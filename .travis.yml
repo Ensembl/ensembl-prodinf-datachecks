@@ -18,6 +18,7 @@ before_install:
   - sudo mv docker-compose /usr/local/bin
 
 before_script:
+  - docker-compose -f src/tests/docker-compose.yml  up -d
   - pip install -r requirements.txt
   - pip install coverage
   - pip install .
@@ -25,3 +26,6 @@ before_script:
 script:
   - coverage run -m pytest src
   - coverage report -m
+
+after_script:
+  - docker-compose -f src/tests/docker-compose.yml down
