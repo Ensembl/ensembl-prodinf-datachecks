@@ -11,6 +11,8 @@ services:
 env:
   DOCKER_COMPOSE_VERSION: 1.23.2
   ES_INDEX: "datacheck_results"
+  ES_PORT: "9200"
+  ES_HOST: "localhost"
 
 before_install:
   - sudo rm /usr/local/bin/docker-compose
