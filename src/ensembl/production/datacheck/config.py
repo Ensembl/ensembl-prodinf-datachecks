@@ -97,8 +97,16 @@ class DatacheckConfig(EnsemblConfig):
                                                                 f"{pathlib.Path().absolute()}/swagger.yml"))
     COPY_URI_DROPDOWN = os.environ.get("COPY_URI_DROPDOWN",
                                        EnsemblConfig.file_config.get('copy_uri_dropdown',
-                                                                     "http://production-services.ensembl.org:80/"))
+                                                                     "http://localhost:80/"))
 
-    DATACHECK_TYPE = os.environ.get('DATACHECK_TYPE', EnsemblConfig.file_config.get('datacheck_type', 'metazoa'))
+    DATACHECK_TYPE = os.environ.get('DATACHECK_TYPE', EnsemblConfig.file_config.get('datacheck_type', 'vertebrates'))
     
+    APP_ES_DATA_SOURCE = os.environ.get('APP_ES_DATA_SOURCE', EnsemblConfig.file_config.get('app_es_data_source', True))
+    
+    ES_HOST = os.environ.get('ES_HOST', EnsemblConfig.file_config.get('es_host', 'localhost'))
+    
+    ES_PORT = os.environ.get('ES_PORT', EnsemblConfig.file_config.get('es_port', '9200'))
+    
+    ES_INDEX = os.environ.get('ES_INDEX', EnsemblConfig.file_config.get('es_index', f"datacheck_results_{EnsemblConfig.ENS_VERSION}"))
+
     APP_VERSION =  get_app_version() 

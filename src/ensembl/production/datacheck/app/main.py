@@ -22,7 +22,7 @@ from ensembl.production.core.models.hive import HiveInstance
 from ensembl.production.core.server_utils import assert_mysql_uri, assert_mysql_db_uri
 from flasgger import Swagger
 from flask import Flask, json, jsonify, render_template, request, send_file, redirect, flash, url_for
-from flask_bootstrap import Bootstrap
+from flask_bootstrap import Bootstrap4
 from flask_cors import CORS
 from requests.exceptions import HTTPError
 from werkzeug.middleware.dispatcher import DispatcherMiddleware
@@ -32,6 +32,7 @@ import ensembl.production.datacheck.exceptions
 from ensembl.production.datacheck.config import DatacheckConfig
 from ensembl.production.datacheck.exceptions import MissingIndexException
 from ensembl.production.datacheck.forms import DatacheckSubmissionForm
+from ensembl.production.datacheck.es import get_datacheck_results
 
 # Go up two levels to get to root, where we will find the static and template files
 app_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -45,7 +46,7 @@ app = Flask(__name__,
 
 app.config.from_object(DatacheckConfig)
 
-Bootstrap(app)
+Bootstrap4(app)
 CORS(app)
 Swagger(app, template_file=app.config['SWAGGER_FILE'])
 
@@ -57,6 +58,12 @@ app.names_list = []
 app.groups_list = []
 app.servers_list = []
 app.servers_dict = {}
+
+#set es details 
+es_host = app.config['ES_HOST']
+es_port = str(app.config['ES_PORT'])
+es_index = app.config['ES_INDEX']
+app_es_data_source  =  app.config['APP_ES_DATA_SOURCE']
 
 if app.env == 'development':
     # ENV dev (assumed run from builtin server, so update script_name at wsgi level)
@@ -243,7 +250,6 @@ def dropdown(src_host=None, src_port=None):
     except HTTPError as http_err:
         raise HTTPRequestError(f'{http_err}', 404)
     except Exception as e:
-        print(str(e))
         return jsonify([])
 
 
@@ -331,10 +337,25 @@ def job_list():
 def job_details():
     try:
         jsonfile = request.args.get('jsonfile', None)
+        if jsonfile is None:
+            raise Exception('jsonfile needed ')
+        
+        if app_es_data_source :
+            ensembl_division = f"Ensembl{DatacheckConfig.DATACHECK_TYPE.capitalize()}"
+            res = get_datacheck_results(division = ensembl_division, 
+                                        jsonfile_path = jsonfile,
+                                        es_host=es_host, 
+                                        es_port=es_port,
+                                        es_index=es_index,
+                                        )
+            if not res['status']:
+                raise Exception(res['message'])
+            return jsonify(res['result'])
+        
         file_data = open(jsonfile, 'r').read()
         return jsonify(json.loads(file_data))
-    except Exception:
-        return jsonify({'Could not retrieve results'})
+    except Exception as e:
+        return jsonify({'error': f"Failed to retrive the details : {str(e)}"}), 404
 
 
 @app.route('/jobs/<int:job_id>', methods=['GET'])
@@ -359,22 +380,51 @@ def job_result(job_id):
 
 @app.route('/download_datacheck_outputs/<int:job_id>')
 def download_dc_outputs(job_id):
-    job = get_hive().get_result_for_job_id(job_id, progress=False)
-    if 'output' in job:
-        base_path = Path(job['output']['output_dir'])
-        paths = list(base_path.iterdir())
-        if len(paths) > 1:
-            data = BytesIO()
-            with ZipFile(data, mode='w') as z:
-                for f_path in paths:
-                    z.write(str(f_path), f_path.name)
-            data.seek(0)
-            filename = 'Datacheck_output_job_%s.zip' % job_id
-            return send_file(data, mimetype='application/zip',
-                             attachment_filename=filename, as_attachment=True)
-        else:
-            for f_path in paths:
-                return send_file(str(f_path), as_attachment=True)
+        
+    try:
+        job = get_hive().get_result_for_job_id(job_id, progress=False)
+        ensembl_division = f"Ensembl{DatacheckConfig.DATACHECK_TYPE.capitalize()}"
+        if 'output' in job:
+        
+            if app_es_data_source :
+                jsonfile_path= job['output']['json_output_file']
+                ensembl_division = f"Ensembl{DatacheckConfig.DATACHECK_TYPE.capitalize()}"           
+                res = get_datacheck_results(division = ensembl_division, 
+                                            jsonfile_path = jsonfile_path,
+                                            es_host=es_host, 
+                                            es_port=es_port,
+                                            es_index=es_index,
+                                            )
+                if not res['status']:
+                    raise Exception(res['message'])
+                
+                buffer = BytesIO()
+                buffer.write(json.dumps(res['result'], indent=2).encode('utf-8'))
+                buffer.seek(0)
+                return send_file(
+                    buffer,
+                    as_attachment=True,
+                    download_name='result_by_species.json',
+                    mimetype='text/json'
+                )
+            else:
+                base_path = Path(job['output']['output_dir'])    
+                paths = list(base_path.iterdir())
+                if len(paths) > 1:
+                    data = BytesIO()
+                    with ZipFile(data, mode='w') as z:
+                        for f_path in paths:
+                            z.write(str(f_path), f_path.name)
+                    data.seek(0)
+                    filename = 'Datacheck_output_job_%s.zip' % job_id
+                    return send_file(data, mimetype='application/zip',
+                                    attachment_filename=filename, as_attachment=True)
+                else:
+                    for f_path in paths:
+                        return send_file(str(f_path), as_attachment=True)
+                    
+    except Exception as e:
+        return jsonify({'error': f"Failed to download the dc result : {str(e)}"}), 404
 
 
 @app.route('/jobs/submit', methods=['POST', 'GET'])
