@@ -52,8 +52,7 @@ Swagger(app, template_file=app.config['SWAGGER_FILE'])
 
 app.analysis = app.config['HIVE_ANALYSIS']
 app.index = app.config['DATACHECK_INDEX']
-app.server_names = json.load(open(os.path.join(app_path, app.config['SERVER_NAMES_FILE'])))
-
+app.server_names = app.config['SERVER_NAMES'] 
 app.names_list = []
 app.groups_list = []
 app.servers_list = []
@@ -76,6 +75,7 @@ if app.env == 'development':
 @app.context_processor
 def inject_configs():
     return dict(script_name=app.config['SCRIPT_NAME'])
+
 
 
 def get_names_list():
