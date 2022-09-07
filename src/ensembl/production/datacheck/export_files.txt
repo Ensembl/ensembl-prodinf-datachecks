@@ -1,0 +1,5 @@
+export HIVE_URI=mysql://ensadmin:ensembl@mysql-ens-hive-prod-1:4575/enseven_datachecks_vertebrates
+export ES_HOST=es.production.ensembl.org
+export ES_PORT=80
+export ES_INDEX=datacheck_results_107
+exprt APP_ES_DATA_SOURCE=True
