@@ -45,15 +45,16 @@ class DCConfigLoader:
     @classmethod
     def load_config(cls, version=None):
         loader = RemoteFileLoader('json')
-        uri = cls.uri.format(version)
+        if version is None:
+            logger.warning(f"No version specified, fall back on main")
+            uri = cls.base_uri + 'main/lib/Bio/EnsEMBL/DataCheck/index.json'
+        else:
+            uri = cls.uri.format(version)
         try:
             return loader.r_open(uri)
         except requests.exceptions.HTTPError as e:
-            logger.warning(f"Load versioned index.json error: {version}")
-            logger.warning("No version specified, fallback on `main` branch")
-            uri = cls.base_uri + 'main/lib/Bio/EnsEMBL/DataCheck/index.json'
-            # should always be available uri.
-            return loader.r_open(uri)
+            logger.fatal(f"Load versioned index.json error: {version}")
+            return {}
 
 
 class EnsemblConfig:
