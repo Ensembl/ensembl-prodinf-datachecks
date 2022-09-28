@@ -23,7 +23,7 @@ from ensembl.utils.rloader import RemoteFileLoader
 
 pathlib.Path(__file__).parent.absolute()
 
-config_file_path = os.environ.get('DATACHECK_CONFIG_PATH', os.path.dirname(__file__) + '/datachecks_config.dev.yaml')
+config_file_path = os.environ.get('DATACHECK_CONFIG_PATH')
 from flask.logging import default_handler
 
 logger = logging.getLogger()
@@ -37,6 +37,7 @@ def get_app_version():
         with open(Path(__file__).parents[4] / 'VERSION') as f:
             version = f.read()
     return version
+
 
 class DCConfigLoader:
     base_uri = 'https://raw.githubusercontent.com/Ensembl/ensembl-datacheck/'
@@ -92,22 +93,24 @@ class DatacheckConfig(EnsemblConfig):
     SERVER_NAMES_FILE = os.environ.get("SERVER_NAMES", EnsemblConfig.file_config.get('server_names_file',
                                                                                      os.path.join(
                                                                                          os.path.dirname(__file__),
-                                                                                         'server_names.dev.json')))
+                                                                                         'server_names.json')))
     SWAGGER_FILE = os.environ.get("SWAGGER_FILE",
                                   EnsemblConfig.file_config.get('swagger_file',
-                                                                f"{pathlib.Path().absolute()}/swagger.yml"))
+                                                                os.path.join(os.path.dirname(__file__),
+                                                                             "swagger.yml")))
     COPY_URI_DROPDOWN = os.environ.get("COPY_URI_DROPDOWN",
                                        EnsemblConfig.file_config.get('copy_uri_dropdown',
                                                                      "http://localhost:80/"))
 
     DATACHECK_TYPE = os.environ.get('DATACHECK_TYPE', EnsemblConfig.file_config.get('datacheck_type', 'vertebrates'))
-    
-    APP_ES_DATA_SOURCE = os.environ.get('APP_ES_DATA_SOURCE', EnsemblConfig.file_config.get('app_es_data_source', True))
-    
-    ES_HOST = os.environ.get('ES_HOST', EnsemblConfig.file_config.get('es_host', 'localhost'))
-    
-    ES_PORT = os.environ.get('ES_PORT', EnsemblConfig.file_config.get('es_port', '9200'))
-    
-    ES_INDEX = os.environ.get('ES_INDEX', EnsemblConfig.file_config.get('es_index', f"datacheck_results_{EnsemblConfig.ENS_VERSION}"))
 
-    APP_VERSION =  get_app_version() 
+    APP_ES_DATA_SOURCE = os.environ.get('APP_ES_DATA_SOURCE', EnsemblConfig.file_config.get('app_es_data_source', True))
+
+    ES_HOST = os.environ.get('ES_HOST', EnsemblConfig.file_config.get('es_host', 'localhost'))
+
+    ES_PORT = os.environ.get('ES_PORT', EnsemblConfig.file_config.get('es_port', '9200'))
+
+    ES_INDEX = os.environ.get('ES_INDEX', EnsemblConfig.file_config.get('es_index',
+                                                                        f"datacheck_results_{EnsemblConfig.ENS_VERSION}"))
+
+    APP_VERSION = get_app_version()
