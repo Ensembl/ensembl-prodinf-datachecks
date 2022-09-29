@@ -23,7 +23,7 @@ from ensembl.utils.rloader import RemoteFileLoader
 
 pathlib.Path(__file__).parent.absolute()
 
-config_file_path = os.environ.get('DATACHECK_CONFIG_PATH', os.path.dirname(__file__) + '/datachecks_config.dev.yaml')
+config_file_path = os.environ.get('DATACHECK_CONFIG_PATH')
 from flask.logging import default_handler
 
 logger = logging.getLogger()
@@ -38,6 +38,7 @@ def get_app_version():
             version = f.read()
     return version
 
+
 class DCConfigLoader:
     base_uri = 'https://raw.githubusercontent.com/Ensembl/ensembl-datacheck/'
     uri = base_uri + 'release/{}/lib/Bio/EnsEMBL/DataCheck/index.json'
@@ -45,15 +46,16 @@ class DCConfigLoader:
     @classmethod
     def load_config(cls, version=None):
         loader = RemoteFileLoader('json')
-        uri = cls.uri.format(version)
+        if version is None:
+            logger.warning(f"No version specified, fall back on main")
+            uri = cls.base_uri + 'main/lib/Bio/EnsEMBL/DataCheck/index.json'
+        else:
+            uri = cls.uri.format(version)
         try:
             return loader.r_open(uri)
         except requests.exceptions.HTTPError as e:
-            logger.warning(f"Load versioned index.json error: {version}")
-            logger.warning("No version specified, fallback on `main` branch")
-            uri = cls.base_uri + 'main/lib/Bio/EnsEMBL/DataCheck/index.json'
-            # should always be available uri.
-            return loader.r_open(uri)
+            logger.fatal(f"Load versioned index.json error: {version}")
+            return {}
 
 
 class EnsemblConfig:
@@ -91,22 +93,24 @@ class DatacheckConfig(EnsemblConfig):
     SERVER_NAMES_FILE = os.environ.get("SERVER_NAMES", EnsemblConfig.file_config.get('server_names_file',
                                                                                      os.path.join(
                                                                                          os.path.dirname(__file__),
-                                                                                         'server_names.dev.json')))
+                                                                                         'server_names.json')))
     SWAGGER_FILE = os.environ.get("SWAGGER_FILE",
                                   EnsemblConfig.file_config.get('swagger_file',
-                                                                f"{pathlib.Path().absolute()}/swagger.yml"))
+                                                                os.path.join(os.path.dirname(__file__),
+                                                                             "swagger.yml")))
     COPY_URI_DROPDOWN = os.environ.get("COPY_URI_DROPDOWN",
                                        EnsemblConfig.file_config.get('copy_uri_dropdown',
                                                                      "http://localhost:80/"))
 
     DATACHECK_TYPE = os.environ.get('DATACHECK_TYPE', EnsemblConfig.file_config.get('datacheck_type', 'vertebrates'))
-    
-    APP_ES_DATA_SOURCE = os.environ.get('APP_ES_DATA_SOURCE', EnsemblConfig.file_config.get('app_es_data_source', True))
-    
-    ES_HOST = os.environ.get('ES_HOST', EnsemblConfig.file_config.get('es_host', 'localhost'))
-    
-    ES_PORT = os.environ.get('ES_PORT', EnsemblConfig.file_config.get('es_port', '9200'))
-    
-    ES_INDEX = os.environ.get('ES_INDEX', EnsemblConfig.file_config.get('es_index', f"datacheck_results_{EnsemblConfig.ENS_VERSION}"))
 
-    APP_VERSION =  get_app_version() 
+    APP_ES_DATA_SOURCE = os.environ.get('APP_ES_DATA_SOURCE', EnsemblConfig.file_config.get('app_es_data_source', True))
+
+    ES_HOST = os.environ.get('ES_HOST', EnsemblConfig.file_config.get('es_host', 'localhost'))
+
+    ES_PORT = os.environ.get('ES_PORT', EnsemblConfig.file_config.get('es_port', '9200'))
+
+    ES_INDEX = os.environ.get('ES_INDEX', EnsemblConfig.file_config.get('es_index',
+                                                                        f"datacheck_results_{EnsemblConfig.ENS_VERSION}"))
+
+    APP_VERSION = get_app_version()
