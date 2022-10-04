@@ -42,28 +42,19 @@ def get_app_version():
     return version
 
 def get_server_names(url, flag=0):
-    if flag :
-        url=urllib.parse.urljoin(url, '/api/dbcopy/dcserversnames')
-        logger.warning(f"Fetching Allowed dc server host names from {url}")
-        retry = urllib3.Retry(
-            total=10,
-            backoff_factor=0.2,
-            status_forcelist=[404, 500, 502, 503, 504],
-        )
-        http = urllib3.PoolManager(retries=retry)
-        response = http.request("GET", url)
-        if response.status != 200:
-            raise ValueError(f"Check DBcopy service is ready {url}")
-
-        logger.warning(f"loaded dc server host names from {url}")
-        return json.loads(response.data.decode('utf-8'))
-    else:
-        server_file_path = os.environ.get("SERVER_NAMES", EnsemblConfig.file_config.get('server_names_file',
-                                                                                     os.path.join(
-                                                                                         os.path.dirname(__file__),
-                                                                                         'server_names.dev.json')))
-        return json.load(open(server_file_path))
-
+    try:
+        if flag :
+            url=urllib.parse.urljoin(url, '/api/dbcopy/dcservers')
+            loader = RemoteFileLoader('json')
+            return loader.r_open(url)
+        else:
+            server_file_path = os.environ.get("SERVER_NAMES", EnsemblConfig.file_config.get('server_names_file',
+                                                                                        os.path.join(
+                                                                                            os.path.dirname(__file__),
+                                                                                            'server_names.dev.json')))
+            return json.load(open(server_file_path))
+    except Exception as e:
+        return {}    
 class DCConfigLoader:
     base_uri = 'https://raw.githubusercontent.com/Ensembl/ensembl-datacheck/'
     uri = base_uri + 'release/{}/lib/Bio/EnsEMBL/DataCheck/index.json'
