@@ -5,3 +5,4 @@ include src/ensembl/production/datacheck/templates/*
 include src/ensembl/production/datacheck/static/js/*
 include src/ensembl/production/datacheck/static/css/*
 include src/ensembl/production/datacheck/swagger.yml
+include src/ensembl/production/datacheck/server_names.json

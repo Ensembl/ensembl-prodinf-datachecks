@@ -14,6 +14,9 @@ import logging
 import os
 import pathlib
 import pkg_resources
+import urllib3
+import urllib
+import json 
 import requests.exceptions
 from pathlib import Path
 
@@ -38,6 +41,21 @@ def get_app_version():
             version = f.read()
     return version
 
+
+def get_server_names(url, flag=0):
+    try:
+        if flag :
+            url=urllib.parse.urljoin(url, '/api/dbcopy/dcservers')
+            loader = RemoteFileLoader('json')
+            return loader.r_open(url)
+        else:
+            server_file_path = os.environ.get("SERVER_NAMES", EnsemblConfig.file_config.get('server_names_file',
+                                                                                        os.path.join(
+                                                                                            os.path.dirname(__file__),
+                                                                                            'server_names.dev.json')))
+            return json.load(open(server_file_path))
+    except Exception as e:
+        return {}    
 
 class DCConfigLoader:
     base_uri = 'https://raw.githubusercontent.com/Ensembl/ensembl-datacheck/'
@@ -109,8 +127,12 @@ class DatacheckConfig(EnsemblConfig):
     ES_HOST = os.environ.get('ES_HOST', EnsemblConfig.file_config.get('es_host', 'localhost'))
 
     ES_PORT = os.environ.get('ES_PORT', EnsemblConfig.file_config.get('es_port', '9200'))
+    
+    ES_INDEX = os.environ.get('ES_INDEX', EnsemblConfig.file_config.get('es_index', f"datacheck_results_{EnsemblConfig.ENS_VERSION}"))
+    
+    GET_SERVER_NAMES = os.environ.get('GET_SERVER_NAMES', EnsemblConfig.file_config.get('get_server_names', 0))
 
-    ES_INDEX = os.environ.get('ES_INDEX', EnsemblConfig.file_config.get('es_index',
-                                                                        f"datacheck_results_{EnsemblConfig.ENS_VERSION}"))
+    SERVER_NAMES = get_server_names(COPY_URI_DROPDOWN, GET_SERVER_NAMES)
 
-    APP_VERSION = get_app_version()
+    APP_VERSION =  get_app_version()
+
