@@ -130,7 +130,7 @@ class DatacheckConfig(EnsemblConfig):
     
     ES_INDEX = os.environ.get('ES_INDEX', EnsemblConfig.file_config.get('es_index', f"datacheck_results_{EnsemblConfig.ENS_VERSION}"))
     
-    GET_SERVER_NAMES = os.environ.get('GET_SERVER_NAMES', EnsemblConfig.file_config.get('get_server_ names', 0))
+    GET_SERVER_NAMES = os.environ.get('GET_SERVER_NAMES', EnsemblConfig.file_config.get('get_server_names', 0))
 
     SERVER_NAMES = get_server_names(COPY_URI_DROPDOWN, GET_SERVER_NAMES)
 
