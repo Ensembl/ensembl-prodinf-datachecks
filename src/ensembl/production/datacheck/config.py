@@ -80,6 +80,7 @@ class EnsemblConfig:
     file_config = load_config_yaml(config_file_path)
 
     ENS_VERSION = os.environ.get("ENS_VERSION")
+    EG_VERSION = os.environ.get("EG_VERSION")
     SCRIPT_NAME = os.environ.get('SCRIPT_NAME', '')
     BASE_DIR = os.environ.get('BASE_DIR',
                               file_config.get('base_dir'))
