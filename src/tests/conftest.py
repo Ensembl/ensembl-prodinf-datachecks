@@ -1,6 +1,7 @@
 import urllib3
 import pytest
 from ensembl.production.datacheck.app.main import app
+from ensembl.production.datacheck.es import ElasticsearchConnectionManager
 from elasticsearch import Elasticsearch
 import json
 import os
@@ -148,6 +149,9 @@ def appclient():
     app.config['TESTING'] = True
     app.config['ES_HOST'] ='localhost'
     app.config['ES_PORT'] = '9200'
+    app.config['ES_USER'] = ''
+    app.config['ES_PASSWORD'] = ''
+    app.config['ES_SSL'] = False
     app.config['APP_ES_DATA_SOURCE'] = True
     app.config['ES_INDEX'] = 'datacheck_results'
 

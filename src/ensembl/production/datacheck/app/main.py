@@ -59,11 +59,15 @@ app.groups_list = []
 app.servers_list = []
 app.servers_dict = {}
 
-#set es details 
+# set es details
 es_host = app.config['ES_HOST']
 es_port = str(app.config['ES_PORT'])
 es_index = app.config['ES_INDEX']
-app_es_data_source  =  app.config['APP_ES_DATA_SOURCE']
+es_user = app.config['ES_USER']
+es_password = app.config['ES_PASSWORD']
+es_ssl = app.config['ES_SSL']
+
+app_es_data_source = app.config['APP_ES_DATA_SOURCE']
 
 if app.env == 'development':
     # ENV dev (assumed run from builtin server, so update script_name at wsgi level)
@@ -339,19 +343,21 @@ def job_details():
         jsonfile = request.args.get('jsonfile', None)
         if jsonfile is None:
             raise Exception('jsonfile needed ')
-        
-        if app_es_data_source :
+
+        if app_es_data_source:
             ensembl_division = f"Ensembl{DatacheckConfig.DATACHECK_TYPE.capitalize()}"
-            res = get_datacheck_results(division = ensembl_division, 
-                                        jsonfile_path = jsonfile,
-                                        es_host=es_host, 
+            res = get_datacheck_results(division=ensembl_division,
+                                        jsonfile_path=jsonfile,
+                                        es_host=es_host,
                                         es_port=es_port,
                                         es_index=es_index,
-                                        )
+                                        es_user=es_user,
+                                        es_password=es_password,
+                                        es_ssl=es_ssl)
             if not res['status']:
                 raise Exception(res['message'])
             return jsonify(res['result'])
-        
+
         file_data = open(jsonfile, 'r').read()
         return jsonify(json.loads(file_data))
     except Exception as e:
@@ -380,24 +386,26 @@ def job_result(job_id):
 
 @app.route('/download_datacheck_outputs/<int:job_id>')
 def download_dc_outputs(job_id):
-        
     try:
         job = get_hive().get_result_for_job_id(job_id, progress=False)
         ensembl_division = f"Ensembl{DatacheckConfig.DATACHECK_TYPE.capitalize()}"
         if 'output' in job:
-        
-            if app_es_data_source :
-                jsonfile_path= job['output']['json_output_file']
-                ensembl_division = f"Ensembl{DatacheckConfig.DATACHECK_TYPE.capitalize()}"           
-                res = get_datacheck_results(division = ensembl_division, 
-                                            jsonfile_path = jsonfile_path,
-                                            es_host=es_host, 
+
+            if app_es_data_source:
+                jsonfile_path = job['output']['json_output_file']
+                ensembl_division = f"Ensembl{DatacheckConfig.DATACHECK_TYPE.capitalize()}"
+                res = get_datacheck_results(division=ensembl_division,
+                                            jsonfile_path=jsonfile_path,
+                                            es_host=es_host,
                                             es_port=es_port,
                                             es_index=es_index,
+                                            es_user=es_user,
+                                            es_password=es_password,
+                                            es_ssl=es_ssl
                                             )
                 if not res['status']:
                     raise Exception(res['message'])
-                
+
                 buffer = BytesIO()
                 buffer.write(json.dumps(res['result'], indent=2).encode('utf-8'))
                 buffer.seek(0)
@@ -408,7 +416,7 @@ def download_dc_outputs(job_id):
                     mimetype='text/json'
                 )
             else:
-                base_path = Path(job['output']['output_dir'])    
+                base_path = Path(job['output']['output_dir'])
                 paths = list(base_path.iterdir())
                 if len(paths) > 1:
                     data = BytesIO()
@@ -418,11 +426,11 @@ def download_dc_outputs(job_id):
                     data.seek(0)
                     filename = 'Datacheck_output_job_%s.zip' % job_id
                     return send_file(data, mimetype='application/zip',
-                                    attachment_filename=filename, as_attachment=True)
+                                     attachment_filename=filename, as_attachment=True)
                 else:
                     for f_path in paths:
                         return send_file(str(f_path), as_attachment=True)
-                    
+
     except Exception as e:
         return jsonify({'error': f"Failed to download the dc result : {str(e)}"}), 404
 
