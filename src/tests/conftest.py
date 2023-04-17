@@ -102,7 +102,7 @@ def wait_for(url: str, retries: int = 2, backoff: float = 0.2):
 def elastic_search():
     wait_for(f"http://localhost:9200/")
     with ElasticsearchConnectionManager("localhost", "9200", "", "", False) as es:
-        print("EsInfo", es.info())
+        print("EsInfo", es.client.info())
         def search(body: dict) -> None:
             es.client.indices.flush()
             es.client.indices.refresh()
