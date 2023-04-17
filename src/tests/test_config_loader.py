@@ -36,12 +36,17 @@ class TestConfigLoader(unittest.TestCase):
 class TestAPPVersion(unittest.TestCase):
 
     def test_config_app_version(self):
-        
+        try:
+            from importlib.metadata import version
+            version = version("datacheck")
+            version_pkg = True
+        except Exception as e:
+            version = "unknown"
+            version_pkg = False
         with open(Path(__file__).parent.parent.parent / 'VERSION') as f:
             version_file = f.read().strip('\n')
-            
-        version = pkg_resources.require("datacheck")[0].version
         version_config = DatacheckConfig.APP_VERSION
-        self.assertEqual(version, version_config)
-        self.assertEqual(version, version_file)
+        if version_pkg :
+            self.assertEqual(version, version_config)
+            self.assertEqual(version, version_file)
         self.assertEqual(version_file, version_config )

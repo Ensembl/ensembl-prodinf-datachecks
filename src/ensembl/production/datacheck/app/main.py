@@ -66,7 +66,6 @@ es_index = app.config['ES_INDEX']
 es_user = app.config['ES_USER']
 es_password = app.config['ES_PASSWORD']
 es_ssl = app.config['ES_SSL']
-
 app_es_data_source = app.config['APP_ES_DATA_SOURCE']
 
 if app.env == 'development':
@@ -343,7 +342,6 @@ def job_details():
         jsonfile = request.args.get('jsonfile', None)
         if jsonfile is None:
             raise Exception('jsonfile needed ')
-
         if app_es_data_source:
             ensembl_division = f"Ensembl{DatacheckConfig.DATACHECK_TYPE.capitalize()}"
             res = get_datacheck_results(division=ensembl_division,
@@ -361,7 +359,7 @@ def job_details():
         file_data = open(jsonfile, 'r').read()
         return jsonify(json.loads(file_data))
     except Exception as e:
-        return jsonify({'error': f"Failed to retrive the details : {str(e)}"}), 404
+        return jsonify({'error': f"Failed to retrieve the details : {str(e)}"}), 404
 
 
 @app.route('/jobs/<int:job_id>', methods=['GET'])
