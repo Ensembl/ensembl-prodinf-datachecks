@@ -101,25 +101,24 @@ def wait_for(url: str, retries: int = 2, backoff: float = 0.2):
 @pytest.fixture(scope="session")
 def elastic_search():
     wait_for(f"http://localhost:9200/")
-    with ElasticsearchConnectionManager("localhost", "9200", "", "", False) as es_client:
-        es = es_client.client
+    with ElasticsearchConnectionManager("localhost", "9200", "", "", False) as es:
         print("EsInfo", es.info())
         def search(body: dict) -> None:
-            es.indices.flush()
-            es.indices.refresh()
-            return es.search(index="datacheck_results", body=body)
+            es.client.indices.flush()
+            es.client.indices.refresh()
+            return es.client.search(index="datacheck_results", body=body)
 
         try:
             #set mock es data
-            es.index(index="datacheck_results", body=dc_success_result_es_doc, doc_type="report")
-            es.index(index="datacheck_results", body=dc_failed_result_es_doc, doc_type="report")
+            es.client.index(index="datacheck_results", body=dc_success_result_es_doc, doc_type="report")
+            es.client.index(index="datacheck_results", body=dc_failed_result_es_doc, doc_type="report")
             print("Index created")
             yield search
         except:
             raise RuntimeWarning("Unable to create indexes!")
         finally:
-            if es.indices.exists("datacheck_results"):
-                es.indices.delete("datacheck_results")
+            if es.client.indices.exists("datacheck_results"):
+                es.client.indices.delete("datacheck_results")
 
 @pytest.fixture()
 def es_query():
