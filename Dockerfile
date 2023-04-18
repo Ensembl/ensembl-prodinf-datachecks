@@ -13,10 +13,11 @@ COPY --chown=appuser:appuser . /home/appuser/datachecks
 RUN python -m venv /home/appuser/datachecks/venv
 ENV PATH="/home/appuser/datachecks/venv/bin:$PATH"
 RUN pip install wheel
+RUN pip install --upgrade pip
 RUN pip install .
 # clone datacheck app
 ENV DATACHECK_CONFIG_PATH="/home/appuser/datachecks/config.yaml"
 RUN git clone https://github.com/Ensembl/ensembl-datacheck.git
 
 EXPOSE 5001
-CMD  ["gunicorn", "--config", "/home/appuser/datachecks/gunicorn_config.py", "-b", "0.0.0.0:5001", "ensembl.production.datacheck.app.main:app"]
+CMD  ["gunicorn", "--config", "/home/appuser/datachecks/gunicorn_config.py", "ensembl.production.datacheck.app.main:app"]
