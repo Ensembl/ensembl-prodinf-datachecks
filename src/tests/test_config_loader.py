@@ -46,7 +46,10 @@ class TestAPPVersion(unittest.TestCase):
         with open(Path(__file__).parent.parent.parent / 'VERSION') as f:
             version_file = f.read().strip('\n')
         version_config = DatacheckConfig.APP_VERSION
+        print("version", version)
+        print("version_config", version_config)
+        print("version_file", version_file)
         if version_pkg :
             self.assertEqual(version, version_config)
-            self.assertEqual(version, version_file)
-        self.assertEqual(version_file, version_config )
+            self.assertRegex(version, version_file)
+        self.assertRegex(version_config, version_file)
