@@ -41,6 +41,7 @@ setup(
     maintainer_email='ensembl-production@ebi.ac.uk',
     description='Ensembl datacheck service',
     python_requires='>=3.7',
+    install_requires=import_requirements(),
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Developers',

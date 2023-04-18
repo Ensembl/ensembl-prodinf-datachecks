@@ -12,7 +12,7 @@ COPY --chown=appuser:appuser . /home/appuser/datachecks
 #Install dependencies
 RUN python -m venv /home/appuser/datachecks/venv
 ENV PATH="/home/appuser/datachecks/venv/bin:$PATH"
-RUN pip install -r requirements.txt
+RUN pip install wheel
 RUN pip install .
 # clone datacheck app
 ENV DATACHECK_CONFIG_PATH="/home/appuser/datachecks/config.yaml"
