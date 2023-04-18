@@ -1,10 +1,20 @@
+# See the NOTICE file distributed with this work for additional information
+#    regarding copyright ownership.
+#    Licensed under the Apache License, Version 2.0 (the "License");
+#    you may not use this file except in compliance with the License.
+#    You may obtain a copy of the License at
+#        http://www.apache.org/licenses/LICENSE-2.0
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS,
+#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#    See the License for the specific language governing permissions and
+#    limitations under the License.
+
 import urllib3
 import pytest
 from ensembl.production.datacheck.app.main import app
-from ensembl.production.datacheck.es import ElasticsearchConnectionManager
-from elasticsearch import Elasticsearch
-import json
-import os
+from ensembl.production.core.es import ElasticsearchConnectionManager
+
 
 dc_success_result_es_doc =   {
 		"job_id": "1",
@@ -124,11 +134,25 @@ def elastic_search():
 def es_query():
     return {
                 "query": {
-                    "term": {
-                        "division.keyword": "EnsemblVertebrates"
-                    },
-                    "term": {
-                        "file.keyword": "/homes/user/test_es_output/user_sL2nmrNTRkjE/results_by_species.json"
+                    "bool": {
+                        "must": [
+                            {
+                                "match": {
+                                    "division.keyword": {
+                                        "query": "EnsemblVertebrates",
+                                        "operator": "and"
+                                    }
+                                }
+                            },
+                            {
+                                "match": {
+                                    "file.keyword": {
+                                        "query": "/homes/user/test_es_output/user_sL2nmrNTRkjE/results_by_species.json",
+                                        "operator": "and"
+                                    }
+                                }
+                            }
+                        ]
                     }
                 },
                 "size": 1,

@@ -32,7 +32,7 @@ import ensembl.production.datacheck.exceptions
 from ensembl.production.datacheck.config import DatacheckConfig
 from ensembl.production.datacheck.exceptions import MissingIndexException
 from ensembl.production.datacheck.forms import DatacheckSubmissionForm
-from ensembl.production.datacheck.es import get_datacheck_results
+from ensembl.production.datacheck.utils import get_datacheck_results
 
 # Go up two levels to get to root, where we will find the static and template files
 app_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
