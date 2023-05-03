@@ -55,8 +55,7 @@ def get_datacheck_results(jsonfile_path: str,
                 ]
             })
             if len(res['hits']['hits']) == 0:
-                raise ElasticsearchException(f""" No Hits Found for given params division {division} 
-                                             and jsonfile_path {jsonfile_path} """)
+                raise ElasticsearchException(f"""No Hits Found for given params jsonfile_path {jsonfile_path} """)
 
             return {"status": True, "message": "", "result": res['hits']['hits'][0]['_source']['content']}
 

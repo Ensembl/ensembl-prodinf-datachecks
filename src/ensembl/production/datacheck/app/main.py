@@ -384,7 +384,6 @@ def job_result(job_id):
 def download_dc_outputs(job_id):
     try:
         job = get_hive().get_result_for_job_id(job_id, progress=False)
-        ensembl_division = f"Ensembl{DatacheckConfig.DATACHECK_TYPE.capitalize()}"
         if 'output' in job:
 
             if app_es_data_source:
@@ -395,8 +394,7 @@ def download_dc_outputs(job_id):
                                             es_index=es_index,
                                             es_user=es_user,
                                             es_password=es_password,
-                                            es_ssl=es_ssl
-                                            )
+                                            es_ssl=es_ssl)
                 if not res['status']:
                     raise Exception(res['message'])
 
