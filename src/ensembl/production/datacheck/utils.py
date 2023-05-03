@@ -15,8 +15,7 @@ from ensembl.production.core.es import ElasticsearchConnectionManager
 from ensembl.production.datacheck.config import DatacheckConfig as dcg
 
 
-def get_datacheck_results(division: str,
-                          jsonfile_path: str,
+def get_datacheck_results(jsonfile_path: str,
                           es_host: str = dcg.ES_HOST,
                           es_port: int = int(dcg.ES_PORT),
                           es_index: str = dcg.ES_INDEX,
@@ -26,7 +25,6 @@ def get_datacheck_results(division: str,
     """Get datacheck results stored in Elasticsearch
 
     Args:
-        division (str): Ensembl division to filter results
         jsonfile_path (str): unique file name to filter the results
         es_host (str): elastic search host to connect 
         es_port (int): elastic search port
@@ -38,33 +36,12 @@ def get_datacheck_results(division: str,
     Returns:
         dict: status with elasticsearch response 
     """
-
-    if not all([division, jsonfile_path]):
-        raise Exception("Param division and jsonfile_path required")
-
     with ElasticsearchConnectionManager(es_host, es_port, es_user, es_password, es_ssl) as es:
         try:
             res = es.client.search(index=es_index, body={
                 "query": {
-                    "bool": {
-                        "must": [
-                            {
-                                "match": {
-                                    "division.keyword": {
-                                        "query": division,
-                                        "operator": "and"
-                                    }
-                                }
-                            },
-                            {
-                                "match": {
-                                    "file.keyword": {
-                                        "query": jsonfile_path,
-                                        "operator": "and"
-                                    }
-                                }
-                            }
-                        ]
+                    "term": {
+                        "file.keyword": jsonfile_path
                     }
                 },
                 "size": 1,
