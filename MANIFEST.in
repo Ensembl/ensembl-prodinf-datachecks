@@ -1,6 +1,7 @@
 include LICENSE
 include NOTICE
 include VERSION
+include requirements.txt
 include src/ensembl/production/datacheck/templates/*
 include src/ensembl/production/datacheck/static/js/*
 include src/ensembl/production/datacheck/static/css/*

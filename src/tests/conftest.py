@@ -1,9 +1,20 @@
+# See the NOTICE file distributed with this work for additional information
+#    regarding copyright ownership.
+#    Licensed under the Apache License, Version 2.0 (the "License");
+#    you may not use this file except in compliance with the License.
+#    You may obtain a copy of the License at
+#        http://www.apache.org/licenses/LICENSE-2.0
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS,
+#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#    See the License for the specific language governing permissions and
+#    limitations under the License.
+
 import urllib3
 import pytest
 from ensembl.production.datacheck.app.main import app
-from elasticsearch import Elasticsearch
-import json
-import os
+from ensembl.production.core.es import ElasticsearchConnectionManager
+
 
 dc_success_result_es_doc =   {
 		"job_id": "1",
@@ -100,34 +111,48 @@ def wait_for(url: str, retries: int = 2, backoff: float = 0.2):
 @pytest.fixture(scope="session")
 def elastic_search():
     wait_for(f"http://localhost:9200/")
-    es = Elasticsearch([{"host": "localhost", "port": 9200}])
-    print(es.info())
-    if not es.ping():
-        raise(
-            f"Cannot connect to Elasticsearch server. Host: localhost, Port: 9200"
-        )
-    def search(body: dict) -> None:
-        es.indices.flush()
-        es.indices.refresh()
-        return es.search(index="datacheck_results", body=body)
-    try:
-        #set mock es data
-        es.index(index="datacheck_results", body=dc_success_result_es_doc, doc_type="report")
-        es.index(index="datacheck_results", body=dc_failed_result_es_doc, doc_type="report")
-        yield search
-    finally:
-        if es.indices.exists("datacheck_results"):
-            es.indices.delete("datacheck_results")
+    with ElasticsearchConnectionManager("localhost", "9200", "", "", False) as es:
+        print("EsInfo", es.client.info())
+        def search(body: dict) -> None:
+            es.client.indices.flush()
+            es.client.indices.refresh()
+            return es.client.search(index="datacheck_results", body=body)
+
+        try:
+            #set mock es data
+            es.client.index(index="datacheck_results", body=dc_success_result_es_doc, doc_type="report")
+            es.client.index(index="datacheck_results", body=dc_failed_result_es_doc, doc_type="report")
+            print("Index created")
+            yield search
+        except:
+            raise RuntimeWarning("Unable to create indexes!")
+        finally:
+            if es.client.indices.exists("datacheck_results"):
+                es.client.indices.delete("datacheck_results")
 
 @pytest.fixture()
 def es_query():
     return {
                 "query": {
-                    "term": {
-                        "division.keyword": "EnsemblVertebrates"
-                    },
-                    "term": {
-                        "file.keyword": "/homes/user/test_es_output/user_sL2nmrNTRkjE/results_by_species.json"
+                    "bool": {
+                        "must": [
+                            {
+                                "match": {
+                                    "division.keyword": {
+                                        "query": "EnsemblVertebrates",
+                                        "operator": "and"
+                                    }
+                                }
+                            },
+                            {
+                                "match": {
+                                    "file.keyword": {
+                                        "query": "/homes/user/test_es_output/user_sL2nmrNTRkjE/results_by_species.json",
+                                        "operator": "and"
+                                    }
+                                }
+                            }
+                        ]
                     }
                 },
                 "size": 1,
@@ -148,6 +173,9 @@ def appclient():
     app.config['TESTING'] = True
     app.config['ES_HOST'] ='localhost'
     app.config['ES_PORT'] = '9200'
+    app.config['ES_USER'] = ''
+    app.config['ES_PASSWORD'] = ''
+    app.config['ES_SSL'] = False
     app.config['APP_ES_DATA_SOURCE'] = True
     app.config['ES_INDEX'] = 'datacheck_results'
 

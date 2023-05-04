@@ -35,7 +35,8 @@ logger.addHandler(default_handler)
 
 def get_app_version():
     try:
-        version = pkg_resources.require("datacheck")[0].version
+        from importlib.metadata import version
+        version = version("datacheck")
     except Exception as e:
         with open(Path(__file__).parents[4] / 'VERSION') as f:
             version = f.read()
@@ -126,10 +127,11 @@ class DatacheckConfig(EnsemblConfig):
     APP_ES_DATA_SOURCE = os.environ.get('APP_ES_DATA_SOURCE', EnsemblConfig.file_config.get('app_es_data_source', True))
 
     ES_HOST = os.environ.get('ES_HOST', EnsemblConfig.file_config.get('es_host', 'localhost'))
-
+    ES_USER = os.getenv("ES_USER", EnsemblConfig.file_config.get("es_user", ""))
+    ES_PASSWORD = os.getenv("ES_PASSWORD", EnsemblConfig.file_config.get("es_password", ""))
     ES_PORT = os.environ.get('ES_PORT', EnsemblConfig.file_config.get('es_port', '9200'))
-    
-    ES_INDEX = os.environ.get('ES_INDEX', EnsemblConfig.file_config.get('es_index', f"datacheck_results_{EnsemblConfig.ENS_VERSION}"))
+    ES_SSL = os.environ.get('ES_SSL', EnsemblConfig.file_config.get('es_ssl', "f")).lower() in ['true', '1']
+    ES_INDEX = os.environ.get('ES_INDEX', EnsemblConfig.file_config.get('es_index', "datacheck_results"))
     
     GET_SERVER_NAMES = os.environ.get('GET_SERVER_NAMES', EnsemblConfig.file_config.get('get_server_names', 0))
 

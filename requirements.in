@@ -1,4 +1,4 @@
-ensembl-prodinf-core~=2.0.0
+ensembl-prodinf-core==2.0.5
 Bootstrap-Flask
 Click
 elasticsearch>=6.8.1,<7.0.0
@@ -12,6 +12,5 @@ mysqlclient
 pytest
 requests
 SQLAlchemy
-sqlalchemy_utils==0.37.0
 wtforms
-ensembl-py@git+https://github.com/Ensembl/ensembl-py.git#egg=ensembl-py
+ensembl-py@git+https://github.com/Ensembl/ensembl-py.git@1.0.0dev2#egg=ensembl-py
