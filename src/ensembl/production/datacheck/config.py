@@ -10,18 +10,15 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
+import json
 import logging
 import os
 import pathlib
-import pkg_resources
-import urllib3
-import urllib
-import json 
 import requests.exceptions
+import urllib
 from pathlib import Path
 
 from ensembl.production.core.config import load_config_yaml
-
 from ensembl.utils.rloader import RemoteFileLoader
 
 pathlib.Path(__file__).parent.absolute()
@@ -29,7 +26,7 @@ pathlib.Path(__file__).parent.absolute()
 config_file_path = os.environ.get('DATACHECK_CONFIG_PATH')
 from flask.logging import default_handler
 
-logger = logging.getLogger()
+logger = logging.getLogger(__name__)
 logger.addHandler(default_handler)
 
 
@@ -50,45 +47,34 @@ def get_server_names(url, flag=0):
             loader = RemoteFileLoader('json')
             return loader.r_open(url)
         else:
-            server_file_path = os.environ.get("SERVER_NAMES", EnsemblConfig.file_config.get('server_names_file',
-                                                                                        os.path.join(
-                                                                                            os.path.dirname(__file__),
-                                                                                            'server_names.dev.json')))
+            server_file_path = os.environ.get("SERVER_NAMES", EnsemblConfig.file_config.get('server_names_file'))
             return json.load(open(server_file_path))
     except Exception as e:
-        return {}    
+        raise RuntimeError(f"Unable to load the list of server names {e}")
 
 class DCConfigLoader:
     base_uri = 'https://raw.githubusercontent.com/Ensembl/ensembl-datacheck/'
     uri = base_uri + 'release/{}/lib/Bio/EnsEMBL/DataCheck/index.json'
 
     @classmethod
-    def load_config(cls, version=None):
+    def load_config(cls, version):
         loader = RemoteFileLoader('json')
-        if version is None:
-            logger.warning(f"No version specified, fall back on main")
-            uri = cls.base_uri + 'main/lib/Bio/EnsEMBL/DataCheck/index.json'
-        else:
-            uri = cls.uri.format(version)
         try:
-            return loader.r_open(uri)
-        except requests.exceptions.HTTPError as e:
-            logger.fatal(f"Load versioned index.json error: {version}")
-            return {}
+            return loader.r_open(cls.uri.format(version))
+        except requests.HTTPError as e:
+            logger.warning(f"Loading {version} index.json from main")
+            return loader.r_open(f'{cls.base_uri}main/lib/Bio/EnsEMBL/DataCheck/index.json')
 
 
 class EnsemblConfig:
     file_config = load_config_yaml(config_file_path)
 
-    ENS_VERSION = os.environ.get("ENS_VERSION")
-    EG_VERSION = os.environ.get("EG_VERSION")
+    ENS_VERSION = os.environ.get("ENS_VERSION", file_config.get('ens_version'))
+    EG_VERSION = os.environ.get("EG_VERSION", file_config.get('eg_version'))
     SCRIPT_NAME = os.environ.get('SCRIPT_NAME', '')
-    BASE_DIR = os.environ.get('BASE_DIR',
-                              file_config.get('base_dir'))
-    SECRET_KEY = os.environ.get('SECRET_KEY',
-                                file_config.get('secret_key', os.urandom(32)))
-    SERVER_URIS_FILE = os.environ.get('SERVER_URIS_FILE',
-                                      file_config.get('server_uris_file', 'server_uris_list.json'))
+    BASE_DIR = os.environ.get('BASE_DIR', file_config.get('base_dir'))
+    SECRET_KEY = os.environ.get('SECRET_KEY', file_config.get('secret_key', os.urandom(32)))
+    SERVER_URIS_FILE = os.environ.get('SERVER_URIS_FILE', file_config.get('server_uris_file', 'server_uris_list.json'))
     SWAGGER = {
         'title': 'Ensembl Datacheck Service',
         'uiversion': 3,
