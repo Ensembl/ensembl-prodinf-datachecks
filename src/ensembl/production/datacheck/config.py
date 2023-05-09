@@ -54,6 +54,7 @@ def get_server_names(url, flag=0):
         raise RuntimeError(f"Unable to load the list of server names {e}")
 
 
+
 class DCConfigLoader:
     base_uri = 'https://raw.githubusercontent.com/Ensembl/ensembl-datacheck/'
 
