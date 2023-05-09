@@ -9,6 +9,8 @@
 #    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
+import logging
+
 import os
 import pytest
 import urllib3
@@ -115,9 +117,10 @@ def wait_for(url: str, retries: int = 2, backoff: float = 0.2):
 
 @pytest.fixture(scope="session")
 def elastic_search():
-    wait_for(f"http://localhost:9200/")
+    es_host = 'http://localhost:9200/'
+    wait_for(es_host)
     with ElasticsearchConnectionManager("localhost", "9200", "", "", False) as es:
-        print("EsInfo", es.client.info())
+        logging.info("EsInfo", es.client.info())
         def search(body: dict) -> None:
             es.client.indices.flush()
             es.client.indices.refresh()
@@ -127,7 +130,7 @@ def elastic_search():
             #set mock es data
             es.client.index(index="datacheck_results", body=dc_success_result_es_doc, doc_type="report")
             es.client.index(index="datacheck_results", body=dc_failed_result_es_doc, doc_type="report")
-            print("Index created")
+            logging.info("Test Indexes created")
             yield search
         except:
             raise RuntimeWarning("Unable to create indexes!")
