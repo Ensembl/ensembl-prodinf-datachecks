@@ -29,7 +29,7 @@ class TestConfigLoader(unittest.TestCase):
         self.assertIn('DuplicateComparaMemberXref', config.keys())
 
     def test_config_load_fallback(self):
-        config = DCConfigLoader.load_config()
+        config = DCConfigLoader.load_config('999')
         # Load main instead
         self.assertIn('SpeciesCommonName', config.keys())
 

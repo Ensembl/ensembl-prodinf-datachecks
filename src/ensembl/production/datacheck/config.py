@@ -42,31 +42,33 @@ def get_app_version():
 
 def get_server_names(url, flag=0):
     try:
-        if flag :
-            url=urllib.parse.urljoin(url, '/api/dbcopy/dcservers')
+        if flag:
+            url = urllib.parse.urljoin(url, '/api/dbcopy/dcservers')
             loader = RemoteFileLoader('json')
             return loader.r_open(url)
         else:
-            server_file_path = os.environ.get("SERVER_NAMES", EnsemblConfig.file_config.get('server_names_file'))
+            server_file_path = os.environ.get("SERVER_NAMES",
+                                              EnsemblConfig.file_config.get('server_names_file'))
             return json.load(open(server_file_path))
     except Exception as e:
         raise RuntimeError(f"Unable to load the list of server names {e}")
 
+
 class DCConfigLoader:
     base_uri = 'https://raw.githubusercontent.com/Ensembl/ensembl-datacheck/'
-    uri = base_uri + 'release/{}/lib/Bio/EnsEMBL/DataCheck/index.json'
 
     @classmethod
     def load_config(cls, version):
         loader = RemoteFileLoader('json')
         try:
-            return loader.r_open(cls.uri.format(version))
-        except requests.HTTPError as e:
-            logger.warning(f"Loading {version} index.json from main")
+            return loader.r_open(f'{cls.base_uri}release/{version}/lib/Bio/EnsEMBL/DataCheck/index.json')
+        except requests.exceptions.HTTPError as e:
+            logger.warning(f"Loading /{version}/ index.json from main")
             return loader.r_open(f'{cls.base_uri}main/lib/Bio/EnsEMBL/DataCheck/index.json')
 
 
 class EnsemblConfig:
+    logging.debug(f"Loading config from {config_file_path}")
     file_config = load_config_yaml(config_file_path)
 
     ENS_VERSION = os.environ.get("ENS_VERSION", file_config.get('ens_version'))
@@ -118,10 +120,9 @@ class DatacheckConfig(EnsemblConfig):
     ES_PORT = os.environ.get('ES_PORT', EnsemblConfig.file_config.get('es_port', '9200'))
     ES_SSL = os.environ.get('ES_SSL', EnsemblConfig.file_config.get('es_ssl', "f")).lower() in ['true', '1']
     ES_INDEX = os.environ.get('ES_INDEX', EnsemblConfig.file_config.get('es_index', "datacheck_results"))
-    
+
     GET_SERVER_NAMES = os.environ.get('GET_SERVER_NAMES', EnsemblConfig.file_config.get('get_server_names', 0))
 
     SERVER_NAMES = get_server_names(COPY_URI_DROPDOWN, GET_SERVER_NAMES)
 
-    APP_VERSION =  get_app_version()
-
+    APP_VERSION = get_app_version()

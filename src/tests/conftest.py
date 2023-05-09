@@ -9,11 +9,16 @@
 #    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
-
-import urllib3
+import os
 import pytest
-from ensembl.production.datacheck.app.main import app
+import urllib3
+from pathlib import Path
+
+os.environ['DATACHECK_CONFIG_PATH'] = f"{Path(__file__).parent}/datachecks_config.yaml"
+os.environ['SERVER_NAMES'] = f"{Path(__file__).parents[2]}/server_names.json"
+
 from ensembl.production.core.es import ElasticsearchConnectionManager
+from ensembl.production.datacheck.app.main import app
 
 
 dc_success_result_es_doc =   {
