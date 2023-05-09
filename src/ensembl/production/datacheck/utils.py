@@ -16,6 +16,7 @@ from sqlalchemy.engine import make_url
 from ensembl.production.core.es import ElasticsearchConnectionManager
 from ensembl.production.datacheck.config import DatacheckConfig as dcg
 
+
 def qualified_name(db_uri):
     import re
     db_url = make_url(db_uri)
