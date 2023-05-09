@@ -11,8 +11,22 @@
 #    limitations under the License.
 
 from elasticsearch import ElasticsearchException
+from sqlalchemy.engine import make_url
+
 from ensembl.production.core.es import ElasticsearchConnectionManager
 from ensembl.production.datacheck.config import DatacheckConfig as dcg
+
+def qualified_name(db_uri):
+    import re
+    db_url = make_url(db_uri)
+    if re.search('[a-z-]?(.ebi.ac.uk|.org)', db_url.host) or db_url.host in ('localhost', 'mysql'):
+        return db_uri
+    else:
+        host = f'{db_url.host}.ebi.ac.uk'
+        if db_url.password:
+            return f"{db_url.drivername}://{db_url.username}:{db_url.password}@{host}:{db_url.port}/{db_url.database}"
+        else:
+            return f"{db_url.drivername}://{db_url.username}@{host}:{db_url.port}/{db_url.database}"
 
 
 def get_datacheck_results(division: str,

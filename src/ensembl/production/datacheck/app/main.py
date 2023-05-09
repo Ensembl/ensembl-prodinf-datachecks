@@ -32,7 +32,7 @@ import ensembl.production.datacheck.exceptions
 from ensembl.production.datacheck.config import DatacheckConfig
 from ensembl.production.datacheck.exceptions import MissingIndexException
 from ensembl.production.datacheck.forms import DatacheckSubmissionForm
-from ensembl.production.datacheck.utils import get_datacheck_results
+from ensembl.production.datacheck.utils import get_datacheck_results, qualified_name
 
 # Go up two levels to get to root, where we will find the static and template files
 app_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -148,7 +148,7 @@ def servers_dict():
 def databases_list():
     db_uri = request.args.get('db_uri')
     query = request.args.get('query')
-    return jsonify(get_databases_list(db_uri, query))
+    return jsonify(get_databases_list(qualified_name(db_uri), query))
 
 
 @app.route('/names/', methods=['GET'])
@@ -515,7 +515,7 @@ def set_db_type(dbname, db_uri):
     if m is not None:
         db_type = m.group()
     else:
-        db_type = get_db_type(db_uri)
+        db_type = get_db_type(qualified_name(db_uri))
     return db_type
 
 
