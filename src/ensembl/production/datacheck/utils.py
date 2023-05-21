@@ -11,12 +11,26 @@
 #    limitations under the License.
 
 from elasticsearch import ElasticsearchException
+from sqlalchemy.engine import make_url
+
 from ensembl.production.core.es import ElasticsearchConnectionManager
 from ensembl.production.datacheck.config import DatacheckConfig as dcg
 
 
-def get_datacheck_results(division: str,
-                          jsonfile_path: str,
+def qualified_name(db_uri):
+    import re
+    db_url = make_url(db_uri)
+    if re.search('[a-z-]?(.ebi.ac.uk|.org)', db_url.host) or db_url.host in ('localhost', 'mysql'):
+        return db_uri
+    else:
+        host = f'{db_url.host}.ebi.ac.uk'
+        if db_url.password:
+            return f"{db_url.drivername}://{db_url.username}:{db_url.password}@{host}:{db_url.port}/{db_url.database}"
+        else:
+            return f"{db_url.drivername}://{db_url.username}@{host}:{db_url.port}/{db_url.database}"
+
+
+def get_datacheck_results(jsonfile_path: str,
                           es_host: str = dcg.ES_HOST,
                           es_port: int = int(dcg.ES_PORT),
                           es_index: str = dcg.ES_INDEX,
@@ -26,7 +40,6 @@ def get_datacheck_results(division: str,
     """Get datacheck results stored in Elasticsearch
 
     Args:
-        division (str): Ensembl division to filter results
         jsonfile_path (str): unique file name to filter the results
         es_host (str): elastic search host to connect 
         es_port (int): elastic search port
@@ -38,33 +51,12 @@ def get_datacheck_results(division: str,
     Returns:
         dict: status with elasticsearch response 
     """
-
-    if not all([division, jsonfile_path]):
-        raise Exception("Param division and jsonfile_path required")
-
     with ElasticsearchConnectionManager(es_host, es_port, es_user, es_password, es_ssl) as es:
         try:
             res = es.client.search(index=es_index, body={
                 "query": {
-                    "bool": {
-                        "must": [
-                            {
-                                "match": {
-                                    "division.keyword": {
-                                        "query": division,
-                                        "operator": "and"
-                                    }
-                                }
-                            },
-                            {
-                                "match": {
-                                    "file.keyword": {
-                                        "query": jsonfile_path,
-                                        "operator": "and"
-                                    }
-                                }
-                            }
-                        ]
+                    "term": {
+                        "file.keyword": jsonfile_path
                     }
                 },
                 "size": 1,
@@ -78,8 +70,7 @@ def get_datacheck_results(division: str,
                 ]
             })
             if len(res['hits']['hits']) == 0:
-                raise ElasticsearchException(f""" No Hits Found for given params division {division} 
-                                             and jsonfile_path {jsonfile_path} """)
+                raise ElasticsearchException(f"""No Hits Found for given params jsonfile_path {jsonfile_path} """)
 
             return {"status": True, "message": "", "result": res['hits']['hits'][0]['_source']['content']}
 

@@ -11,8 +11,9 @@
 #     limitations under the License.
 
 import unittest
-from flask import Flask, render_template, jsonify, Request, request
+from flask import Flask, Request, request
 from werkzeug.test import EnvironBuilder
+
 from ensembl.production.datacheck.forms import DatacheckSubmissionForm
 
 valid_payload = {

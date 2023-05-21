@@ -9,11 +9,18 @@
 #    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
+import logging
 
-import urllib3
+import os
 import pytest
-from ensembl.production.datacheck.app.main import app
+import urllib3
+from pathlib import Path
+
+os.environ['DATACHECK_CONFIG_PATH'] = f"{Path(__file__).parent}/datachecks_config.yaml"
+os.environ['SERVER_NAMES'] = f"{Path(__file__).parents[2]}/server_names.json"
+
 from ensembl.production.core.es import ElasticsearchConnectionManager
+from ensembl.production.datacheck.app.main import app
 
 
 dc_success_result_es_doc =   {
@@ -110,9 +117,10 @@ def wait_for(url: str, retries: int = 2, backoff: float = 0.2):
 
 @pytest.fixture(scope="session")
 def elastic_search():
-    wait_for(f"http://localhost:9200/")
+    es_host = 'http://localhost:9200/'
+    wait_for(es_host)
     with ElasticsearchConnectionManager("localhost", "9200", "", "", False) as es:
-        print("EsInfo", es.client.info())
+        logging.info("EsInfo", es.client.info())
         def search(body: dict) -> None:
             es.client.indices.flush()
             es.client.indices.refresh()
@@ -122,7 +130,7 @@ def elastic_search():
             #set mock es data
             es.client.index(index="datacheck_results", body=dc_success_result_es_doc, doc_type="report")
             es.client.index(index="datacheck_results", body=dc_failed_result_es_doc, doc_type="report")
-            print("Index created")
+            logging.info("Test Indexes created")
             yield search
         except:
             raise RuntimeWarning("Unable to create indexes!")

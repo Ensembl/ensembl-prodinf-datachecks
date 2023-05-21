@@ -1,0 +1,7 @@
+---
+datacheck_output_dir: !ENV '${HOME}/datachecks'
+datacheck_common_dir: !ENV '${HOME}/datachecks'
+ens_version: 110
+eg_version: 57
+hive_uri: !ENV "mysql://ensembl@localhost:3306/${USER}_datachecks_test"
+
