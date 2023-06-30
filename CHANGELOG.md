@@ -1,6 +1,15 @@
 CHANGELOG - Ensembl Prodinf Database copy
 =========================================
 
+v2.0.1
+------
+- BugFix incomplete DC status for failed dc jobs
+
+
+V2.0.0
+------
+- Deployed DC App to k8s 
+
 v1.2.1
 ------
 

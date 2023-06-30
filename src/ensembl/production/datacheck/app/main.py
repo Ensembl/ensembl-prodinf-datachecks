@@ -326,9 +326,9 @@ def job_list():
             # Handle case where submission is marked as complete,
         # but where output has not been created.
         for job in jobs:
-            if 'output' not in job.keys():
+            if 'output' not in job.keys() and job['status'] not in ['failed', 'complete']:
                 job['status'] = 'incomplete'
-            elif job['output']['failed_total'] > 0:
+            if 'output' in job.keys() and job['output']['failed_total'] > 0:
                 job['status'] = 'failed'
 
         return jsonify(jobs)
