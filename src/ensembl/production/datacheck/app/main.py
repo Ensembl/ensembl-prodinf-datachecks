@@ -399,7 +399,7 @@ def download_dc_outputs(job_id):
                     raise Exception(res['message'])
 
                 buffer = BytesIO()
-                buffer.write(json.dumps(res['result'], indent=2).encode('utf-8'))
+                buffer.write(json.dumps(json.loads(res['result']), indent=2).encode('utf-8'))
                 buffer.seek(0)
                 return send_file(
                     buffer,
