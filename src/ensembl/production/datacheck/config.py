@@ -84,7 +84,7 @@ class EnsemblConfig:
         'ui_params': {
             'defaultModelsExpandDepth': -1
         },
-        'favicon': '/img/production.png'
+        'favicon': f'{SCRIPT_NAME}/img/production.png'
     }
 
 
