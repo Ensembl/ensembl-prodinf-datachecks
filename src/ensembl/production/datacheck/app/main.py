@@ -53,6 +53,7 @@ Swagger(app, template_file=app.config['SWAGGER_FILE'])
 app.analysis = app.config['HIVE_ANALYSIS']
 app.index = app.config['DATACHECK_INDEX']
 app.server_names = app.config['SERVER_NAMES']
+app.url_map.strict_slashes = False
 
 app.names_list = []
 app.groups_list = []
@@ -78,7 +79,8 @@ if app.env == 'development':
 
 @app.context_processor
 def inject_configs():
-    return dict(script_name=app.config['SCRIPT_NAME'])
+    return dict(script_name=app.config['SCRIPT_NAME'],
+                css_url=f"css/{app.config['DATACHECK_TYPE']}.css")
 
 
 def get_names_list():

@@ -19,25 +19,8 @@
       {%- block styles %}
       <!-- Bootstrap -->
       {{ bootstrap.load_css() }}
-      
-      {% if config['DATACHECK_TYPE'] == 'vertebrates' %}
-          <link rel= "stylesheet" type= "text/css" href= "{{ url_for('static',filename='css/vertebrates.css') }}">
-      {% elif config['DATACHECK_TYPE'] == 'plants' %}
-          <link rel= "stylesheet" type= "text/css" href= "{{ url_for('static',filename='css/plants.css') }}">
-      {% elif config['DATACHECK_TYPE'] == 'metazoa' %}
-          <link rel= "stylesheet" type= "text/css" href= "{{ url_for('static',filename='css/metazoa.css') }}">   
-      {% elif config['DATACHECK_TYPE'] == 'microbes' or  config['HANDOVER_TYPE'] == 'bacteria'%}
-          <link rel= "stylesheet" type= "text/css" href= "{{ url_for('static',filename='css/microbes.css') }}">
-      {% elif config['DATACHECK_TYPE'] == 'viruses' %}
-          <link rel= "stylesheet" type= "text/css" href= "{{ url_for('static',filename='css/viruses.css') }}"> 
-      {% elif config['DATACHECK_TYPE'] == 'rapid' %}
-          <link rel= "stylesheet" type= "text/css" href= "{{ url_for('static',filename='css/rapid.css') }}">                                     
-      {% else %}
-          <link rel="stylesheet" href="{{ url_for('static', filename='css/vertebrates.css') }}">
-      {% endif %}
-
-
-      <link rel="shortcut icon" href="{{ url_for('static', filename=icon_image) }}">
+      <link rel= "stylesheet" type= "text/css" href= "{{ url_for('static',filename=css_url) }}">
+      <link rel="shortcut icon" href="{{ url_for('static', filename='img/production.png') }}">
       <link href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet" 
       integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
       {%- endblock styles %}
