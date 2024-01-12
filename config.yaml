@@ -1,7 +1,10 @@
 ---
-base_dir: '/home/appuser/datachecks'
-datacheck_output_dir: '/nfs'
-datacheck_common_dir: '/nfs'
-hive_uri: 'mysql://test:test@test:3366/ensprod_db_datachecks_production'
-server_names_file: '/home/appuser/datachecks/server_names.json'
-swagger_file: '/home/appuser/datachecks/swagger.yml'
+base_dir: !ENV '${HOME}/datachecks'
+datacheck_output_dir: !ENV '${HOME}/datachecks'
+datacheck_common_dir: !ENV '${HOME}/datachecks'
+hive_uri: 'mysql://test:test@test:3366/ensprod_datachecks_production'
+ens_version: 110
+eg_version: 57
+copy_uri_dropdown: 'https://services.test.ensembl-production.ebi.ac.uk'
+datacheck_type: production
+get_server_names: 1
