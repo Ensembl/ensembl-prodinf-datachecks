@@ -141,6 +141,17 @@ def servers_list():
     return jsonify(get_servers_list())
 
 
+@app.route('/config', methods=['GET'])
+def config():
+    """ Disply all configs vars"""
+    config = {key: value if 'pass' not in key.lower() else 'XXXXXX' for key, value in DatacheckConfig.__dict__.items() if
+              key[:1] != '_'}
+    return render_template(
+        'config.html',
+        config=config
+    )
+
+
 @app.route('/servers/dict', methods=['GET'])
 def servers_dict():
     return jsonify(get_servers_dict())
