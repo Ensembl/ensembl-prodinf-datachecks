@@ -69,7 +69,7 @@ es_password = app.config['ES_PASSWORD']
 es_ssl = app.config['ES_SSL']
 app_es_data_source = app.config['APP_ES_DATA_SOURCE']
 
-if app.env == 'development':
+if app.debug:
     # ENV dev (assumed run from builtin server, so update script_name at wsgi level)
     app.wsgi_app = DispatcherMiddleware(
         Response('Not Found', status=404),

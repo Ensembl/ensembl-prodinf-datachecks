@@ -56,7 +56,7 @@ def get_datacheck_results(jsonfile_path: str,
             res = es.client.search(index=es_index, body={
                 "query": {
                     "term": {
-                        "file": jsonfile_path
+                        "file.keyword": jsonfile_path
                     }
                 },
                 "size": 1,
