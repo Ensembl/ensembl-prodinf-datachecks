@@ -154,7 +154,7 @@ def es_query():
                             },
                             {
                                 "match": {
-                                    "file.keyword": {
+                                    "file": {
                                         "query": "/homes/user/test_es_output/user_sL2nmrNTRkjE/results_by_species.json",
                                         "operator": "and"
                                     }
