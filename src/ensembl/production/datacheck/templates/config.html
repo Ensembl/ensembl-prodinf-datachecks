@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block styles %}
+    {{ super() }}
+{% endblock %}
+{% block content %}
+    {{ super() }}
+
+    <div class="row table-responsive">
+        <div class="col-12">
+            <div class="card shadow p-3 mb-5 bg-white rounded">
+                <div class="card-header">
+                    Datacheck Configuration set
+                </div>
+                <div class="card-body">
+                    <table class="bootstrap-table table-striped table result">
+                        <tbody>
+                        {% for key, value in config.items() %}
+                            <tr>
+                                <td class="bg-secondary">{{ key }}</td>
+                                <td>{{ value }}</td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

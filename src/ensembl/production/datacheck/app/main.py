@@ -69,7 +69,7 @@ es_password = app.config['ES_PASSWORD']
 es_ssl = app.config['ES_SSL']
 app_es_data_source = app.config['APP_ES_DATA_SOURCE']
 
-if app.env == 'development':
+if app.debug:
     # ENV dev (assumed run from builtin server, so update script_name at wsgi level)
     app.wsgi_app = DispatcherMiddleware(
         Response('Not Found', status=404),
@@ -139,6 +139,17 @@ def index():
 @app.route('/servers/list', methods=['GET'])
 def servers_list():
     return jsonify(get_servers_list())
+
+
+@app.route('/config', methods=['GET'])
+def config():
+    """ Disply all configs vars"""
+    config = {key: value if 'pass' not in key.lower() else 'XXXXXX' for key, value in DatacheckConfig.__dict__.items() if
+              key[:1] != '_'}
+    return render_template(
+        'config.html',
+        config=config
+    )
 
 
 @app.route('/servers/dict', methods=['GET'])

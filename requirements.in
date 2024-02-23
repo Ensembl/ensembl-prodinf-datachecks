@@ -13,4 +13,4 @@ pytest
 requests
 SQLAlchemy
 wtforms
-ensembl-py@git+https://github.com/Ensembl/ensembl-py.git@1.0.0dev2#egg=ensembl-py
+ensembl-py@git+https://github.com/Ensembl/ensembl-py.git@1.2.2
