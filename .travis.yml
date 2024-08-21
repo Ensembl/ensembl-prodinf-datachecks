@@ -1,8 +1,7 @@
 language: python
+dist: jammy
 python:
-  - "3.8"
-  - "3.9"
-
+  - "3.10"
 
 sudo: required
 

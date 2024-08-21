@@ -1,6 +1,7 @@
-ensembl-prodinf-core==2.0.5
+ensembl-prodinf-core==3.0.0
 Bootstrap-Flask
-Click
+#celery~=5.0.5 required click 7.1.2
+click
 elasticsearch>=6.8.1,<7.0.0
 email_validator
 Flask
